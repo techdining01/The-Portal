@@ -1,0 +1,48 @@
+<button id="payBtn">Pay Now</button>
+<script>
+document.getElementById('payBtn').addEventListener('click', async () => {
+  const resp = await fetch('/payments/init-paystack/', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({invoice_id: 123})
+  });
+  const data = await resp.json();
+  // redirect to Paystack hosted page
+  window.location.href = data.authorization_url;
+});
+</script>
+
+
+{% raw %}
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Pay Invoice</title>
+</head>
+<body>
+<h3>Pay Invoice</h3>
+<button id="payBtn">Pay Now</button>
+
+
+<script>
+// Replace invoiceId variable server-side template rendering or set via JS
+const invoiceId = {{ invoice.id }};
+
+
+document.getElementById('payBtn').addEventListener('click', async () => {
+const resp = await fetch('/payments/init-paystack/', {
+method: 'POST',
+headers: {'Content-Type': 'application/json'},
+body: JSON.stringify({invoice_id: invoiceId})
+});
+const data = await resp.json();
+// redirect to Paystack hosted payment page
+window.location.href = data.authorization_url;
+});
+</script>
+
+
+</body>
+</html>
+{% endraw %}
