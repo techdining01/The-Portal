@@ -30,6 +30,7 @@ class User(AbstractUser):
     address = models.TextField(blank=True, null=True)
     phone_number = models.CharField(max_length=15, blank=True, null=True)
     approved = models.BooleanField(default=False)  # SuperAdmin must approve Admins
+    can_take_exam = models.BooleanField(default=False)  # permission to take exams
     parent_email = models.EmailField(blank=True, null=True)
     profile_picture = models.ImageField(upload_to='profiles/', default='profiles/default_profile.png', null=True, blank=True)
        # NEW FIELDS for teachers/admins

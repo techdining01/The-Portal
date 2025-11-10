@@ -1,11 +1,11 @@
 from django.db import models
 from django.utils import timezone
-from users.models import User
+from django.conf import settings
 
 
 
 class Invoice(models.Model):
-    student = models.ForeignKey(User, limit_choices_to='student', on_delete=models.CASCADE) 
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     description = models.CharField(max_length=255)
     amount = models.PositiveIntegerField(help_text="Amount in kobo (store smallest currency unit)")
     currency = models.CharField(max_length=3, default='NGN')
