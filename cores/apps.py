@@ -1,5 +1,3 @@
-
-
 from django.apps import AppConfig
 
 class CoresConfig(AppConfig):
@@ -7,10 +5,6 @@ class CoresConfig(AppConfig):
     name = 'cores'
 
     def ready(self):
+        from django.db.models.signals import post_migrate
         from .tasks import start_scheduler
-        try:
-            start_scheduler()
-        except Exception as e:
-            import traceback
-            print("⚠️ Scheduler not started (possible first run before migrations):", e)
-            traceback.print_exc()
+        post_migrate.connect(lambda **kwargs: start_scheduler(), sender=self)

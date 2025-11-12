@@ -16,8 +16,8 @@ from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv(os.path.join(BASE_DIR, '.env'))
 
+load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -28,11 +28,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-# ALLOWED_HOSTS = ['newsiest-interlineally-guy.ngrok-free.dev', '127.0.0.1']
-
-
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -45,9 +41,8 @@ INSTALLED_APPS = [
     'users',
     'exams',
     'payments', 
+    'django_session_timeout',
 ]
-INSTALLED_APPS += ['django_session_timeout']
-
 
 # Messages config (optional but neat)
 from django.contrib.messages import constants as messages
@@ -67,22 +62,16 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-]
-
-MIDDLEWARE += [
     'cores.middleware.auto_logout.AutoLogoutMiddleware',
 ]
 
-
-# Session expires after 10 minutes (600 seconds)
-SESSION_COOKIE_AGE = 600  
-
+# Session expires after 10 minutes (300 seconds)
+SESSION_COOKIE_AGE = 300 
 # Expire session when the browser is closed
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True  
 
 # Update session timestamp on each request (resets timeout if active)
 SESSION_SAVE_EVERY_REQUEST = True  
-
 
 ROOT_URLCONF = 'thebrills.urls'
 
@@ -96,6 +85,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'core.context_processors.school_settings',  
             ],
         },
     },
@@ -103,22 +93,20 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'thebrills.wsgi.application'
 
-
-'''
 # Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD':os.getenv('DB_PASSWORD'),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('DB_PORT', '5432'),
     }
 }
-'''
+
 
 # Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -134,121 +122,56 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'Africa/Lagos'
-
 USE_I18N = True
-
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
-
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [BASE_DIR / 'static']
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
-### ............ sAdditional specific settings ............................#
-
-
-# ----- School config (dynamic) -----
+# School config (dynamic)
 SCHOOL_NAME = os.getenv("SCHOOL_NAME", "The Brills School")
+SCHOOL_ADDRESS = os.getenv("SCHOOL_ADDRESS", "No 1, Adaba Awotan/Akufo Road. Ibadan. Oyo State")
 SCHOOL_SLOGAN = os.getenv("SCHOOL_SLOGAN", "Knowledge is Light")
 
-
 # AWS S3 Settings for media file storage
-AWS_ACCESS_KEY_ID = 'your_aws_access_key'
-AWS_SECRET_ACCESS_KEY = 'your_aws_secret_key'
-AWS_STORAGE_BUCKET_NAME = 'your_bucket_name'
-AWS_S3_REGION_NAME = 'us-east-1'  # adjust as needed
+AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID', 'your_aws_access_key')
+AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY', 'your_aws_secret_key')
+AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_STORAGE_BUCKET_NAME', 'your_bucket_name')
+AWS_S3_REGION_NAME = 'us-east-1' 
 AWS_DEFAULT_ACL = None
 
 BACKUP_DIR = BASE_DIR / 'backups'
 
 # Optional encryption key (generate once using Fernet.generate_key())
-FERNET_KEY = b'your_generated_key_here'
-
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME'),
-        'USER': os.getenv('DB_USER'),
-        'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', '5432'),
-    }
-}
-
-
-
-# Payment settings (put real secrets in environment vars)
-PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY", "sk_test_xxx")
-PAYSTACK_PUBLIC_KEY = os.getenv("PAYSTACK_PUBLIC_KEY", "pk_test_xxx")
-PAYSTACK_BASE_URL = "https://api.paystack.co"
-
-
-TEST_PAYSTACK_SECRET_KEY = os.getenv("TEST_PAYSTACK_SECRET_KEY")
-TEST_PAYSTACK_PUBLIC_KEY = os.getenv("TEST_PAYSTACK_PUBLIC_KEY")
-
-
-# webhook secret is the same as PAYSTACK_SECRET_KEY (used to compute HMAC)
-# ensure you use HTTPS in production and configure Paystack dashboard webhook URL
-
+FERNET_KEY = os.getenv('FERNET_KEY', b'your_generated_key_here')
 
 # Custom user model
 AUTH_USER_MODEL = 'users.User'
 
-# Static & media
-STATIC_URL = '/static/'
-STATICFILES_DIRS = [BASE_DIR / 'static']
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
-
-SCHOOL_NAME = "THE BRILLS ACADEMY"
-SCHOOL_ADDRESS = "No 1, Adaba Awotan/Akufo Road. Ibadan. Oyo State"
-
-
-CRONJOBS = [
-    ('0 2 * * *', 'core.cron.daily_backup'),  # runs every day at 2 AM
-]
-
-
-
-# ----- Paystack keys (env) -----
-# For dev use test keys, for production use live keys.
+# Payment settings
 PAYSTACK_TEST_PUBLIC_KEY = os.getenv("PAYSTACK_TEST_PUBLIC_KEY")
 PAYSTACK_TEST_SECRET_KEY = os.getenv("PAYSTACK_TEST_SECRET_KEY")
 PAYSTACK_LIVE_PUBLIC_KEY = os.getenv("PAYSTACK_LIVE_PUBLIC_KEY")
 PAYSTACK_LIVE_SECRET_KEY = os.getenv("PAYSTACK_LIVE_SECRET_KEY")
-# Choose mode: 'test' or 'live'
 PAYSTACK_MODE = os.getenv("PAYSTACK_MODE", "test").lower()
 PAYSTACK_PUBLIC_KEY = PAYSTACK_LIVE_PUBLIC_KEY if PAYSTACK_MODE == "live" else PAYSTACK_TEST_PUBLIC_KEY
 PAYSTACK_SECRET_KEY = PAYSTACK_LIVE_SECRET_KEY if PAYSTACK_MODE == "live" else PAYSTACK_TEST_SECRET_KEY
 PAYSTACK_BASE_URL = "https://api.paystack.co"
 
-# ----- Static / media -----
-STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
-
-# ----- Security & Hosts (production) -----
+# Security & Hosts (production)
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,thebrillsschool.edu.ng").split(",")
 CSRF_TRUSTED_ORIGINS = os.getenv("CSRF_TRUSTED_ORIGINS", "https://thebrillsschool.edu.ng").split(",")
 
-# Template context processors (ensure you have 'django.template.context_processors.request' and add our custom)
-TEMPLATES[0]['OPTIONS']['context_processors'] += [
-    'django.template.context_processors.request',
-    'core.context_processors.school_settings',  
+CRONJOBS = [
+    ('0 2 * * *', 'core.cron.daily_backup'),
 ]

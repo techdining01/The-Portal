@@ -1,5 +1,4 @@
 import os, json, uuid, hmac, hashlib, requests
-from django.conf import settings
 from django.http import JsonResponse, HttpResponseBadRequest, HttpResponseForbidden, HttpResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
@@ -11,8 +10,9 @@ from django.urls import reverse
 
 User = get_user_model()
 
-PAYSTACK_BASE = getattr(settings, 'PAYSTACK_BASE_URL', 'https://api.paystack.co')
-PAYSTACK_SECRET = getattr(settings, 'PAYSTACK_SECRET_KEY', '')
+PAYSTACK_BASE = os.getenv('PAYSTACK_BASE_URL')
+PAYSTACK_SECRET = os.getenv('PAYSTACK_SECRET_KEY')
+
 
 @require_POST
 def init_paystack(request):
@@ -57,7 +57,7 @@ def init_paystack(request):
 def paystack_webhook(request):
     # verify signature
     signature = request.META.get('HTTP_X_PAYSTACK_SIGNATURE') or request.headers.get('x-paystack-signature')
-    secret = getattr(settings, 'PAYSTACK_SECRET_KEY','').encode()
+    secret = os.getenv('PAYSTACK_SECRET_KEY').encode()
     computed = hmac.new(secret, request.body, hashlib.sha512).hexdigest()
     if not signature or not hmac.compare_digest(computed, signature):
         return HttpResponseForbidden('Invalid signature')

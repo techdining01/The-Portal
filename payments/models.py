@@ -18,7 +18,7 @@ class Payment(models.Model):
     ]
 
     student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='payments')
-    payment_type = models.CharField(max_length=50, choices=PAYMENT_TYPES)
+    payment_type = models.CharField(max_length=50, choices=PAYMENT_TYPES, default='pending')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=STATUS, default='pending')
     is_paid = models.BooleanField(default=False)

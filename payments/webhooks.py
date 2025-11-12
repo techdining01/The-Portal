@@ -1,6 +1,6 @@
 import hmac
 import hashlib
-import json
+import json, os
 from django.conf import settings
 from django.http import HttpResponse, HttpResponseForbidden
 from django.utils import timezone
@@ -22,7 +22,7 @@ def paystack_webhook(request):
     payload = request.body  # raw bytes
     # Paystack signs with x-paystack-signature header (HMAC SHA512)
     signature = request.META.get('HTTP_X_PAYSTACK_SIGNATURE') or request.headers.get('x-paystack-signature')
-    secret = settings.PAYSTACK_SECRET_KEY.encode()
+    secret = os.getenv('PAYSTACK_SECRET_KEY').encode()
 
     computed = hmac.new(secret, payload, hashlib.sha512).hexdigest()
 
