@@ -28,7 +28,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+# ALLOWED_HOSTS = ['newsiest-interlineally-guy.ngrok-free.dev', '127.0.0.1']
 
 
 # Application definition
@@ -47,45 +47,6 @@ INSTALLED_APPS = [
     'payments', 
 ]
 INSTALLED_APPS += ['django_session_timeout']
-
-# AWS S3 Settings for media file storage
-AWS_ACCESS_KEY_ID = 'your_aws_access_key'
-AWS_SECRET_ACCESS_KEY = 'your_aws_secret_key'
-AWS_STORAGE_BUCKET_NAME = 'your_bucket_name'
-AWS_S3_REGION_NAME = 'us-east-1'  # adjust as needed
-AWS_DEFAULT_ACL = None
-
-BACKUP_DIR = BASE_DIR / 'backups'
-
-# Optional encryption key (generate once using Fernet.generate_key())
-FERNET_KEY = b'your_generated_key_here'
-
-
-# Payment settings (put real secrets in environment vars)
-PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY", "sk_test_xxx")
-PAYSTACK_PUBLIC_KEY = os.getenv("PAYSTACK_PUBLIC_KEY", "pk_test_xxx")
-PAYSTACK_BASE_URL = "https://api.paystack.co"
-
-# webhook secret is the same as PAYSTACK_SECRET_KEY (used to compute HMAC)
-# ensure you use HTTPS in production and configure Paystack dashboard webhook URL
-
-
-# Custom user model
-AUTH_USER_MODEL = 'users.User'
-
-# Static & media
-STATIC_URL = '/static/'
-STATICFILES_DIRS = [BASE_DIR / 'static']
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
-
-SCHOOL_NAME = "THE BRILLS ACADEMY"
-SCHOOL_ADDRESS = "No 1, Adaba Awotan/Akufo Road. Ibadan. Oyo State"
-
-
-CRONJOBS = [
-    ('0 2 * * *', 'core.cron.daily_backup'),  # runs every day at 2 AM
-]
 
 
 # Messages config (optional but neat)
@@ -143,6 +104,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'thebrills.wsgi.application'
 
 
+'''
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
@@ -152,7 +114,7 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
-
+'''
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -194,3 +156,99 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+### ............ sAdditional specific settings ............................#
+
+
+# ----- School config (dynamic) -----
+SCHOOL_NAME = os.getenv("SCHOOL_NAME", "The Brills School")
+SCHOOL_SLOGAN = os.getenv("SCHOOL_SLOGAN", "Knowledge is Light")
+
+
+# AWS S3 Settings for media file storage
+AWS_ACCESS_KEY_ID = 'your_aws_access_key'
+AWS_SECRET_ACCESS_KEY = 'your_aws_secret_key'
+AWS_STORAGE_BUCKET_NAME = 'your_bucket_name'
+AWS_S3_REGION_NAME = 'us-east-1'  # adjust as needed
+AWS_DEFAULT_ACL = None
+
+BACKUP_DIR = BASE_DIR / 'backups'
+
+# Optional encryption key (generate once using Fernet.generate_key())
+FERNET_KEY = b'your_generated_key_here'
+
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('DB_PORT', '5432'),
+    }
+}
+
+
+
+# Payment settings (put real secrets in environment vars)
+PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY", "sk_test_xxx")
+PAYSTACK_PUBLIC_KEY = os.getenv("PAYSTACK_PUBLIC_KEY", "pk_test_xxx")
+PAYSTACK_BASE_URL = "https://api.paystack.co"
+
+
+TEST_PAYSTACK_SECRET_KEY = os.getenv("TEST_PAYSTACK_SECRET_KEY")
+TEST_PAYSTACK_PUBLIC_KEY = os.getenv("TEST_PAYSTACK_PUBLIC_KEY")
+
+
+# webhook secret is the same as PAYSTACK_SECRET_KEY (used to compute HMAC)
+# ensure you use HTTPS in production and configure Paystack dashboard webhook URL
+
+
+# Custom user model
+AUTH_USER_MODEL = 'users.User'
+
+# Static & media
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [BASE_DIR / 'static']
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+SCHOOL_NAME = "THE BRILLS ACADEMY"
+SCHOOL_ADDRESS = "No 1, Adaba Awotan/Akufo Road. Ibadan. Oyo State"
+
+
+CRONJOBS = [
+    ('0 2 * * *', 'core.cron.daily_backup'),  # runs every day at 2 AM
+]
+
+
+
+# ----- Paystack keys (env) -----
+# For dev use test keys, for production use live keys.
+PAYSTACK_TEST_PUBLIC_KEY = os.getenv("PAYSTACK_TEST_PUBLIC_KEY")
+PAYSTACK_TEST_SECRET_KEY = os.getenv("PAYSTACK_TEST_SECRET_KEY")
+PAYSTACK_LIVE_PUBLIC_KEY = os.getenv("PAYSTACK_LIVE_PUBLIC_KEY")
+PAYSTACK_LIVE_SECRET_KEY = os.getenv("PAYSTACK_LIVE_SECRET_KEY")
+# Choose mode: 'test' or 'live'
+PAYSTACK_MODE = os.getenv("PAYSTACK_MODE", "test").lower()
+PAYSTACK_PUBLIC_KEY = PAYSTACK_LIVE_PUBLIC_KEY if PAYSTACK_MODE == "live" else PAYSTACK_TEST_PUBLIC_KEY
+PAYSTACK_SECRET_KEY = PAYSTACK_LIVE_SECRET_KEY if PAYSTACK_MODE == "live" else PAYSTACK_TEST_SECRET_KEY
+PAYSTACK_BASE_URL = "https://api.paystack.co"
+
+# ----- Static / media -----
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+# ----- Security & Hosts (production) -----
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,thebrillsschool.edu.ng").split(",")
+CSRF_TRUSTED_ORIGINS = os.getenv("CSRF_TRUSTED_ORIGINS", "https://thebrillsschool.edu.ng").split(",")
+
+# Template context processors (ensure you have 'django.template.context_processors.request' and add our custom)
+TEMPLATES[0]['OPTIONS']['context_processors'] += [
+    'django.template.context_processors.request',
+    'core.context_processors.school_settings',  
+]

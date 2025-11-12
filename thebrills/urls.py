@@ -26,7 +26,12 @@ urlpatterns = [
     path('users/', include('users.urls')),
     path('exams/', include('exams.urls')),
     path('cores/', include('cores.urls')),
+    #---------------------------------------#
     path('payments/', include('payments.urls')),
+    path('', include('landing.urls')),            # if you have separate landing app
+    path('', include('django.contrib.auth.urls')), # login / logout / password reset
+    path('payments/', include('payments.urls', namespace='payments')),
+
 ]
 
 if settings.DEBUG:
