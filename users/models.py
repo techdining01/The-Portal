@@ -2,16 +2,6 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
-from PIL import Image
-from exams.models import Class, Subject
-import uuid
-import datetime
-from django.utils.crypto import get_random_string
-
-from django.contrib.auth.models import AbstractUser
-from django.db import models
-from django.conf import settings
-from django.utils import timezone
 from django.utils.crypto import get_random_string
 from PIL import Image
 from exams.models import Class, Subject
@@ -30,9 +20,6 @@ class User(AbstractUser):
         ('male', 'Male')
     )
 
-    # ---------------------------
-    # CUSTOM FIELDS
-    # ---------------------------
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
     other_name = models.CharField(max_length=100, blank=True, null=True)
     date_joined = models.DateTimeField(auto_now=True)
@@ -76,10 +63,6 @@ class User(AbstractUser):
         help_text="Auto-generated Student Registration Number"
     )
 
-    # ---------------------------
-    # REGISTRATION NUMBER GENERATOR
-    # ---------------------------
-
     @staticmethod
     def generate_unique_reg_no():
         """
@@ -100,9 +83,6 @@ class User(AbstractUser):
             reg_no = cls.generate_unique_reg_no()
         return reg_no
 
-    # ---------------------------
-    # SAVE OVERRIDE
-    # ---------------------------
     def save(self, *args, **kwargs):
 
         # Generate unique registration number for students only
@@ -120,9 +100,6 @@ class User(AbstractUser):
             except Exception:
                 pass
 
-    # ---------------------------
-    # HELPERS
-    # ---------------------------
     def is_teacher(self):
         return self.role == "teacher"
 
@@ -134,6 +111,7 @@ class User(AbstractUser):
 
     def __str__(self):
         return f"{self.username} ({self.role})"
+
 
 
 # class User(AbstractUser):

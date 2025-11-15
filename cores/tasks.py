@@ -4,7 +4,6 @@ import datetime
 import boto3
 from django.conf import settings
 from apscheduler.schedulers.background import BackgroundScheduler
-from django_apscheduler.jobstores import DjangoJobStore, register_events
 from cryptography.fernet import Fernet
 from cores.models import BackupLog
 
@@ -33,9 +32,10 @@ def backup_and_cleanup(auto=True):
         "--indent", "2", "-o", filepath
     ])
 
-    # Encrypt (optional)
+    # Encrypt
     encrypt_file(filepath)
 
+    # Upload to S3
     s3 = boto3.client(
         's3',
         aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
@@ -43,52 +43,28 @@ def backup_and_cleanup(auto=True):
         region_name=settings.AWS_S3_REGION_NAME
     )
 
-    # Upload
     try:
         s3.upload_file(filepath, settings.AWS_STORAGE_BUCKET_NAME, f"backups/{filename}")
-        upload_status = "Uploaded to S3"
+        status = "Uploaded to S3"
     except Exception as e:
-        upload_status = f"Cloud upload failed: {e}"
+        status = f"Cloud upload failed: {e}"
 
-    # Cleanup (older than 7 days)
-    try:
-        response = s3.list_objects_v2(Bucket=settings.AWS_STORAGE_BUCKET_NAME, Prefix="backups/")
-        if "Contents" in response:
-            for obj in response["Contents"]:
-                last_modified = obj["LastModified"].replace(tzinfo=None)
-                if (datetime.datetime.now() - last_modified).days > 7:
-                    s3.delete_object(Bucket=settings.AWS_STORAGE_BUCKET_NAME, Key=obj["Key"])
-                    print(f"🗑️ Deleted old backup: {obj['Key']}")
-    except Exception as e:
-        print(f"⚠️ Cleanup failed: {e}")
-
-    BackupLog.objects.create(filename=filename, status=upload_status, is_auto=auto)
-
-
-# --- Make this top-level so it can be serialized ---
-def scheduled_backup_job():
-    backup_and_cleanup(auto=True)
+    # Save backup log
+    BackupLog.objects.create(filename=filename, status=status, is_auto=auto)
 
 
 def start_scheduler():
-    """Start background scheduler once Django starts."""
+    """Start job scheduler without DB jobstore."""
     scheduler = BackgroundScheduler()
-    scheduler.add_jobstore(DjangoJobStore(), "default")
 
-    # Add job via full path (text reference)
-    from cores.tasks import scheduled_backup_job
-
+    # Run every minute
     scheduler.add_job(
-    scheduled_backup_job,      
-    trigger='cron',
-    hour=2,
-    minute=0,
-    id='daily_backup_job',
-    replace_existing=True,
-)
+        backup_and_cleanup,
+        trigger="interval",
+        minutes=1,
+        id="backup_job",
+        replace_existing=True
+    )
 
-
-
-    register_events(scheduler)
     scheduler.start()
-    print("🕒 Daily backup scheduler running.")
+    print("⏱ APScheduler running (every 1 minute).")
