@@ -6,7 +6,7 @@
     <div class="d-flex justify-content-between align-items-center mt-3">
         <h1 class="fw-bold mb-3"> 👑👑👑 SuperAdmin Dashboard</h1>
           <nav class="d-flex gap-3">
-            <a class="btn btn-success" style="width: 80px; height: 40px;font-size: .95rem;" href="{% url 'user_approval_list' %}">Approval</a>
+            <a class="btn btn-success" style="width: 80px; height: 40px;font-size: .95rem;" href="{% url 'users:user_approval_list' %}">Approval</a>
           </nav>
         </div>
       <br>
@@ -57,7 +57,7 @@
         <div class="col-md-3">
             <div class="card text-center">
                 <div class="card-body">
-                    <h5> 📚 Quizzes</h5>
+                    <h5> 📚 Exams</h5>
                     <p>{{ total_quizzes }}</p>
                 </div>
             </div>
@@ -96,10 +96,10 @@
 
     <!-- Quiz Management -->
     <div class="card mb-4">
-        <div class="card-header">📚 Manage Quizzes</div>
+        <div class="card-header">📚 Manage Exams</div>
         <div class="card-body">
-            <a href="{% url 'create_quiz_page' %}" class="btn btn-success">➕ Add Quiz</a>
-            <a href="{% url 'manage_quizzes' %}" class="btn btn-primary">⚙️ Manage Quizzes</a>
+            <a href="{% url 'exams:create_quiz_page' %}" class="btn btn-success">➕ Add Exam</a>
+            <a href="{% url 'exams:manage_quizzes' %}" class="btn btn-primary">⚙️ Manage Exams</a>
         </div>
     </div>
 
@@ -107,8 +107,8 @@
     <div class="card mb-4">
         <div class="card-header">👤 Manage Users</div>
         <div class="card-body">
-            <a href="{% url 'create_user' %}" class="btn btn-success">➕ Create User</a>
-            <a href="{% url 'manage_users' %}" class="btn btn-primary">⚙️ Manage Users</a>
+            <a href="{% url 'users:create_user' %}" class="btn btn-success">➕ Create User</a>
+            <a href="{% url 'users:manage_users' %}" class="btn btn-primary">⚙️ Manage Users</a>
         </div>
     </div>
 
@@ -116,7 +116,7 @@
     <div class="card mb-4">
         <div class="card-header">📢 Broadcast to Teachers & Students</div>
         <div class="card-body">
-            <form method="post" action="{% url 'send_broadcast' %}">
+            <form method="post" action="{% url 'users:send_broadcast' %}">
                 {% csrf_token %}
                 <textarea name="message" class="form-control mb-2" placeholder="Write your message"></textarea>
                 <button type="submit" class="btn btn-primary">Send</button>

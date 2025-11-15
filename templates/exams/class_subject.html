@@ -6,9 +6,9 @@
     <h5></h5>   
     <div>
       <nav class="d-flex gap-3">
-      <a class="btn btn-warning btn-sm" href="{% url 'create_quiz' %}">Create Exam</a>
-      <a class="btn btn-success" href="{% url 'manage_quizzes' %} ">Manage exam</a>
-      <a class="btn btn-primary" href="{% url 'dashboard' %}">Dashboard</a>
+      <a class="btn btn-warning btn-sm" href="{% url 'exams:create_quiz' %}">Create Exam</a>
+      <a class="btn btn-success" href="{% url 'exams:manage_quizzes' %} ">Manage exam</a>
+      <a class="btn btn-primary" href="{% url 'users:dashboard' %}">Dashboard</a>
       </nav>     
     </div>
   </div>

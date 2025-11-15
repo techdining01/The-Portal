@@ -3,9 +3,10 @@ from .models import User
 
 
 class UserAdmin(admin.ModelAdmin):
-    list_display = ('username', 'role', 'approved', 'date_joined')
+    list_display = ('username', 'role', 'approved',  "email", "registration_number", "is_active", 'date_joined')
     list_filter = ('role', 'approved')
-    search_fields = ('username', 'other_name', 'phone_number')
+    readonly_fields = ("registration_number",)
+    search_fields = ('username', 'other_name', 'phone_number', "registration_number")
     ordering = ('-date_joined',)
     actions = ['approve_users']
 

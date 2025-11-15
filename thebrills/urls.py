@@ -20,15 +20,13 @@ from django.conf import settings
 from django.conf.urls.static import static
 from exams import views
 
-urlpatterns = [
-    path('', views.home, name='home'),  
+urlpatterns = [ 
     path('admin/', admin.site.urls),
     path('users/', include('users.urls')),
     path('exams/', include('exams.urls')),
     path('cores/', include('cores.urls')),
-    #---------------------------------------#
     path('payments/', include('payments.urls')),
-    path('', include('django.contrib.auth.urls')),
+    path('', include('school_portal.urls')),
 ]
 
 if settings.DEBUG:

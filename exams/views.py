@@ -48,9 +48,6 @@ matplotlib.use('Agg')
 
 
 
-def home(request):
-    return render(request, "exams/home.html")
-
 
 # --------------------------------------------------------------#
 
@@ -66,6 +63,9 @@ def is_teacher_or_admin(user):
 def is_admin_or_superadmin(user):
     return user.is_authenticated and user.role in ["admin", "superadmin"]
 
+
+def home(request):
+    return render(request, "exams/home.html")
 
 @login_required
 @user_passes_test(is_admin_or_superadmin)
@@ -1192,7 +1192,7 @@ def grade_attempt(request, attempt_id):
             })
 
         messages.success(request, "✅ Grading completed successfully!")
-        return redirect("teacher_dashboard")
+        return redirect("users:teacher_dashboard")
 
     # If modal load (AJAX)
     if _is_ajax(request):
@@ -1940,7 +1940,7 @@ def create_user(request):
         user = User.objects.create_user(username=username, email=email, password=password, role=role, approved=True)
         ActionLog.objects.create(user=request.user, action=f"Created user {user.username} ({role})")
         messages.success(request, f"User {username} created successfully.")
-        return redirect("manage_users")
+        return redirect("users:manage_users")
 
     return render(request, "exams/create_user.html")
 
@@ -2085,7 +2085,7 @@ def create_quiz(request):
         quiz = Quiz.objects.create(title=title, subject=subject, duration=duration, created_by=request.user)
         ActionLog.objects.create(user=request.user, action_type=f"Created quiz {quiz.title}")
         messages.success(request, f"Quiz {title} created successfully.")
-        return redirect("manage_quizzes")
+        return redirect("exams:manage_quizzes")
 
     subjects = Subject.objects.all()
     return render(request, "exams/create_quiz.html", {"subjects": subjects})
@@ -2110,7 +2110,7 @@ def upload_quiz_excel(request):
 
         ActionLog.objects.create(user=request.user, action_type=f"Uploaded Exams from Excel")
         messages.success(request, "Exams uploaded successfully.")
-        return redirect("manage_quizzes")
+        return ("exams:manage_quizzes")
 
     return render(request, "exams/upload_quiz_excel.html")
 
@@ -2686,7 +2686,7 @@ def create_quiz_ajax(request):
                     if not correct_present:
                         raise ValueError(f"At least one correct choice required for question {qidx}")
             # success
-            return JsonResponse({"ok": True, "quiz_id": quiz.id, "message": "Quiz created."})
+            return JsonResponse({"ok": True, "quiz_id": quiz.id, "message": "Exam created."})
     except ValueError as e:
         return JsonResponse({"ok": False, "error": str(e)}, status=400)
     except Exception as e:
@@ -3004,7 +3004,7 @@ def edit_quiz_ajax(request, quiz_id):
             details={"title": quiz.title, "subject": quiz.subject.name, "action": "edited" },
         )
 
-        return JsonResponse({"ok": True, "quiz_id": quiz.id, "message": "Quiz updated."})
+        return JsonResponse({"ok": True, "quiz_id": quiz.id, "message": "Exam updated."})
     
     except ValueError as e:
         return JsonResponse({"ok": False, "error": str(e)}, status=400)
@@ -3044,7 +3044,7 @@ def quiz_details_page(request, quiz_id):
         return HttpResponse("Permission denied", status=403)
     if quiz.DoesNotExist:
         attempts = StudentQuizAttempt.objects.filter(quiz=quiz).select_related('student').order_by('-started_at')
-        return redirect('quiz_closed_detail', quiz.id)
+        return redirect('exams:quiz_closed_detail', quiz.id)
     
     attempts = StudentQuizAttempt.objects.filter(quiz=quiz).select_related('student').order_by('-started_at')
 
@@ -3052,13 +3052,13 @@ def quiz_details_page(request, quiz_id):
 
 
 def manage_quizzes_redirect(request):
-    if request.user.role == 'admin':
-        return redirect('manage_quizzes_admin')
+    if request.user.role == 'admin' or 'superadmin':
+        return redirect('exams:manage_quizzes_admin')
     elif request.user.role == 'teacher':
-        return redirect('manage_quizzes_teacher')
+        return redirect('exams:manage_quizzes_teacher')
     else:
         messages.warning(request, 'Unknown user role')
-        return redirect('login')
+        return redirect('users:login')
 
 
 
@@ -3270,7 +3270,7 @@ def request_retake(request, attempt_id):
     )
 
     messages.success(request, "Your retake request has been sent for approval.")
-    return redirect("student_dashboard")
+    return redirect("users:student_dashboard")
 
 ###---------------------The End Retake Exam after submission -----------------------###
 
@@ -3315,7 +3315,7 @@ def approve_retake(request, attempt_id):
     )
 
     messages.success(request, f"Retake approved for {attempt.student.username} on {attempt.quiz.title}.")
-    return redirect("retake_requests")
+    return redirect("exams:retake_requests")
 
 
 
@@ -3361,8 +3361,8 @@ def take_quiz_view(request, quiz_id):
         if not available and not allow_ret:
             # if closed and not allowed: if there is a is_submitted attempt, redirect to its result
             if last_attempt and last_attempt.is_submitted:
-                return redirect('quiz_result', attempt_id=last_attempt.id)
-            return redirect('quiz_closed_detail', quiz_id=quiz.id)
+                return redirect('exams:quiz_result', attempt_id=last_attempt.id)
+            return redirect('exams:quiz_closed_detail', quiz_id=quiz.id)
 
         # create new attempt
         end_time = now + timezone.timedelta(minutes=quiz.duration_minutes)

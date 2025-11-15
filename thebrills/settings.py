@@ -36,12 +36,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.humanize',
+    'django_session_timeout',
     'django_apscheduler',
     'cores',
     'users',
     'exams',
     'payments', 
-    'django_session_timeout',
+    'school_portal',
 ]
 
 # Messages config (optional but neat)
@@ -65,8 +67,8 @@ MIDDLEWARE = [
     'cores.middleware.auto_logout.AutoLogoutMiddleware',
 ]
 
-# Session expires after 10 minutes (300 seconds)
-SESSION_COOKIE_AGE = 300 
+# Session expires after 10 minutes (600 seconds)
+SESSION_COOKIE_AGE = 600 
 # Expire session when the browser is closed
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True  
 
@@ -85,7 +87,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'core.context_processors.school_settings',  
+                'cores.context_processors.school_settings', 
+                'django.template.context_processors.static', 
             ],
         },
     },
@@ -142,6 +145,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 SCHOOL_NAME = os.getenv("SCHOOL_NAME", "The Brills School")
 SCHOOL_ADDRESS = os.getenv("SCHOOL_ADDRESS", "No 1, Adaba Awotan/Akufo Road. Ibadan. Oyo State")
 SCHOOL_SLOGAN = os.getenv("SCHOOL_SLOGAN", "Knowledge is Light")
+PORTAL_DOMAIN = os.getenv("PORTAL_DOMAIN", "https://www.thebrillsschool.edu.ng")
 
 # AWS S3 Settings for media file storage
 AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID', 'your_aws_access_key')

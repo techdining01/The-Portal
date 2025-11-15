@@ -49,13 +49,13 @@ def restore_database(request):
         # Load backup
         subprocess.call(["python", "manage.py", "loaddata", file_path])
 
-        return redirect("admin_dashboard")
+        return redirect("exams:admin_dashboard")
 
-    return render(request, "exams/restore_database.html")
+    return render(request, "cores/restore_database.html")
 
 
 # ---------- SESSION TIMEOUT ---------- #
 
 def session_expired(request):
-    return render(request, 'exams/session_expired.html')
+    return render(request, 'cores/session_expired.html')
 

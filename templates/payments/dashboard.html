@@ -15,7 +15,7 @@
             <td>{{ student.get_full_name }} ({{ student.username }})</td>
             <td>
               {% for p in student.payments.all %}
-                <div>{{ p.payment_type }} - ₦{{ p.amount }} - <span class="badge bg-{{ 'success' if p.is_paid else 'warning' }}">{{ p.status }}</span></div>
+                <div>{{ p.payment_type }} - ₦{{ p.amount }} - {% if p.is_paid %} <span class="badge bg-{{ 'success' }}"></span>  {% else %} <span class="badge bg-{{ 'warning' }}"> {%endif%} {{ p.status }}</span></div>
               {% empty %}
                 <span class="text-muted">No payments</span>
               {% endfor %}
@@ -42,5 +42,30 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 });
+
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i=0;i<cookies.length;i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.startsWith(name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+const csrftoken = getCookie('csrftoken');
+fetch(url, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-CSRFToken': csrftoken,
+  },
+  body: JSON.stringify({})
+});
+
 </script>
 {% endblock %}

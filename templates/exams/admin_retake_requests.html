@@ -6,14 +6,14 @@
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="fw-bold mb-3">📌 Retake Requests</h2>
     <div>
-      <a class="btn btn-success" style="width: 160px; height: 45px;font-size: 1.1rem;" href="{% url 'manage_quizzes' %}">Manage Exam</a>
-      <a class="btn btn-primary" style="width: 140px; height: 45px;font-size: 1.1rem;" href="{% url 'dashboard' %}">Dashboard</a>
+      <a class="btn btn-success" style="width: 160px; height: 45px;font-size: 1.1rem;" href="{% url 'exams:manage_quizzes' %}">Manage Exam</a>
+      <a class="btn btn-primary" style="width: 140px; height: 45px;font-size: 1.1rem;" href="{% url 'users:dashboard' %}">Dashboard</a>
     </div>
   </div>
 
   <!-- 🔍 Search -->
   <div class="mb-3">
-    <input type="text" id="search-bar" class="form-control" placeholder="Search by student or quiz..." />
+    <input type="text" id="search-bar" class="form-control" placeholder="Search by student or exam..." />
   </div>
 
   <!-- 📋 Requests Table -->
@@ -88,14 +88,14 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function fetchRequests(page = 1, query = "") {
-    const url = `{% url 'retake_requests_list' %}?page=${page}&q=${encodeURIComponent(query)}`;
+    const url = `{% url 'exams:retake_requests_list' %}?page=${page}&q=${encodeURIComponent(query)}`;
     console.log("fetchRequests ->", url);
     fetch(url, { headers: {"X-Requested-With": "XMLHttpRequest"} })
       .then(res => {
         if (!res.ok) {
           console.error("retake_requests_list returned error", res.status, res.statusText);
           // fallback: reload page with query param so server-side render handles it
-          window.location.href = `{% url 'retake_requests_list' %}?page=${page}&q=${encodeURIComponent(query)}`;
+          window.location.href = `{% url 'exams:retake_requests_list' %}?page=${page}&q=${encodeURIComponent(query)}`;
           throw new Error("Network error");
         }
         return res.text();
@@ -104,7 +104,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // If server returned full HTML page instead of fragment, detect by looking for <html> tag
         if (html.trim().startsWith("<!doctype") || html.trim().startsWith("<html")) {
           console.warn("Server returned full page HTML; falling back to full reload");
-          window.location.href = `{% url 'retake_requests_list' %}?page=${page}&q=${encodeURIComponent(query)}`;
+          window.location.href = `{% url 'exams:retake_requests_list' %}?page=${page}&q=${encodeURIComponent(query)}`;
           return;
         }
         document.getElementById("requests-container").innerHTML = html;
@@ -125,7 +125,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const reqId = this.dataset.id;
         const action = this.classList.contains("approve-btn") ? "approve" : "deny";
         if (action === "deny" && !confirm("Are you sure you want to deny this request?")) return;
-        fetch("{% url 'handle_retake_request' 0 %}".replace("0", reqId), {
+        fetch("{% url 'exams:handle_retake_request' 0 %}".replace("0", reqId), {
           method: "POST",
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",

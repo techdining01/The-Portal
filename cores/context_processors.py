@@ -1,5 +1,7 @@
 # core/context_processors.py
 from django.conf import settings
+from django.utils import timezone
+
 
 def school_settings(request):
     """
@@ -7,5 +9,6 @@ def school_settings(request):
     """
     return {
         'SCHOOL_NAME': getattr(settings, 'SCHOOL_NAME', ''),
-        'SCHOOL_SLOGAN': getattr(settings, 'SCHOOL_SLOGAN', '')
+        'SCHOOL_SLOGAN': getattr(settings, 'SCHOOL_SLOGAN', ''),
+        
     }

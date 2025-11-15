@@ -19,7 +19,8 @@ def signup_view(request):
     if request.method == 'POST':
         form = UserRegistrationForm(request.POST, request.FILES)
         if form.is_valid():
-            user = form.save()
+            user = form.save(commit=False)
+            user.save() 
             user_id = user.id
             role = user.role
             if role in ['admin', 'teacher']:
@@ -28,7 +29,7 @@ def signup_view(request):
                 return redirect(url)
             else:
                 messages.success(request, "Registration successful. Please wait for approval.")
-            return redirect("dashboard")
+            return redirect("users:dashboard")
     else:
         form = UserRegistrationForm()
     return render(request, 'users/signup.html', {'form': form})
@@ -44,7 +45,7 @@ def login_view(request):
             if user.approved == True:
                 login(request, user)
                 messages.success(request, f"Welcome back, {user.first_name} 👋")
-                return redirect('dashboard')
+                return redirect('users:dashboard')
             else:
                 messages.info(request, 'Ensure you have been approval by Admin')
         messages.error(request, "Invalid username or password.")
@@ -55,7 +56,7 @@ def login_view(request):
 def logout_view(request):
     logout(request)
     messages.info(request, "You have been logged out.")
-    return redirect('login')
+    return redirect('users:login')
 
 
 
@@ -70,9 +71,9 @@ def teacheradminprofile(request, user_id):
             profile.save()
             if request.user.is_authenticated:
                 messages.success(request, f'{user.role.title()} profile updated successfully. wait for approval')
-                return redirect('dashboard')
+                return redirect('users:dashboard')
             messages.success(request, f'{user.role.title()} profile created successfully. wait for approval')
-            return redirect('login')
+            return redirect('users:login')
     else:
         form = TeacherAdminForm()
 
@@ -124,11 +125,11 @@ def edit_user(request, user_id):
 
                 # Redirect back to dashboard
             if request.user.is_authenticated == "student":
-                return redirect("student_dashboard")
+                return redirect("users:student_dashboard")
             elif request.user.is_authenticated == "teacher":
-                return redirect("teacher_dashboard")
+                return redirect("users:teacher_dashboard")
             else:
-                return redirect("admin_dashboard")
+                return redirect("users:admin_dashboard")
     else:
         form = form_class(instance=user)
 
@@ -138,7 +139,7 @@ def edit_user(request, user_id):
             
 
 def create_user(request):
-    return redirect('signup')
+    return redirect('users:signup')
 
 
 
@@ -160,7 +161,7 @@ def approve_user(request, user_id):
     user.approved = True
     user.save()
     messages.success(request, f"{user.username} has been approved ✅.")
-    return redirect("user_approval_list")
+    return redirect("users:user_approval_list")
 
 
 @login_required
@@ -170,7 +171,7 @@ def reject_user(request, user_id):
     user.approved = False
     user.delete()
     messages.warning(request, f"{user.username} has been rejected ❌.")
-    return redirect("user_approval_list")
+    return redirect("users:user_approval_list")
 
 
 @login_required
@@ -180,7 +181,7 @@ def pending_user(request, user_id):
     user.approved = False
     user.save()
     messages.info(request, f"{user.username} is now pending ⏳.")
-    return redirect("user_approval_list")
+    return redirect("users:user_approval_list")
 
 
 
@@ -308,16 +309,16 @@ def delete_user(request, user_id):
 @login_required
 def dashboard_redirect(request):
     if request.user.role == "superadmin":
-        return redirect("superadmin_dashboard")
+        return redirect("exams:superadmin_dashboard")
     elif request.user.role == "admin":
-        return redirect("admin_dashboard")
+        return redirect("exams:admin_dashboard")
     elif request.user.role == "teacher":
-        return redirect("teacher_dashboard")
+        return redirect("exams:teacher_dashboard")
     elif request.user.role == "student":
-        return redirect("student_dashboard")
+        return redirect("exams:student_dashboard")
     else:
         messages.error(request, "Unknown role. Contact SuperAdmin.")
-        return redirect("login")
+        return redirect("users:login")
 
 
 @login_required
@@ -326,7 +327,7 @@ def mark_notification_read(request, pk):
     notif.is_read = True
     notif.save()
     messages.success(request, "Notification marked as read ✅")
-    return redirect("dashboard")
+    return redirect("users:dashboard")
 
 
 @login_required
@@ -342,7 +343,7 @@ def send_broadcast(request):
             recipients = User.objects.filter(role="student")
         else:
             messages.error(request, "You cannot send broadcasts.")
-            return redirect("dashboard")
+            return redirect("users:dashboard")
 
         # Create notifications
         for recipient in recipients:
@@ -354,7 +355,7 @@ def send_broadcast(request):
             )
 
         messages.success(request, "Broadcast sent successfully ✅")
-    return redirect("dashboard")
+    return redirect("users:dashboard")
 
 
 from .models import User, UserStatusLog
@@ -365,7 +366,7 @@ def update_user_status(request, user_id):
 
     if new_status not in ["approve", "reject", "pending"]:
         messages.error(request, "Invalid status")
-        return redirect("manage_users")
+        return redirect("users:manage_users")
 
     old_status = user.status  # assuming User model has a `status` field
     user.status = new_status
@@ -381,4 +382,4 @@ def update_user_status(request, user_id):
     )
 
     messages.success(request, f"{user.username}'s status updated to {new_status}.")
-    return redirect("manage_users")
+    return redirect("users:manage_users")

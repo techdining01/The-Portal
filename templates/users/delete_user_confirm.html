@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'cbt_base.html' %}
 
 {% block content %}
 <div class="container mt-4">
@@ -18,7 +18,7 @@
   <form method="POST">
     {% csrf_token %}
     <button type="submit" class="btn btn-danger">Yes, Delete</button>
-    <a href="{% url 'admin_manage_users' %}" class="btn btn-secondary">Cancel</a>
+    <a href="{% url 'users:admin_manage_users' %}" class="btn btn-secondary">Cancel</a>
   </form>
 </div>
 {% endblock %}

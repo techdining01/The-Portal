@@ -1,12 +1,15 @@
-import os, json, uuid, hmac, hashlib, requests
+import os, json, uuid, hmac, hashlib, requests, random, string
 from django.http import JsonResponse, HttpResponseBadRequest, HttpResponseForbidden, HttpResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import user_passes_test
-from .models import Payment
 from django.contrib.auth import get_user_model
 from django.urls import reverse
+from django.conf import settings
+from .models import FeeItem, Payment
+from django.utils import timezone
+from django.core.exceptions import ObjectDoesNotExist
 
 User = get_user_model()
 
@@ -91,7 +94,7 @@ def paystack_webhook(request):
             user.save(update_fields=['can_take_exam'])
     return HttpResponse(status=200)
 
-@user_passes_test(lambda u: u.is_superuser or u.role in ['superadmin','admin'])
+#@user_passes_test(lambda u: u.is_superuser or u.role in ['superadmin','admin'])
 def payment_dashboard(request):
     # show classes and students with payments
     from exams.models import Class
@@ -106,3 +109,120 @@ def toggle_exam_access(request, user_id):
         u.save(update_fields=['can_take_exam'])
         return JsonResponse({'status':'ok','can_take_exam':u.can_take_exam})
     return HttpResponseBadRequest()
+
+
+
+def pay_now_page(request):
+    # optionally show payment types and start payment flow
+    return render(request, 'payments/pay_now.html', {
+        'paystack_public_key': settings.PAYSTACK_PUBLIC_KEY,
+        'paystack_mode': settings.PAYSTACK_MODE,
+        'currency_symbol': '₦',
+    })
+
+
+
+def generate_reference():
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=12))
+
+
+def payment_page(request):
+    fees = FeeItem.objects.all()
+    if request.method == "POST":
+        reg_number = request.POST.get("registration_number")
+        selected_fees = request.POST.getlist("fees")
+
+        try:
+            student = User.objects.get(registration_number=reg_number)
+        except User.DoesNotExist:
+            return render(request, "payments/payment_page.html", {"fees": fees, "error": "Invalid registration number."})
+
+        selected_fee_items = FeeItem.objects.filter(id__in=selected_fees)
+        total = sum(item.amount for item in selected_fee_items)
+        reference = generate_reference()
+
+        payment = Payment.objects.create(student=student, total_amount=total, reference=reference)
+        payment.fee_items.set(selected_fee_items)
+
+        paystack_url = "https://api.paystack.co/transaction/initialize"
+        headers = {"Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}"}
+        data = {
+            "email": student.user.email,
+            "amount": int(total * 100),  # in kobo
+            "reference": reference,
+            "callback_url": request.build_absolute_uri("/payments/verify/"),
+        }
+        response = requests.post(paystack_url, headers=headers, json=data)
+        res_data = response.json()
+
+        if res_data.get("status"):
+            return redirect(res_data["data"]["authorization_url"])
+        else:
+            return render(request, "payments/payment_page.html", {"fees": fees, "error": "Error initializing payment."})
+
+    return render(request, "payments/payment_page.html", {"fees": fees})
+
+
+@csrf_exempt
+def verify_payment(request):
+    """
+    Verifies Paystack payment via webhook or redirect callback
+    """
+    if request.method == "POST":
+        payload = json.loads(request.body.decode("utf-8"))
+        event = payload.get("event")
+
+        if event == "charge.success":
+            reference = payload["data"]["reference"]
+            amount = payload["data"]["amount"] / 100  # convert from kobo
+            email = payload["data"]["customer"]["email"]
+
+            try:
+                payment = Payment.objects.get(reference=reference)
+                payment.verified = True
+                payment.save()
+
+                # Unlock exam access
+                student = payment.student
+                user = student.user
+                user.can_take_exam = True
+                user.save()
+
+                print(f"[✅] Payment verified for {student.registration_number} ({email})")
+
+            except ObjectDoesNotExist:
+                print("[❌] Payment reference not found:", reference)
+
+        return HttpResponse(status=200)
+
+    # If callback redirect (Paystack redirects after success)
+    reference = request.GET.get("reference")
+    if reference:
+        headers = {"Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}"}
+        url = f"https://api.paystack.co/transaction/verify/{reference}"
+
+        response = requests.get(url, headers=headers)
+        res_data = response.json()
+
+        if res_data.get("status") and res_data["data"]["status"] == "success":
+            payment = Payment.objects.get(reference=reference)
+            payment.verified = True
+            payment.save()
+
+            student = payment.student
+            user = student.user
+            user.can_take_exam = True
+            user.save()
+
+            context = {
+                "success": True,
+                "student": student,
+                "amount": payment.total_amount,
+                "reference": reference,
+                "timestamp": timezone.now(),
+            }
+            return render(request, "payments/verify_success.html", context)
+        else:
+            return render(request, "payments/verify_failed.html", {"reference": reference})
+
+    return HttpResponse(status=400)

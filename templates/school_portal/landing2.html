@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Welcome to {{ settings.SCHOOL_NAME }} Portal{% endblock %}
+
+{% block content %}
+<div class="row align-items-center">
+    <!-- Left: School Branding -->
+    <div class="col-md-6 text-center text-md-start mb-4 mb-md-0">
+        <img src="{% static 'images/school_logo.png' %}" alt="School Logo" class="img-fluid rounded-circle mb-3" style="max-width: 120px;">
+        <h1 class="fw-bold text-primary">{{ settings.SCHOOL_NAME }}</h1>
+        <p class="lead">Empowering Minds, Building the Future.</p>
+        <p class="text-muted">Welcome to our all-in-one student and parent portal.  
+        Manage fees, track results, and stay connected — all in one place.</p>
+    </div>
+
+    <!-- Right: Tabs for Login & Pay -->
+    <div class="col-md-6">
+        <div class="card shadow-lg border-0 rounded-4">
+            <div class="card-body p-4">
+                <ul class="nav nav-tabs mb-3" id="portalTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="login-tab" data-bs-toggle="tab" data-bs-target="#loginTab" type="button" role="tab">Login</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="payment-tab" data-bs-toggle="tab" data-bs-target="#paymentTab" type="button" role="tab">Pay Fees</button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="portalTabsContent">
+                    <!-- Login Form -->
+                    <div class="tab-pane fade show active" id="loginTab" role="tabpanel">
+                        <form method="post" action="{% url 'login' %}">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Username</label>
+                                <input type="text" name="username" class="form-control" id="username" placeholder="Enter your username" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Password</label>
+                                <input type="password" name="password" class="form-control" id="password" placeholder="Enter your password" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100 rounded-pill">
+                                <i class="fas fa-sign-in-alt me-1"></i> Login
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Payment Form -->
+                    <div class="tab-pane fade" id="paymentTab" role="tabpanel">
+                        <form method="get" action="{% url 'payments:payment_page' %}">
+                            <div class="mb-3">
+                                <label for="regNo" class="form-label">Student Registration Number</label>
+                                <input type="text" class="form-control" id="regNo" name="reg_no"
+                                    placeholder="e.g. TBS/2025/00123" required>
+                            </div>
+                            <button type="submit" class="btn btn-success w-100 rounded-pill">
+                                <i class="fas fa-wallet me-1"></i> Proceed to Payment
+                            </button>
+                        </form>
+                        <small class="d-block text-center text-muted mt-3">
+                            Forgot registration number? Contact the school admin.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

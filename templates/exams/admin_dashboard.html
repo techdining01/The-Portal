@@ -7,13 +7,13 @@
       <h3 class="d-inline ms-2 fw-bold">🛠️ Admin Dashboard</h3>
     </div>
     <div class="d-flex justify-content-between">
-      <a href="{% url 'backup_database' %}" class="btn btn-success btn-sm me-2">
+      <a href="{% url 'cores:backup_database' %}" class="btn btn-success btn-sm me-2">
         <i class="fas fa-download"></i> Backup Database 
       </a>
-      <a href="{% url 'restore_database' %}" class="btn btn-danger btn-sm me-2">
+      <a href="{% url 'cores:restore_database' %}" class="btn btn-danger btn-sm me-2">
         <i class="fas fa-upload"></i> Restore Database
       </a>
-      <a href="{% url 'manage_quizzes' %}" class="btn btn-success btn-sm me-2">
+      <a href="{% url 'exams:manage_quizzes' %}" class="btn btn-success btn-sm me-2">
         <i class="fas fa-cogs"></i> Advance</a> 
     </div>
   </div>
@@ -223,7 +223,7 @@
                 <td>{{ cls.name }}</td>
                 <td>{{ cls.student_class.count }}</td>
                 <td>
-                  <a href="{% url 'admin_classes_report_pdf' cls.id %}" class="btn btn-sm btn-success">
+                  <a href="{% url 'exams:admin_classes_report_pdf' cls.id %}" class="btn btn-sm btn-success">
                     <i class="bi bi-file-earmark-pdf"></i> Generate Report
                   </a>
                 </td>
@@ -236,7 +236,7 @@
             </tbody>
           </table>
           <small class="text-muted">Generates PDF reports of student performances per class.</small>
-          <a href="{% url 'admin_report_generator' %}" class="btn btn-warning btn-sm mb-2 p-2 fw-semi-bold w-100">Download Advance Report (PDF)</a>
+          <a href="{% url 'exams:admin_report_generator' %}" class="btn btn-warning btn-sm mb-2 p-2 fw-semi-bold w-100">Download Advance Report (PDF)</a>
         </div> 
       </div>
 
@@ -246,9 +246,9 @@
           <strong>User Management</strong>
         </div>
         <div class="card-body">
-          <a href="{% url 'create_user' %}" class="btn btn-primary sm">Create User</a>
-          <a href="{% url 'manage_users' %}" class="btn btn-success sm">Manage Users</a>
-          <a href="{% url 'manage_classes_subjects' %}" class="btn btn-warning sm">Manage Classes & Subjects</a>
+          <a href="{% url 'users:create_user' %}" class="btn btn-primary sm">Create User</a>
+          <a href="{% url 'users:manage_users' %}" class="btn btn-success sm">Manage Users</a>
+          <a href="{% url 'exams:manage_classes_subjects' %}" class="btn btn-warning sm">Manage Classes & Subjects</a>
         </div>
       </div>
 
@@ -257,9 +257,9 @@
           <strong>Exams Management</strong>
         </div>
         <div class="card-body">
-          <a href="{% url 'create_quiz' %}" class="btn btn-primary sm">Create Exam</a>
-          <a href="{% url 'manage_quizzes' %}" class="btn btn-success sm">Manage Exams</a>
-          <a href="{% url 'retake_requests_list' %}" class="btn btn-warning sm">Allow retake exam</a>
+          <a href="{% url 'exams:create_quiz' %}" class="btn btn-primary sm">Create Exam</a>
+          <a href="{% url 'exams:manage_quizzes' %}" class="btn btn-success sm">Manage Exams</a>
+          <a href="{% url 'exams:retake_requests_list' %}" class="btn btn-warning sm">Allow retake exam</a>
         </div>
       </div>
 
@@ -301,7 +301,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-  const DATA_URL = "{% url 'admin_dashboard_data' %}";
+  const DATA_URL = "{% url 'exams:admin_dashboard_data' %}";
   const csrftoken = "{{ csrf_token }}";
 
   let performanceChartInstance = null;
@@ -667,7 +667,7 @@
 
         
       (() => {
-        const API_GRADING = "{% url 'api_admin_grading_page' %}";
+        const API_GRADING = "{% url 'exams:api_admin_grading_page' %}";
         const GRADE_POST_URL_BASE = "/exams/teacher/grade/"; // append attempt_id + '/'
         const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken') || '';
 

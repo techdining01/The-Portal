@@ -4,7 +4,7 @@
     {% load static %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AL-MUMEEN STANDARD ACADEMY</title>
+    <title>{{SCHOOL_NAME}} - CBT EXAMS</title>
 
     <style>
 
@@ -16,7 +16,7 @@
 
     body{
     height: 100vh;
-    background-image:linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6)), url('static/images/background.jpg');
+    background-image:linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6)), url('/static/images/background.jpg');
     background-position: center;
     background-size:cover;
     background-attachment: fixed;
@@ -44,16 +44,17 @@ img{
 </head>
 <body>
 
-    <img src="{% static 'images/school_logo2.png' %}" alt="school logo" class="d-block mx-auto mt-5 mb-3 p-7 ">
+    <img src="{% static 'images/school_logo.png' %}" alt="school logo" class="d-block mx-auto mt-5 mb-3 p-7 ">
 
     <div class="container text-center">
     
-        <h1 class="school">AL-MUMEEN STANDARD ACADEMY</h1><br>
+        <h1 class="school">{{SCHOOL_NAME}}</h1><br>
     
     </div>
     <div class="container text-center mt-5">
-        <a class="btn btn-primary" href="{% url 'signup' %}">Signup</a>
-        <a class="btn btn-warning" href="{% url 'login' %}">Login</a>
+        <a class="btn btn-info me-1" href="{% url 'school_portal:landing' %}">Home</a>
+        <a class="btn btn-primary me-1" href="{% url 'users:signup' %}">Signup</a>
+        <a class="btn btn-warning me-1" href="{% url 'users:login' %}">Login</a>
     </div>
 </body>
     <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>

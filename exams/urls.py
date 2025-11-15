@@ -1,8 +1,10 @@
 from django.urls import path
 from . import views
 
+app_name = 'exams'
+
 urlpatterns = [
-   
+
     # Create quiz page (manual + excel)
     path("create/", views.create_quiz_page, name="create_quiz_page"),
     path("api/create/", views.create_quiz_ajax, name="create_quiz_ajax"),
@@ -112,4 +114,8 @@ urlpatterns = [
     path("api/quizzes/<int:quiz_id>/toggle-publish/", views.toggle_quiz_publish, name="toggle_quiz_publish"),
     path("api/quizzes/<int:quiz_id>/", views.quiz_detail_api, name="quiz_detail_api"),
    
+]
+
+urlpatterns += [
+        path('home/', views.home, name='home')
 ]

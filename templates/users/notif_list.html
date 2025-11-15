@@ -7,7 +7,7 @@
       <small class="text-muted">{{ notif.created_at|date:"d M, Y H:i" }}</small>
 
       {% if not notif.is_read %}
-        <a href="{% url 'mark_notification_read' notif.id %}" 
+        <a href="{% url 'exams:mark_notification_read' notif.id %}" 
            class="btn btn-sm btn-outline-success">Mark as read</a>
       {% endif %}
     </li>

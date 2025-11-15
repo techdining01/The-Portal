@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container text-center mt-5">
+  <img src="{% static 'images/failed.jpg' %}" alt="Failed" width="100">
+  <h2>Payment Failed ❌</h2>
+  <p>We couldn’t verify your transaction at the moment.</p>
+  <p>Reference: <strong>{{ reference }}</strong></p>
+  <a href="{% url 'payments:payment_page' %}" class="btn btn-warning">Try Again</a>
+</div>
+{% endblock %}

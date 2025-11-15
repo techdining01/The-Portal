@@ -1,0 +1,30 @@
+
+<!doctype html>
+<html>
+  <head>
+    <title>Pay Invoice</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment</title>
+</head>
+<body>
+<h3>Pay Invoice</h3>
+<button id="payBtn">Pay Now</button>
+
+<script>
+// Replace invoiceId variable server-side template rendering or set via JS
+const invoiceId = {{ invoice.id }};
+
+
+document.getElementById('payBtn').addEventListener('click', async () => {
+const resp = await fetch('/payments/init-paystack/', {
+method: 'POST',
+headers: {'Content-Type': 'application/json'},
+body: JSON.stringify({invoice_id: invoiceId})
+});
+const data = await resp.json();
+// redirect to Paystack hosted payment page
+window.location.href = data.authorization_url;
+});
+</script>
+

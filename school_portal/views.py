@@ -1,5 +1,9 @@
 
 from django.shortcuts import render
+from datetime import datetime
 
-def home(request):
-    return render(request, 'school_portal/home.html')
+
+def school_portal(request):
+    date = str
+   
+    return render(request, 'school_portal/landing_page.html', {'date': date})
