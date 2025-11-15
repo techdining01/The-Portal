@@ -6,6 +6,7 @@ __pycache__/
 .profile/*
 .env
 .env.example
+backups/
 
 # C extensions
 *.so

@@ -3,7 +3,7 @@ from django.db import models
 class BackupLog(models.Model):
     filename = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
-    status = models.CharField(max_length=255)
+    status = models.TextField()
     is_auto = models.BooleanField(default=False)
 
     class Meta:

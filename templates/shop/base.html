@@ -1,0 +1,35 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ SCHOOL_NAME }} — School Store</title>
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/store.css' %}">
+</head>
+
+<body class="bg-light">
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="/">
+            <img src="{% static 'img/logo.png' %}" width="40" class="me-2">
+            {{ SCHOOL_NAME }}
+        </a>
+
+        <div class="ms-auto">
+            <a href="{% url 'shop:cart' %}" class="btn btn-warning">
+                🛒 Cart
+            </a>
+        </div>
+    </div>
+</nav>
+
+<div class="container py-5">
+    {% block content %}{% endblock %}
+</div>
+
+<script src="https://js.paystack.co/v1/inline.js"></script>
+<script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+</body>
+</html>

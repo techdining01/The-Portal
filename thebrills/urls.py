@@ -22,11 +22,13 @@ from exams import views
 
 urlpatterns = [ 
     path('admin/', admin.site.urls),
-    path('users/', include('users.urls')),
-    path('exams/', include('exams.urls')),
-    path('cores/', include('cores.urls')),
-    path('payments/', include('payments.urls')),
-    path('', include('school_portal.urls')),
+    path('', include('school_portal.urls', namespace='school_portal')),
+    path('users/', include('users.urls', namespace='users')),
+    path('exams/', include('exams.urls', namespace='exams')),
+    path('cores/', include('cores.urls', namespace='cores')),
+    path('payments/', include('payments.urls', namespace='payments')),
+    path('shop/', include('shop.urls', namespace='shop')),
+
 ]
 
 if settings.DEBUG:

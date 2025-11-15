@@ -1,0 +1,47 @@
+{% extends "shop/base.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="row mb-5">
+    <div class="col-lg-6 d-flex align-items-center">
+        <div>
+            <h1 class="display-4 fw-bold">
+                Welcome to {{ SCHOOL_NAME }} Online Store
+            </h1>
+            <p class="lead mt-3">
+                Buy school uniforms, pay school fees, textbooks and more —
+                securely via Paystack.
+            </p>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <img src="{% static 'img/hero-bg.jpg' %}" class="img-fluid rounded shadow">
+    </div>
+</div>
+
+<h3 class="fw-bold mb-4">Available Items</h3>
+
+<div class="row">
+    {% for item in items %}
+    <div class="col-md-3 mb-4">
+        <div class="card shadow-sm h-100">
+            {% if item.image %}
+                <img src="{{ item.image.url }}" class="card-img-top">
+            {% else %}
+                <img src="{% static 'img/placeholder.jpg' %}" class="card-img-top">
+            {% endif %}
+
+            <div class="card-body">
+                <h5 class="card-title">{{ item.name }}</h5>
+                <p class="fw-bold text-primary">₦{{ item.price|floatformat:2 }}</p>
+                <a href="{% url 'shop:add_to_cart' item.id %}" class="btn btn-success w-100">
+                    Add to Cart
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}

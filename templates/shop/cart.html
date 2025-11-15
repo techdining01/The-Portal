@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-5">
+  <h2>Your Cart</h2>
+  {% if items %}
+    <table class="table">
+      <thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th><th></th></tr></thead>
+      <tbody>
+        {% for it in items %}
+        <tr>
+          <td>
+            <div class="d-flex align-items-center">
+              {% if it.image %}<img src="{{ it.image }}" style="width:64px;height:64px;object-fit:cover;margin-right:10px">{% endif %}
+              <div>{{ it.name }}</div>
+            </div>
+          </td>
+          <td><input type="number" value="{{ it.qty }}" min="1" class="form-control qty-input" data-pk="{{ it.pk }}"></td>
+          <td>₦{{ it.price }}</td>
+          <td>₦{{ it.qty|floatformat:2|add:"0"|floatformat:2 }}</td>
+          <td><button class="btn btn-sm btn-danger remove-btn" data-pk="{{ it.pk }}">Remove</button></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="d-flex justify-content-between align-items-center">
+      <div class="fs-4">Total: ₦{{ total }}</div>
+      <a href="{% url 'shop:checkout' %}" class="btn btn-success btn-lg">Checkout</a>
+    </div>
+  {% else %}
+    <p>Your cart is empty.</p>
+  {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const csrftoken = (document.cookie.split('; ').find(r=>r.startsWith('csrftoken='))||'').split('=')[1];
+  document.querySelectorAll('.remove-btn').forEach(b=>{
+    b.addEventListener('click', async ()=> {
+      const pk = b.dataset.pk;
+      const res = await fetch("{% url 'shop:cart_remove' %}", {method:'POST',
+        headers:{'Content-Type':'application/json','X-CSRFToken':csrftoken},
+        body: JSON.stringify({pk: pk})});
+      const j = await res.json(); if (j.status==='ok') location.reload();
+    });
+  });
+
+  document.querySelectorAll('.qty-input').forEach(inp=>{
+    inp.addEventListener('change', async ()=>{
+      const updates = {}; updates[inp.dataset.pk] = inp.value;
+      const res = await fetch("{% url 'shop:cart_update' %}", {method:'POST',
+        headers:{'Content-Type':'application/json','X-CSRFToken':csrftoken},
+        body: JSON.stringify({updates})});
+      const j = await res.json(); if (j.status==='ok') location.reload();
+    });
+  });
+
+});
+</script>
+{% endblock %}
