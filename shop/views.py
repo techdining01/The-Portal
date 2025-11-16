@@ -1,13 +1,14 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.conf import settings
 from django.http import JsonResponse, HttpResponse
-from .models import Item, Cart, CartItem, Order
+from .models import Item, Cart, CartItem, Order, ShopItem
 import secrets
 import requests
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
-
+from django.contrib import messages
+from .forms import ShopItemForm
 
 
 def shop_home(request):
@@ -119,6 +120,89 @@ def paystack_webhook(request):
                 # remove session cart by matching session?
                 pass
     return HttpResponse(status=200)
+
+
+def is_admin(user):
+    return user.is_staff or user.is_superuser
+
+
+# --- Admin Item List ---
+@login_required
+@user_passes_test(is_admin)
+def admin_items(request):
+    items = ShopItem.objects.all().order_by("-created_at")
+    return render(request, "shop/admin/items.html", {"items": items})
+
+
+# --- Create Item ---
+@login_required
+@user_passes_test(is_admin)
+def admin_add_item(request):
+    if request.method == "POST":
+        form = ShopItemForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Item added successfully.")
+            return redirect("shop:admin_items")
+    else:
+        form = ShopItemForm()
+
+    return render(request, "shop/admin/item_form.html", {"form": form, "title": "Add Item"})
+
+
+# --- Edit Item ---
+@login_required
+@user_passes_test(is_admin)
+def admin_edit_item(request, item_id):
+    item = get_object_or_404(ShopItem, id=item_id)
+
+    if request.method == "POST":
+        form = ShopItemForm(request.POST, request.FILES, instance=item)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Item updated successfully.")
+            return redirect("shop:admin_items")
+
+    else:
+        form = ShopItemForm(instance=item)
+
+    return render(request, "shop/admin/item_form.html", {"form": form, "title": "Edit Item"})
+
+
+# --- Delete Item ---
+@login_required
+@user_passes_test(is_admin)
+def admin_delete_item(request, item_id):
+    item = get_object_or_404(ShopItem, id=item_id)
+    item.delete()
+    messages.warning(request, "Item deleted.")
+    return redirect("shop:admin_items")
+
+
+# --- Increase Stock ---
+@login_required
+@user_passes_test(is_admin)
+def admin_increase_stock(request, item_id):
+    item = get_object_or_404(ShopItem, id=item_id)
+    item.stock += 1
+    item.save()
+    messages.success(request, "Stock increased.")
+    return redirect("shop:admin_items")
+
+
+# --- Decrease Stock ---
+@login_required
+@user_passes_test(is_admin)
+def admin_decrease_stock(request, item_id):
+    item = get_object_or_404(ShopItem, id=item_id)
+    if item.stock > 0:
+        item.stock -= 1
+        item.save()
+        messages.info(request, "Stock decreased.")
+    else:
+        messages.error(request, "Stock cannot go below 0.")
+    return redirect("shop:admin_items")
+
 
 
 # @login_required

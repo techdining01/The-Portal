@@ -91,12 +91,13 @@
 
             <div class="collapse navbar-collapse" id="navmenu">
                 <ul class="navbar-nav ms-auto">
-                    {% if not request.user.authenticated %}
+                    {% if request.user.is_authenticated %}
                     <li class="nav-item"><a href="/" class="nav-link">Home</a></li>
-                    {% endif %}
+                    {% else %}
                     <li class="nav-item"><a href="/about/" class="nav-link">About</a></li>
                     <li class="nav-item"><a href="{% url 'shop:home' %}" class="nav-link">Pay Fees</a></li>
                     <li class="nav-item"><a href="{% url 'users:signup' %}" class="btn btn-primary rounded-pill ms-3 px-4">Login</a></li>
+                    {% endif %}
                 </ul>
             </div>
         </div>

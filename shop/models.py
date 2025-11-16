@@ -60,3 +60,20 @@ class OrderItem(models.Model):
     item = models.ForeignKey(Item, on_delete=models.CASCADE)
     qty = models.PositiveIntegerField(default=1)
     price = models.DecimalField(max_digits=10, decimal_places=2)
+
+
+
+class ShopItem(models.Model):
+    name = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    price = models.PositiveIntegerField()
+    stock = models.PositiveIntegerField(default=0)
+    image = models.ImageField(upload_to="shop_items/", blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def in_stock(self):
+        return self.stock > 0
+
+    def __str__(self):
+        return self.name
