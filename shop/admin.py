@@ -1,15 +1,17 @@
 from django.contrib import admin
-from .models import Product, Order, OrderItem, Payment
+from .models import Item, Cart, CartItem, Order, OrderItem
 
-@admin.register(Product)
-class ProductAdmin(admin.ModelAdmin):
-    list_display = ('name','sku','price','stock','active')
+@admin.register(Item)
+class ItemAdmin(admin.ModelAdmin):
+    list_display = ("name","product_type","price","active")
+    prepopulated_fields = {"slug": ("name",)}
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('reference','email','status','total_amount','created_at')
-    search_fields = ('reference','email')
+    list_display = ("reference","user","amount","status","paid_at")
+    readonly_fields = ("reference","amount","created_at","paid_at")
 
-@admin.register(Payment)
-class PaymentAdmin(admin.ModelAdmin):
-    list_display = ('gateway_reference','order','amount','status','created_at')
+# optionally register Cart and others for debugging
+admin.site.register(Cart)
+admin.site.register(CartItem)
+admin.site.register(OrderItem)

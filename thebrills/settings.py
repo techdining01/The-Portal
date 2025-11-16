@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     'cores',
     'users',
     'exams',
-    'payments', 
+    # 'payments', 
     'school_portal',
     'shop',
 ]
