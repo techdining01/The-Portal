@@ -6,7 +6,7 @@ from . import api_views
 app_name = "shop"
 
 urlpatterns = [
-    path("", views.shop_home, name="home"),
+    path("", views.shop_home, name="shop_home"),
     path("product/<slug:slug>/", views.product_detail, name="detail"),
     path("add-to-cart/", views.add_to_cart, name="add_to_cart"),
     path("cart/", views.cart_view, name="cart"),

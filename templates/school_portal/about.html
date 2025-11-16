@@ -1,160 +1,166 @@
-{% extends "shop_base.html" %}
+{% extends "base.html" %}
 {% load static %}
-{% load humanize %}
-{% block title %} About Us {% endblock %}
+
+{% block title %}About — {{ SCHOOL_NAME }}{% endblock %}
+
 {% block content %}
-
-<style>
-    .hero-section {
-        background: url("{% static 'images/about_school.jpg' %}");
-        background-size: cover;
-        background-position: center;
-        padding: 90px 0;
-        color: white;
-        text-align: center;
-    }
-    .icon-box {
-        border-radius: 12px;
-        padding: 25px;
-        background: #fff;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.07);
-        transition: 0.3s;
-    }
-    .icon-box:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 6px 15px rgba(0,0,0,0.1);
-    }
-    .icon-box i {
-        font-size: 40px;
-        color: #0d6efd;
-        margin-bottom: 15px;
-    }
-</style>
-
-<!-- Hero Banner -->
-<div class="hero-section">
-    <div class="container">
-        <h1 class="display-4 fw-bold">About Our School</h1>
-        <p class="lead mt-3">Building bright futures through quality education, innovation, and technology.</p>
-    </div>
-</div>
-
-<!-- About Intro -->
-<div class="container my-5">
-    <div class="row justify-content-center">
-        <div class="col-md-9">
-            <h2 class="fw-bold mb-3">Who We Are</h2>
-            <p class="fs-5" style="line-height: 1.7;">
-                Our school is dedicated to nurturing students with the knowledge, creativity, and character 
-                they need to succeed in a rapidly evolving world. We combine traditional values with 
-                modern digital systems such as e-learning, online enrollment, computer-based testing (CBT),
-                real-time results, and automated academic workflows.
-            </p>
-            <p class="fs-5" style="line-height: 1.7;">
-                With a passionate team of educators, advanced technology platforms, and a safe, supportive 
-                learning environment, we help students discover their potential and achieve excellence 
-                academically, morally, and socially.
-            </p>
+<section class="py-5">
+  <div class="container">
+    <div class="row align-items-center gy-4">
+      <div class="col-lg-6" data-aos="fade-right">
+        <div class="rounded-hero overflow-hidden shadow-lg">
+          <img src="{% static 'images/about_school.jpg' %}" alt="About {{ SCHOOL_NAME }}" class="img-fluid w-100">
+          <div class="hero-overlay"></div>
         </div>
-    </div>
-</div>
+      </div>
 
-<!-- Core Values -->
-<div class="container my-5">
-    <h2 class="text-center fw-bold mb-4">Our Core Values</h2>
+      <div class="col-lg-6" data-aos="fade-left">
+        <h1 class="gsap-hero-title display-5 fw-bold">About <span class="text-primary">{{ SCHOOL_NAME }}</span></h1>
+        <p class="gsap-hero-sub lead text-muted">
+          We blend modern pedagogy with character formation to create confident, curious, and compassionate leaders.
+        </p>
+
+        <div class="mt-4">
+          <a href="{% url 'shop:shop_home' %}" class="btn btn-success btn-lg me-2">Pay Fees</a>
+          <a href="{% url 'shop:shop_home' %}" class="btn btn-outline-primary btn-lg">School Shop</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Mission / Vision -->
+<section class="py-5 bg-white">
+  <div class="container">
     <div class="row g-4">
-
-        <div class="col-md-3">
-            <div class="icon-box text-center">
-                <i class="bi bi-book-half"></i>
-                <h5 class="fw-bold mt-2">Knowledge</h5>
-                <p>We encourage strong academic performance through structured learning and technology.</p>
-            </div>
+      <div class="col-md-6" data-aos="fade-up" data-aos-delay="80">
+        <div class="p-4 feature-card shadow-sm h-100">
+          <h4 class="fw-bold">Our Mission</h4>
+          <p class="text-muted">To provide a broad, balanced and inclusive education that enables each child to excel academically and morally.</p>
         </div>
+      </div>
 
-        <div class="col-md-3">
-            <div class="icon-box text-center">
-                <i class="bi bi-shield-check"></i>
-                <h5 class="fw-bold mt-2">Integrity</h5>
-                <p>We promote honesty, discipline, and responsibility among students and staff.</p>
-            </div>
+      <div class="col-md-6" data-aos="fade-up" data-aos-delay="160">
+        <div class="p-4 feature-card shadow-sm h-100">
+          <h4 class="fw-bold">Our Vision</h4>
+          <p class="text-muted">To be a leading school known for innovation, excellence and community impact across Nigeria and beyond.</p>
         </div>
-
-        <div class="col-md-3">
-            <div class="icon-box text-center">
-                <i class="bi bi-lightbulb"></i>
-                <h5 class="fw-bold mt-2">Innovation</h5>
-                <p>We leverage digital tools like CBT systems, dashboards, and online portals.</p>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="icon-box text-center">
-                <i class="bi bi-people"></i>
-                <h5 class="fw-bold mt-2">Community</h5>
-                <p>Parents, teachers, and students work together to drive growth and excellence.</p>
-            </div>
-        </div>
-
+      </div>
     </div>
-</div>
+  </div>
+</section>
 
-<!-- What Makes Us Unique -->
-<div class="container my-5">
-    <h2 class="fw-bold text-center mb-4">What Makes Us Different</h2>
-    <div class="row gy-4">
+<!-- Features -->
+<section class="py-5">
+  <div class="container">
+    <h3 class="text-center fw-bold mb-4" data-aos="fade-up">Why Parents Choose Us</h3>
 
-        <div class="col-md-6">
-            <h5 class="fw-bold">✔ Online Enrollment System</h5>
-            <p>Parents can register students online with instant approvals and digital records.</p>
-
-            <h5 class="fw-bold">✔ Computer-Based Test (CBT)</h5>
-            <p>Students take assessments online, with automatic grading for objective questions.</p>
-
-            <h5 class="fw-bold">✔ Real-Time Result Management</h5>
-            <p>Students and parents can access results and progress reports instantly.</p>
+    <div class="row g-4">
+      <div class="col-md-4" data-aos="zoom-in" data-aos-delay="60">
+        <div class="p-4 text-center feature-card shadow-sm">
+          <img src="{% static 'images/icon-1.png' %}" height="72" class="mb-3" alt="Quality Education">
+          <h5 class="fw-semibold">Quality Education</h5>
+          <p class="text-muted small">Certified teachers, modern curriculum and excellent results.</p>
         </div>
+      </div>
 
-        <div class="col-md-6">
-            <h5 class="fw-bold">✔ Digital School Shop</h5>
-            <p>Purchase uniforms, books, and supplies online with delivery updates and tracking.</p>
-
-            <h5 class="fw-bold">✔ Staff & Student Portals</h5>
-            <p>Dedicated dashboards for teachers, admins, and students to manage daily activities.</p>
-
-            <h5 class="fw-bold">✔ Automated Notifications</h5>
-            <p>SMS/Email updates for enrollment, results, payments, and important school events.</p>
+      <div class="col-md-4" data-aos="zoom-in" data-aos-delay="120">
+        <div class="p-4 text-center feature-card shadow-sm">
+          <img src="{% static 'images/icon-2.png' %}" height="72" class="mb-3" alt="Online Portal">
+          <h5 class="fw-semibold">Secure Portal</h5>
+          <p class="text-muted small">Pay fees, check results and take CBT exams online.</p>
         </div>
+      </div>
 
+      <div class="col-md-4" data-aos="zoom-in" data-aos-delay="180">
+        <div class="p-4 text-center feature-card shadow-sm">
+          <img src="{% static 'images/icon-3.png' %}" height="72" class="mb-3" alt="Payments">
+          <h5 class="fw-semibold">Seamless Payments</h5>
+          <p class="text-muted small">Paystack integration for fast, secure transactions in Naira.</p>
+        </div>
+      </div>
     </div>
-</div>
+  </div>
+</section>
 
-<!-- Mission & Vision -->
-<div class="container my-5">
-    <div class="row">
+<!-- Timeline / Milestones -->
+<section class="py-5 bg-light">
+  <div class="container">
+    <h3 class="text-center fw-bold mb-4" data-aos="fade-up">Our Journey</h3>
 
-        <div class="col-md-6">
-            <div class="p-4 bg-light rounded shadow-sm">
-                <h3 class="fw-bold">Our Vision</h3>
-                <p class="fs-5 mt-3">To be a leading educational institution producing confident, innovative, and responsible future leaders.</p>
-            </div>
+    <div class="timeline">
+      <div class="row g-4">
+        <div class="col-md-4" data-aos="fade-up" data-aos-delay="60">
+          <div class="p-4 bg-white shadow-sm rounded">
+            <h6 class="text-primary fw-bold">2015</h6>
+            <p class="mb-0 text-muted">Founded with a vision to provide accessible quality education.</p>
+          </div>
         </div>
-
-        <div class="col-md-6">
-            <div class="p-4 bg-light rounded shadow-sm">
-                <h3 class="fw-bold">Our Mission</h3>
-                <p class="fs-5 mt-3">To provide quality education through dedicated teachers, modern learning facilities, and technology-driven systems.</p>
-            </div>
+        <div class="col-md-4" data-aos="fade-up" data-aos-delay="120">
+          <div class="p-4 bg-white shadow-sm rounded">
+            <h6 class="text-primary fw-bold">2018</h6>
+            <p class="mb-0 text-muted">Launched digital learning & parent portal.</p>
+          </div>
         </div>
-
+        <div class="col-md-4" data-aos="fade-up" data-aos-delay="180">
+          <div class="p-4 bg-white shadow-sm rounded">
+            <h6 class="text-primary fw-bold">2023</h6>
+            <p class="mb-0 text-muted">Expanded campus, improved facilities, integrated Paystack for payments.</p>
+          </div>
+        </div>
+      </div>
     </div>
-</div>
+  </div>
+</section>
+
+<!-- Faculty / Testimonials (simple grid) -->
+<section class="py-5">
+  <div class="container">
+    <h3 class="text-center fw-bold mb-4" data-aos="fade-up">Our Faculty</h3>
+
+    <div class="row g-4">
+      <div class="col-md-3" data-aos="flip-left" data-aos-delay="60">
+        <div class="card text-center p-3">
+          <img src="{% static 'images/teacher-1.jpg' %}" class="rounded-circle mx-auto d-block" alt="Teacher" style="width:88px;height:88px;object-fit:cover;">
+          <h6 class="mt-3 mb-0">Mrs. A. Johnson</h6>
+          <small class="text-muted">Head of Academics</small>
+        </div>
+      </div>
+
+      <div class="col-md-3" data-aos="flip-left" data-aos-delay="120">
+        <div class="card text-center p-3">
+          <img src="{% static 'images/teacher-2.jpg' %}" class="rounded-circle mx-auto d-block" alt="Teacher" style="width:88px;height:88px;object-fit:cover;">
+          <h6 class="mt-3 mb-0">Mr. K. Ade</h6>
+          <small class="text-muted">ICT Coordinator</small>
+        </div>
+      </div>
+
+      <div class="col-md-3" data-aos="flip-left" data-aos-delay="180">
+        <div class="card text-center p-3">
+          <img src="{% static 'images/teacher-3.jpg' %}" class="rounded-circle mx-auto d-block" alt="Teacher" style="width:88px;height:88px;object-fit:cover;">
+          <h6 class="mt-3 mb-0">Mrs. L. Obi</h6>
+          <small class="text-muted">Senior Teacher</small>
+        </div>
+      </div>
+
+      <div class="col-md-3" data-aos="flip-left" data-aos-delay="240">
+        <div class="card text-center p-3">
+          <img src="{% static 'images/teacher-4.jpg' %}" class="rounded-circle mx-auto d-block" alt="Teacher" style="width:88px;height:88px;object-fit:cover;">
+          <h6 class="mt-3 mb-0">Mr. R. Musa</h6>
+          <small class="text-muted">Sports Master</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
 <!-- CTA -->
-<div class="container text-center my-5">
-    <a href="{% url 'users:signup' %}" class="btn btn-lg btn-primary px-4 py-3">
-        Start Enrollment
-    </a>
-</div>
+<section class="py-5 bg-primary text-white text-center">
+  <div class="container" data-aos="zoom-in">
+    <h3 class="fw-bold">Become Part of The Brills Family</h3>
+    <p class="mb-3">Admissions open — limited spaces. Enroll your child today.</p>
+    <a href="/users/signup/" class="btn btn-light btn-lg rounded-pill">Apply Now</a>
+  </div>
+</section>
 
 {% endblock %}
