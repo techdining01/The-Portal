@@ -34,9 +34,9 @@
                     {% endif %}
                 </td>
                 <td>
-                    <a href="{% url 'approve_user' user.id %}" class="btn btn-success btn-sm">Approve</a>
-                    <a href="{% url 'reject_user' user.id %}" class="btn btn-danger btn-sm">Reject</a>
-                    <a href="{% url 'pending_user' user.id %}" class="btn btn-secondary btn-sm">Set Pending</a>
+                    <a href="{% url 'users:approve_user' user.id %}" class="btn btn-success btn-sm">Approve</a>
+                    <a href="{% url 'users:reject_user' user.id %}" class="btn btn-danger btn-sm">Reject</a>
+                    <a href="{% url 'users:pending_user' user.id %}" class="btn btn-secondary btn-sm">Set Pending</a>
                 </td>
             </tr>
         {% empty %}

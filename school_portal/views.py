@@ -6,3 +6,7 @@ from datetime import datetime
 def school_portal(request):
      
     return render(request, 'school_portal/landing_page.html')
+
+def about(request):
+     
+    return render(request, 'school_portal/about.html')

@@ -1,0 +1,160 @@
+{% extends "shop_base.html" %}
+{% load static %}
+{% load humanize %}
+{% block title %} About Us {% endblock %}
+{% block content %}
+
+<style>
+    .hero-section {
+        background: url("{% static 'images/about_school.jpg' %}");
+        background-size: cover;
+        background-position: center;
+        padding: 90px 0;
+        color: white;
+        text-align: center;
+    }
+    .icon-box {
+        border-radius: 12px;
+        padding: 25px;
+        background: #fff;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.07);
+        transition: 0.3s;
+    }
+    .icon-box:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+    }
+    .icon-box i {
+        font-size: 40px;
+        color: #0d6efd;
+        margin-bottom: 15px;
+    }
+</style>
+
+<!-- Hero Banner -->
+<div class="hero-section">
+    <div class="container">
+        <h1 class="display-4 fw-bold">About Our School</h1>
+        <p class="lead mt-3">Building bright futures through quality education, innovation, and technology.</p>
+    </div>
+</div>
+
+<!-- About Intro -->
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-9">
+            <h2 class="fw-bold mb-3">Who We Are</h2>
+            <p class="fs-5" style="line-height: 1.7;">
+                Our school is dedicated to nurturing students with the knowledge, creativity, and character 
+                they need to succeed in a rapidly evolving world. We combine traditional values with 
+                modern digital systems such as e-learning, online enrollment, computer-based testing (CBT),
+                real-time results, and automated academic workflows.
+            </p>
+            <p class="fs-5" style="line-height: 1.7;">
+                With a passionate team of educators, advanced technology platforms, and a safe, supportive 
+                learning environment, we help students discover their potential and achieve excellence 
+                academically, morally, and socially.
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Core Values -->
+<div class="container my-5">
+    <h2 class="text-center fw-bold mb-4">Our Core Values</h2>
+    <div class="row g-4">
+
+        <div class="col-md-3">
+            <div class="icon-box text-center">
+                <i class="bi bi-book-half"></i>
+                <h5 class="fw-bold mt-2">Knowledge</h5>
+                <p>We encourage strong academic performance through structured learning and technology.</p>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="icon-box text-center">
+                <i class="bi bi-shield-check"></i>
+                <h5 class="fw-bold mt-2">Integrity</h5>
+                <p>We promote honesty, discipline, and responsibility among students and staff.</p>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="icon-box text-center">
+                <i class="bi bi-lightbulb"></i>
+                <h5 class="fw-bold mt-2">Innovation</h5>
+                <p>We leverage digital tools like CBT systems, dashboards, and online portals.</p>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="icon-box text-center">
+                <i class="bi bi-people"></i>
+                <h5 class="fw-bold mt-2">Community</h5>
+                <p>Parents, teachers, and students work together to drive growth and excellence.</p>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- What Makes Us Unique -->
+<div class="container my-5">
+    <h2 class="fw-bold text-center mb-4">What Makes Us Different</h2>
+    <div class="row gy-4">
+
+        <div class="col-md-6">
+            <h5 class="fw-bold">✔ Online Enrollment System</h5>
+            <p>Parents can register students online with instant approvals and digital records.</p>
+
+            <h5 class="fw-bold">✔ Computer-Based Test (CBT)</h5>
+            <p>Students take assessments online, with automatic grading for objective questions.</p>
+
+            <h5 class="fw-bold">✔ Real-Time Result Management</h5>
+            <p>Students and parents can access results and progress reports instantly.</p>
+        </div>
+
+        <div class="col-md-6">
+            <h5 class="fw-bold">✔ Digital School Shop</h5>
+            <p>Purchase uniforms, books, and supplies online with delivery updates and tracking.</p>
+
+            <h5 class="fw-bold">✔ Staff & Student Portals</h5>
+            <p>Dedicated dashboards for teachers, admins, and students to manage daily activities.</p>
+
+            <h5 class="fw-bold">✔ Automated Notifications</h5>
+            <p>SMS/Email updates for enrollment, results, payments, and important school events.</p>
+        </div>
+
+    </div>
+</div>
+
+<!-- Mission & Vision -->
+<div class="container my-5">
+    <div class="row">
+
+        <div class="col-md-6">
+            <div class="p-4 bg-light rounded shadow-sm">
+                <h3 class="fw-bold">Our Vision</h3>
+                <p class="fs-5 mt-3">To be a leading educational institution producing confident, innovative, and responsible future leaders.</p>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="p-4 bg-light rounded shadow-sm">
+                <h3 class="fw-bold">Our Mission</h3>
+                <p class="fs-5 mt-3">To provide quality education through dedicated teachers, modern learning facilities, and technology-driven systems.</p>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- CTA -->
+<div class="container text-center my-5">
+    <a href="{% url 'users:signup' %}" class="btn btn-lg btn-primary px-4 py-3">
+        Start Enrollment
+    </a>
+</div>
+
+{% endblock %}

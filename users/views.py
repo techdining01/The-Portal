@@ -25,7 +25,7 @@ def signup_view(request):
             role = user.role
             if role in ['admin', 'teacher']:
                 messages.success(request, f'{user.role.title()} account created successfully. Awaiting approval.')
-                url = reverse('teacheradminprofile', kwargs={'user_id': user_id})
+                url = reverse('users:teacheradminprofile', kwargs={'user_id': user_id})
                 return redirect(url)
             else:
                 messages.success(request, "Registration successful. Please wait for approval.")

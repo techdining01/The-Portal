@@ -81,7 +81,7 @@
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm py-3">
         <div class="container">
             <a class="navbar-brand fw-bold" href="/">
-                <img src="{% static 'images/school_logo.png' %}" class="img-fluid rounded-circle mb-2" style="max-width: 50px;">
+                <img src="{% static 'images/school_logo.png' %}" class="img-fluid mb-2" style="max-width: 60px;">
                 {{ SCHOOL_NAME }}
             </a>
 
@@ -91,13 +91,12 @@
 
             <div class="collapse navbar-collapse" id="navmenu">
                 <ul class="navbar-nav ms-auto">
-                    {% if request.user.is_authenticated %}
+                   
                     <li class="nav-item"><a href="/" class="nav-link">Home</a></li>
-                    {% else %}
                     <li class="nav-item"><a href="/about/" class="nav-link">About</a></li>
                     <li class="nav-item"><a href="{% url 'shop:home' %}" class="nav-link">Pay Fees</a></li>
                     <li class="nav-item"><a href="{% url 'users:signup' %}" class="btn btn-primary rounded-pill ms-3 px-4">Login</a></li>
-                    {% endif %}
+                 
                 </ul>
             </div>
         </div>
