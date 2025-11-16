@@ -10,6 +10,7 @@ urlpatterns = [
     path("product/<slug:slug>/", views.product_detail, name="detail"),
     path("add-to-cart/", views.add_to_cart, name="add_to_cart"),
     path("cart/", views.cart_view, name="cart"),
+    path('cart/update/', views.update_cart_item, name='update_cart_item'),
     path("checkout/", views.initiate_checkout, name="checkout"),
     path("paystack/webhook/", views.paystack_webhook, name="paystack_webhook"),
     path("api/items/", api_views.api_items, name="api_items"),

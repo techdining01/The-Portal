@@ -9,7 +9,7 @@
         <h1 id="schoolName" class="display-2 fw-bold text-shadow text-danger">{{ SCHOOL_NAME }}</h1>
         <p id="slogan" class="lead  text-shadow text-white">{{SCHOOL_SLOGAN}}</p>
         <p id="bright" class="lead mb-4 text-shadow text-danger">Building Brilliant Minds for a Brighter Future</p>
-        <a href="/portal/login/" class="btn btn-lg btn-light px-4 py-2 fw-semibold shadow-sm">Enter School Portal</a>
+        <a href="{% url 'users:login' %}" class="btn btn-lg btn-light px-4 py-2 fw-semibold shadow-sm">Enter School Portal</a>
     </div> 
 </section>
 
@@ -82,7 +82,7 @@
     <div class="container">
         <h2 class="fw-bold mb-3">Pay School Fees Online</h2>
         <p class="text-muted mb-4">Secure, fast, and fully verified via Paystack.</p>
-        <a href="/payments/" class="btn btn-success btn-lg px-4 shadow">Pay Now</a>
+        <a href="{% url 'shop:home' %}" class="btn btn-success btn-lg px-4 shadow">Pay Now</a>
     </div>
 </section>
 

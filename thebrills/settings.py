@@ -39,11 +39,10 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
     'django_session_timeout',
     'django_apscheduler',
+    'school_portal',
     'cores',
     'users',
     'exams',
-    # 'payments', 
-    'school_portal',
     'shop',
 ]
 
