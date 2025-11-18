@@ -7,8 +7,8 @@
 
         <div class="row g-3">
             {% for item in items %}
-            <div class="col-md-4" data-aos="fade-up" data-aos-delay="{{ forloop.counter0|add:1 }}00">
-                <div class="card h-100 shadow-sm">
+            <div class="col-md-3" data-aos="fade-up" data-aos-delay="{{ forloop.counter0|add:1 }}00">
+                <div class="card h-50 shadow-sm">
                     {% if item.image %}
                     <img src="{{ item.image.url }}" class="card-img-top" style="height:220px; object-fit:center;">
                     {% endif %}
