@@ -1,0 +1,23 @@
+{% extends "shop_base.html" %}
+{% load static %}
+{% load humanize %}
+{% block content %}
+<div class="container py-5">
+  <div class="row">
+    <div class="col-md-6" data-aos="zoom-in"><img src="{{ item.image.url }}" class="img-fluid"></div>
+    <div class="col-md-6" data-aos="fade-left">
+      <h2 class="gsap-fade-up">{{ item.name }}</h2>
+      <p class="lead">₦{{ item.price|intcomma }}</p>
+      <p>{{ item.description }}</p>
+      {% if item.in_stock %}
+        <form method="post">{% csrf_token %}
+          <input type="number" name="quantity" value="1" min="1" class="form-control mb-2" style="width:120px;">
+          <button class="btn btn-success">Add to cart</button>
+        </form>
+      {% else %}
+        <p class="text-danger">Out of stock</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

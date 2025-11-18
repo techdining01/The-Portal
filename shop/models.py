@@ -8,7 +8,7 @@ class Item(models.Model):
     PRODUCT_TYPES = [
         ('uniform','Uniform'),
         ('textbook','Textbook'),
-        ('fee','Fee'),
+        ('school fee','School Fee'),
         ('other','Other'),
     ]
     name = models.CharField(max_length=200)
@@ -16,9 +16,15 @@ class Item(models.Model):
     description = models.TextField(blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)  # Naira
     product_type = models.CharField(max_length=20, choices=PRODUCT_TYPES, default='other')
-    active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     image = models.ImageField(upload_to='shop/', null=True, blank=True)
+    stock = models.PositiveIntegerField(default=0)
+
+
+    def in_stock(self):
+        return self.stock > 0
+
 
     def __str__(self):
         return self.name
@@ -63,17 +69,3 @@ class OrderItem(models.Model):
 
 
 
-class ShopItem(models.Model):
-    name = models.CharField(max_length=200)
-    description = models.TextField(blank=True)
-    price = models.PositiveIntegerField()
-    stock = models.PositiveIntegerField(default=0)
-    image = models.ImageField(upload_to="shop_items/", blank=True, null=True)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def in_stock(self):
-        return self.stock > 0
-
-    def __str__(self):
-        return self.name

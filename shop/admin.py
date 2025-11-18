@@ -3,7 +3,7 @@ from .models import Item, Cart, CartItem, Order, OrderItem
 
 @admin.register(Item)
 class ItemAdmin(admin.ModelAdmin):
-    list_display = ("name","product_type","price","active")
+    list_display = ("name","product_type","price","is_active")
     prepopulated_fields = {"slug": ("name",)}
 
 @admin.register(Order)

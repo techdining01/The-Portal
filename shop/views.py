@@ -1,18 +1,18 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.conf import settings
 from django.http import JsonResponse, HttpResponse
-from .models import Item, Cart, CartItem, Order, ShopItem
+from .models import Item, Cart, CartItem, Order, OrderItem
 import secrets
 import requests
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 from django.contrib import messages
-from .forms import ShopItemForm
+from .forms import ItemForm
 
 
 def shop_home(request):
-    items = Item.objects.filter(active=True)
+    items = Item.objects.filter(is_active=True)
     return render(request, "shop/home.html", {"items": items})
 
 def product_detail(request, slug):
@@ -130,7 +130,7 @@ def is_admin(user):
 @login_required
 @user_passes_test(is_admin)
 def admin_items(request):
-    items = ShopItem.objects.all().order_by("-created_at")
+    items = Item.objects.all().order_by("-created_at")
     return render(request, "shop/admin/items.html", {"items": items})
 
 
@@ -139,13 +139,13 @@ def admin_items(request):
 @user_passes_test(is_admin)
 def admin_add_item(request):
     if request.method == "POST":
-        form = ShopItemForm(request.POST, request.FILES)
+        form = ItemForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
             messages.success(request, "Item added successfully.")
             return redirect("shop:admin_items")
     else:
-        form = ShopItemForm()
+        form = ItemForm()
 
     return render(request, "shop/admin/item_form.html", {"form": form, "title": "Add Item"})
 
@@ -154,17 +154,17 @@ def admin_add_item(request):
 @login_required
 @user_passes_test(is_admin)
 def admin_edit_item(request, item_id):
-    item = get_object_or_404(ShopItem, id=item_id)
+    item = get_object_or_404(Item, id=item_id)
 
     if request.method == "POST":
-        form = ShopItemForm(request.POST, request.FILES, instance=item)
+        form = ItemForm(request.POST, request.FILES, instance=item)
         if form.is_valid():
             form.save()
             messages.success(request, "Item updated successfully.")
             return redirect("shop:admin_items")
 
     else:
-        form = ShopItemForm(instance=item)
+        form = ItemForm(instance=item)
 
     return render(request, "shop/admin/item_form.html", {"form": form, "title": "Edit Item"})
 
@@ -173,7 +173,7 @@ def admin_edit_item(request, item_id):
 @login_required
 @user_passes_test(is_admin)
 def admin_delete_item(request, item_id):
-    item = get_object_or_404(ShopItem, id=item_id)
+    item = get_object_or_404(Item, id=item_id)
     item.delete()
     messages.warning(request, "Item deleted.")
     return redirect("shop:admin_items")
@@ -183,7 +183,7 @@ def admin_delete_item(request, item_id):
 @login_required
 @user_passes_test(is_admin)
 def admin_increase_stock(request, item_id):
-    item = get_object_or_404(ShopItem, id=item_id)
+    item = get_object_or_404(Item, id=item_id)
     item.stock += 1
     item.save()
     messages.success(request, "Stock increased.")
@@ -194,7 +194,7 @@ def admin_increase_stock(request, item_id):
 @login_required
 @user_passes_test(is_admin)
 def admin_decrease_stock(request, item_id):
-    item = get_object_or_404(ShopItem, id=item_id)
+    item = get_object_or_404(Item, id=item_id)
     if item.stock > 0:
         item.stock -= 1
         item.save()
@@ -208,7 +208,7 @@ def admin_decrease_stock(request, item_id):
 # @login_required
 # def student_fees(request):
 #     # all fee items for the student's class or school
-#     fees = Fee.objects.filter(is_active=True)
+#     fees = Fee.objects.filter(is_is_active=True)
 #     payments = Payment.objects.filter(user=request.user, status='success')
 #     paid_amount = sum(p.amount for p in payments)
 #     total_fees = sum(f.amount for f in fees)
