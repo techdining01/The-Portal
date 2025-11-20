@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>{{ SCHOOL_NAME }} — {% block title %}School Store{% endblock %}</title>
+  <title>{{ SCHOOL_NAME }} — {% block title %}{% endblock %}</title>
 
   <!-- Bootstrap (kept local/static or CDN) -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -30,6 +30,7 @@
         color: #333;
         margin: 0;
         padding: 0;
+        overflow-wrap: anywhere;
         }
 
         a {
@@ -41,6 +42,7 @@
         }
 
         .navbar {
+        display: none; /* Hide navbar on shop pages */  
         background-color: #ffffff;
         border-bottom: 1px solid #e5e8eb;
         }
@@ -129,6 +131,65 @@
         box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.1);
         }
 
+
+        /* Styles for screens 768px and wider */
+      @media screen and (min-width: 768px) {
+        .navbar {
+        display: flex;
+        }
+        .hero-section {
+            height: 60vh;
+        }
+        }
+
+        /* Shop Product card */
+
+        .shop_container {
+            margin: 0px auto 0px auto;
+            text-align: left;
+        }
+
+        .product-card {
+            background-color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 1px solid #ccc;
+            padding: 10px;
+            width: 300px;
+            margin-left: auto;
+            margin-right: auto;
+            margin-top: 10px;
+        }
+
+        .product-card:hover {
+            border: 1px solid #c43535;
+            border-radius: 8px;
+        }
+
+        .product-image {
+            width: 100%;
+            height: 200px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .product-image img {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        .product-title {
+            font-size: 24px;
+            margin: 0;
+            text-align: center;
+        }
+
+        .product-price {
+            font-size: 20px;
+            margin: 0;
+            text-align: center;
+        }
 </style>
   
 
@@ -142,7 +203,7 @@
   <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm header">
     <div class="container">
       <a class="navbar-brand d-flex align-items-center" href="/">
-        <img src="{% static 'images/school_logo.png' %}" alt="{{ SCHOOL_NAME }}" style="height: 40px; width:auto;" >
+        <img class="me-3" src="{% static 'images/school_logo.png' %}" alt="{{ SCHOOL_NAME }}" style="height: 40px; width:auto;" >
         <span class="fw-bold">{{ SCHOOL_NAME }}</span>
       </a>
 

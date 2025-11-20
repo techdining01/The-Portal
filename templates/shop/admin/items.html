@@ -5,7 +5,7 @@
 
 {% block content %}
 <div class="container">
-
+      <a class="btn btn-outline-secondary mb-2" href="{% url 'shop:shop_home' %}">← Back</a>
     <h2 class="fw-bold mb-4">Manage Store Items</h2>
 
     <a href="{% url 'shop:admin_add_item' %}" class="btn btn-primary mb-4">
@@ -19,6 +19,7 @@
                 <th>Price</th>
                 <th>Stock</th>
                 <th>Status</th>
+                <th>Created At</th>
                 <th class="text-end">Actions</th>
             </tr>
         </thead>
@@ -39,12 +40,14 @@
 
             <td>
                 {% if item.is_active %}
-                    <span class="badge bg-success">Active</span>
+                <span class="badge bg-success">Active</span>
                 {% else %}
-                    <span class="badge bg-secondary">Hidden</span>
+                <span class="badge bg-secondary">Hidden</span>
                 {% endif %}
             </td>
-
+            
+            <td>{{ item.created_at|date:"M d, Y" }}</td>
+            
             <td class="text-end">
                 <a href="{% url 'shop:admin_edit_item' item.id %}" class="btn btn-warning btn-sm">Edit</a>
                 <a href="{% url 'shop:admin_delete_item' item.id %}" class="btn btn-danger btn-sm"

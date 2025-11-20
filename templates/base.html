@@ -30,6 +30,7 @@
         color: #333;
         margin: 0;
         padding: 0;
+        overflow-wrap: anywhere;
         }
 
         a {
@@ -39,7 +40,8 @@
         a:hover {
         color: #003d99;
         }
-
+        
+        /* Default styles for mobile view */
         .navbar {
         background-color: #ffffff;
         border-bottom: 1px solid #e5e8eb;
@@ -61,7 +63,7 @@
         position: fixed;
         top: 0;
         width: 100%;
-        z-index: 1000;
+        z-index: 100;
         }   
 
         .hero-section {
@@ -132,9 +134,17 @@
         box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.1);
         }
 
-        @media screen {
-          
+    /* Styles for screens 768px and wider */
+    @media screen and (min-width: 768px) {
+      .navbar {
+        display: flex; 
+        flex-direction: row; 
+      }
+      
+      .hero-section {
+            height: 60vh;
         }
+    }
 
 </style>
   
@@ -145,7 +155,7 @@
   <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm header">
     <div class="container">
       <a class="navbar-brand d-flex align-items-center" href="/">
-        <img src="{% static 'images/school_logo.png' %}" alt="{{ SCHOOL_NAME }}" style="height: 40px; width:auto;" >
+        <img  class="me-3" src="{% static 'images/school_logo.png' %}" alt="{{ SCHOOL_NAME }}" style="height: 2.6rem; max-width: 100%;" >
         <span class="fw-bold">{{ SCHOOL_NAME }}</span>
       </a>
 
@@ -154,7 +164,7 @@
       </button>
 
       <div class="collapse navbar-collapse" id="mainNav">
-        <ul class="navbar-nav ms-auto fw-bold">
+        <ul class="navbar-nav ms-auto">
           <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
           <li class="nav-item"><a class="nav-link" href="{% url 'school_portal:about' %}">About</a></li>
           <li class="nav-item"><a class="nav-link" href="{% url 'shop:shop_home' %}">Pay Fees</a></li>

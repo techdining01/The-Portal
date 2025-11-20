@@ -1,14 +1,17 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.conf import settings
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse, HttpResponse, HttpResponseBadRequest
 from .models import Item, Cart, CartItem, Order, OrderItem
 import secrets
 import requests
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 from django.contrib import messages
 from .forms import ItemForm
+from django.views.decorators.http import require_POST
+
 
 
 def shop_home(request):
@@ -19,50 +22,231 @@ def product_detail(request, slug):
     item = get_object_or_404(Item, slug=slug)
     return render(request, "shop/detail.html", {"item": item})
 
+
+
 def get_or_create_cart(request):
+    # If user is logged in → attach user cart
     if request.user.is_authenticated:
-        cart, _ = Cart.objects.get_or_create(user=request.user)
-        return cart
-    session_key = request.session.session_key
-    if not session_key:
-        request.session.create()
+        cart, created = Cart.objects.get_or_create(user=request.user)
+    else:
+        # Use session for guest cart
+        if not request.session.session_key:
+            request.session.create()  # create session if missing
+
         session_key = request.session.session_key
-    cart, _ = Cart.objects.get_or_create(session_key=session_key)
+        cart, created = Cart.objects.get_or_create(session_key=session_key)
+
     return cart
 
-def add_to_cart(request):
-    # expects POST: item_id, qty
-    item_id = request.POST.get("item_id")
-    qty = int(request.POST.get("qty", 1))
+
+def add_to_cart(request, item_id):
     item = get_object_or_404(Item, id=item_id)
     cart = get_or_create_cart(request)
-    cart_item, created = CartItem.objects.get_or_create(cart=cart, item=item)
-    if not created:
-        cart_item.qty += qty
+
+    cart_item, created = CartItem.objects.get_or_create(
+        cart=cart,
+        item=item
+    )
+
+    cart_item.qty 
     cart_item.save()
-    return JsonResponse({"ok": True, "cart_total": float(cart.total())})
 
-def cart_view(request):
+    return redirect("shop:cart")
+
+
+def cart_page(request):
     cart = get_or_create_cart(request)
-    return render(request, "shop/cart.html", {"cart": cart})
+    items = cart.items.select_related("item")
+    return render(request, "shop/cart.html", {"cart": cart, "items": items})
 
 
-def update_cart_item(request):
-    # POST item_id, qty
+def remove_from_cart(request, item_id):
+    item = get_object_or_404(CartItem, id=item_id)
+    print(item)
+    item.delete()
+    return redirect("shop:cart")
+
+
+@require_POST
+def update_cart_ajax(request):
+    cart = get_or_create_cart(request)
     item_id = request.POST.get("item_id")
-    qty = int(request.POST.get("qty", 1))
+    qty = int(request.POST.get("qty"))
+
+    cart_item = get_object_or_404(CartItem, cart=cart, item_id=item_id)
+    cart_item.qty = qty
+    cart_item.save()
+
+    return JsonResponse({
+        "success": True,
+        "item_total": float(cart_item.line_total()),
+        "cart_total": float(cart.total())
+    })
+
+
+def checkout(request):
     cart = get_or_create_cart(request)
-    ci = cart.items.filter(item_id=item_id).first()
-    if not ci:
-        return JsonResponse({"error":"no item"}, status=400)
-    if qty <= 0:
-        ci.delete()
+
+    if cart.items.count() == 0:
+        return redirect("shop:cart")
+    
+    line_totals = [ci.line_total() for ci in cart.items.all()]
+    total_amount = cart.total()
+
+    return render(request, "shop/checkout.html", {
+        "cart": cart,
+        "items": cart.items.all(),
+        "total": total_amount,
+        "line_totals": line_totals,
+        "PAYSTACK_PUBLIC_KEY": settings.PAYSTACK_PUBLIC_KEY,
+    })
+
+
+def clear_cart(request):
+    cart = get_or_create_cart(request)
+    cart.items.all().delete()
+    return redirect("cart")
+
+
+# Quantity Adjustment Views -----------------------------
+
+
+def increase_quantity(request, item_id):
+    item = get_object_or_404(CartItem, id=item_id)
+    item.quantity += 1
+    item.save()
+    return redirect("shop:cart")
+
+def decrease_quantity(request, item_id):
+    item = get_object_or_404(CartItem, id=item_id)
+    if item.quantity > 1:
+        item.quantity -= 1
+        item.save()
     else:
-        ci.qty = qty
-        ci.save()
-    return JsonResponse({"ok":True, "cart_total": float(cart.total())})
+        item.delete()
+    return redirect("shop:cart")
 
 
+@require_POST
+def update_cart_ajax(request):
+    cart = Cart(request)
+    item_id = request.POST.get("item_id")
+    action = request.POST.get("action")
+
+    item = get_object_or_404(Item, id=item_id)
+
+    if action == "increase":
+        cart.add(item, quantity=1)
+
+    elif action == "decrease":
+        cart.add(item, quantity=-1)
+
+        # Auto-remove if quantity becomes 0
+        if cart.get_quantity(item_id) <= 0:
+            cart.remove(item)
+
+    # Build response
+    items = []
+    removed_ids = []
+
+    for item in cart:
+        items.append({
+            "item_id": item["item"].id,
+            "quantity": item["quantity"],
+            "total_price": f"{item['total_price']:.2f}",
+        })
+
+    # Check for removed items
+    if action == "decrease" and cart.get_quantity(item_id) <= 0:
+        removed_ids.append(int(item_id))
+
+    return JsonResponse({
+        "status": "success",
+        "items": items,
+        "total_price": f"{cart.get_total_price():.2f}",
+        "total_items": len(cart),
+        "removed_ids": removed_ids,
+    })
+
+
+
+@require_POST
+def remove_from_cart_ajax(request):
+    cart = Cart(request)
+    item_id = request.POST.get("item_id")
+    item = get_object_or_404(Item, id=item_id)
+
+    cart.remove(item)
+
+    # Rebuild updated items
+    items = []
+    for item in cart:
+        items.append({
+            "item_id": item["item"].id,
+            "quantity": item["quantity"],
+            "total_price": f"{item['total_price']:.2f}",
+        })
+
+    return JsonResponse({
+        "status": "removed",
+        "items": items,
+        "removed_ids": [int(item_id)],
+        "total_price": f"{cart.get_total_price():.2f}",
+        "total_items": len(cart),
+    })
+
+
+def get_total_price(self):
+    return sum(item["total_price"] for item in self.cart.values())
+
+
+def get_quantity(self, item_id):
+    item_id = str(item_id)
+    return self.cart[item_id]["quantity"] if item_id in self.cart else 0
+
+
+def initiate_checkout(request):
+    cart = get_or_create_cart(request.session)
+    if not cart:
+        return redirect('shop:index')
+    total = 0
+    from .models import Item as ItemModel, Order, OrderItem
+    for id_str, qty in cart.items():
+        obj = ItemModel.objects.get(pk=int(id_str))
+        total += obj.price * qty
+    reference = secrets.token_hex(10)
+    order = Order.objects.create(user=request.user if request.user.is_authenticated else None,
+                                 reference=reference, amount=total, status='pending')
+    for id_str, qty in cart.items():
+        obj = ItemModel.objects.get(pk=int(id_str))
+        OrderItem.objects.create(order=order, item=obj, quantity=qty, unit_price=obj.price)
+    headers = {'Authorization': f'Bearer {settings.PAYSTACK_SECRET_KEY}'}
+    callback = request.build_absolute_uri(reverse('shop:verify', args=[reference]))
+    data = {'email': request.user.email if request.user.is_authenticated else '', 'amount': total*100, 'reference': reference, 'callback_url': callback}
+    resp = requests.post('https://api.paystack.co/transaction/initialize', json=data, headers=headers, timeout=30)
+    if resp.status_code != 200:
+        return HttpResponseBadRequest('Payment initialization failed')
+    payload = resp.json()
+    request.session['cart'] = {}
+    request.session.modified = True
+    return redirect(payload['data']['authorization_url'])
+
+def verify_payment(request, reference):
+    import requests
+    headers = {'Authorization': f'Bearer {settings.PAYSTACK_SECRET_KEY}'}
+    resp = requests.get(f'https://api.paystack.co/transaction/verify/{reference}', headers=headers, timeout=30)
+    data = resp.json()
+    order = get_object_or_404(Order, reference=reference)
+    if data.get('status') and data['data']['status'] == 'success':
+        order.status = 'paid'
+        order.save()
+        return render(request, 'shop/success.html', {'order': order})
+    order.status = 'failed'
+    order.save()
+    return render(request, 'shop/failed.html', {'order': order})
+
+
+@require_POST
 def initiate_checkout(request):
     cart = get_or_create_cart(request)
     if cart.items.count() == 0:
@@ -94,6 +278,7 @@ def initiate_checkout(request):
     j = resp.json()
     # redirect to authorization_url
     return redirect(j["data"]["authorization_url"])
+
 
 @csrf_exempt
 def paystack_webhook(request):
@@ -205,13 +390,3 @@ def admin_decrease_stock(request, item_id):
 
 
 
-# @login_required
-# def student_fees(request):
-#     # all fee items for the student's class or school
-#     fees = Fee.objects.filter(is_is_active=True)
-#     payments = Payment.objects.filter(user=request.user, status='success')
-#     paid_amount = sum(p.amount for p in payments)
-#     total_fees = sum(f.amount for f in fees)
-#     return render(request, "students/fees.html", {
-#         "fees": fees, "paid_amount": paid_amount, "balance": total_fees - paid_amount
-#     })

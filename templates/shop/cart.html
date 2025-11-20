@@ -1,47 +1,125 @@
 {% extends "shop_base.html" %}
 {% load static %}
 {% load humanize %}
+{% block title %}Your Cart{% endblock %}
+
 {% block content %}
+<link rel="stylesheet" href="{% static 'css/aos.css' %}">
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
 <div class="container py-5" data-aos="fade-up">
-  <h2>Your Cart</h2>
-  {% if cart.items.count %}
-  <table class="table">
-    <thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
-    <tbody>
-      {% for ci in cart.items.all %}
-      <tr>
-        <td>{{ ci.item.name }}</td>
-        <td>
-          <input class="qty-input" data-id="{{ ci.item.id }}" type="number" value="{{ ci.qty }}" min="0" />
-        </td>
-        <td>₦{{ ci.item.price }}</td>
-        <td>₦{{ ci.line_total|intcomma }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  <div class="d-flex justify-content-between">
-    <h4>Total: ₦{{ cart.total|intcomma }}</h4>
-    <a href="{% url 'shop:checkout' %}" class="btn btn-success">Checkout with Paystack</a>
-  </div>
-  {% else %}
-    <p>No items in cart.</p>
-  {% endif %}
+    <a class="btn btn-outline-secondary mb-5" href="{% url 'shop:shop_home' %}">← Back</a>
+
+    <h2 class="fw-bold mb-4 text-center">Your Shopping Cart <span><img src="{% static 'images/cart3.jpg' %}" alt="cart" style="height: 70px; width: 80px;"></span></h2>
+
+    {% if items %}
+    <div id="toast" class="toast-msg">Updated!</div>
+
+    <table class="table table-bordered shadow-sm">
+        <thead class="table-light">
+            <tr>
+                <th>Item</th>
+                <th>Qty</th>
+                <th>Price</th>
+                <th>Total</th>
+                <th></th>
+            </tr>
+        </thead>
+
+        <tbody>
+        {% for ci in items %}
+            <tr data-aos="zoom-in">
+                <td>
+                    <img src="{{ ci.item.image.url }}" width="60" class="rounded me-2">
+                    {{ ci.item.name }}
+                </td>
+
+                <td>
+                    <input type="number" min="1" value="{{ ci.qty }}"
+                           class="form-control qty-input"
+                           data-id="{{ ci.item.id }}">
+                </td>
+
+                <td>₦{{ ci.item.price }}</td>
+
+                <td class="item-total" id="item-total-{{ ci.item.id }}">
+                    ₦{{ ci.line_total }}
+                </td>
+
+                <td>
+                    <a href="{% url 'shop:remove_from_cart' ci.item.id %}"
+                       class="btn btn-sm btn-danger">Remove</a>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <h3 class="text-end fw-bold">Grand Total: ₦<span id="cart-total">{{ cart.total }}</span></h3>
+
+    <div class="text-end mt-4">
+        <a href="{% url 'shop:checkout' %}" class="btn btn-success btn-lg px-5">Checkout</a>
+    </div>
+
+    {% else %}
+    <div class="text-center py-5">
+        <h4>Your cart is empty</h4>
+        <a href="{% url 'shop:shop_home' %}" class="btn btn-primary mt-3">Shop Now</a>
+    </div>
+    {% endif %}
 </div>
+
+<style>
+.toast-msg {
+    position: fixed;
+    top: 20px;
+    right: -200px;
+    background: #28a745;
+    padding: 12px 20px;
+    color: white;
+    border-radius: 5px;
+    transition: 0.6s ease;
+}
+.toast-show { right: 20px; }
+</style>
+
 <script>
-document.querySelectorAll('.qty-input').forEach(input=>{
-  input.addEventListener('change', async (e)=>{
-    const id = e.target.dataset.id;
-    const qty = e.target.value;
-    const res = await fetch("{% url 'shop:update_cart_item' %}", {
-      method:'POST',
-      headers: {'X-CSRFToken':'{{ csrf_token }}', 'Content-Type':'application/x-www-form-urlencoded'},
-      body: 'item_id=' + id + '&qty=' + qty
+function showToast(){
+    let t = document.getElementById("toast");
+    t.classList.add("toast-show");
+    setTimeout(()=> t.classList.remove("toast-show"), 2000);
+}
+
+document.querySelectorAll(".qty-input").forEach(input => {
+    input.addEventListener("change", function() {
+        let item_id = this.dataset.id;
+        let qty = this.value;
+
+ // Send AJAX request to update cart
+        axios.post("{% url 'shop:update_cart_ajax' %}", {
+            item_id: item_id,
+            qty: qty,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        })
+        .then(response => {
+            // Update item total and cart total in the DOM
+            document.getElementById(`item-total-${item_id}`).innerText = `₦${response.data.item_total}`;
+            document.getElementById("cart-total").innerText = response.data.cart_total;
+            showToast();
+        })
+        .catch(error => {
+            console.error("There was an error updating the cart!", error);
+        });
     });
-    const j = await res.json();
-    if (j.ok) location.reload();
-  });
 });
 </script>
+
+<script src="{% static 'js/aos.js' %}"></script>
+<script>AOS.init();</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script>
+gsap.from("table", {opacity:0, y:40, duration:0.8});
+</script>
+
 {% endblock %}

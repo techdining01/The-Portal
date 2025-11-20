@@ -2,22 +2,52 @@
 {% load static %}
 {% load humanize %}
 {% block content %}
-<div class="container py-5">
+<div class="container">
+    <a class="btn btn-outline-secondary mb-5" href="{% url 'shop:shop_home' %}">← Back</a>
   <div class="row">
-    <div class="col-md-6" data-aos="zoom-in"><img src="{{ item.image.url }}" class="img-fluid"></div>
-    <div class="col-md-6" data-aos="fade-left">
-      <h2 class="gsap-fade-up">{{ item.name }}</h2>
-      <p class="lead">₦{{ item.price|intcomma }}</p>
-      <p>{{ item.description }}</p>
-      {% if item.in_stock %}
-        <form method="post">{% csrf_token %}
+      <div class="col-md-3" data-aos="zoom-in"><img src="{{ item.image.url }}" class="product-image"></div>
+        <div class="col-md-3" data-aos="fade-left">
+          <h2 class="gsap-fade-up">{{ item.name }}</h2>
+            <p class="lead">₦{{ item.price|intcomma }}</p>
+            <p>{{ item.description }}</p>
+          {% if item.in_stock %}
+        
           <input type="number" name="quantity" value="1" min="1" class="form-control mb-2" style="width:120px;">
-          <button class="btn btn-success">Add to cart</button>
-        </form>
+          <button 
+              class="btn btn-primary add-to-cart-btn"
+              data-id="{{ item.id }}" >
+
+              Add to Cart
+
+          </button>
       {% else %}
         <p class="text-danger">Out of stock</p>
       {% endif %}
+      <a class="btn btn-warning " href="{% url 'shop:cart' %}">🛒 View Cart</a>
     </div>
   </div>
 </div>
+
+
+<script>
+document.querySelectorAll(".add-to-cart-btn").forEach(btn => {
+    btn.addEventListener("click", function () {
+        let id = this.dataset.id;
+
+        fetch(`/shop/cart/add/${id}/`, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}",
+                "X-Requested-With": "XMLHttpRequest",
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            showToast(data.message);
+            updateCartCount(data.cart_count);
+        });
+    });
+});
+</script>
+
 {% endblock %}

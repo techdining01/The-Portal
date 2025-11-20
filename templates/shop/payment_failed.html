@@ -4,6 +4,7 @@
 
 {% block content %}
 <div class="container text-center mt-5">
+    <a class="btn btn-outline-secondary mb-5" href="{% url 'shop:shop_home' %}">← Back</a>
   <img src="{% static 'images/failed.jpg' %}" alt="Failed" width="100">
   <h2>Payment Failed ❌</h2>
   <p>We couldn’t verify your transaction at the moment.</p>

@@ -1,0 +1,169 @@
+{% extends "shop_base.html" %}
+{% load static %}
+{% block title %}Your Cart{% endblock %}
+{% block content %}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<style>
+.cart-card {
+    border-radius: 16px;
+    background: #fff;
+    padding: 20px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    transition: .3s ease;
+}
+.cart-card:hover {
+    transform: translateY(-3px);
+}
+.quantity-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 50%;
+    background: #f1f1f1;
+    cursor: pointer;
+    transition: .2s;
+}
+.quantity-btn:hover {
+    background: #ddd;
+}
+.toast {
+    position: fixed;
+    top: 20px;
+    right: -400px;
+    padding: 14px 20px;
+    background: #28a745;
+    color: white;
+    border-radius: 8px;
+    box-shadow: 0 5px 20px rgba(0,0,0,.2);
+    z-index: 5000;
+    transition: .4s ease;
+}
+#loader {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.25);
+    backdrop-filter: blur(3px);
+    z-index: 9000;
+    justify-content: center;
+    align-items: center;
+}
+.spinner {
+    width: 60px;
+    height: 60px;
+    border: 6px solid #fff;
+    border-top-color: #28a745;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+</style>
+
+<!-- Loader -->
+<div id="loader"><div class="spinner"></div></div>
+
+<div class="container py-5">
+
+    <h2 class="fw-bold mb-4 text-center" data-aos="fade-down">Your Shopping Cart <span><img src="{% static 'images/cart3.jpg' %}" alt="cart" style="height: 70px; width: 80px;"></span></h2>
+
+    {% if cart|length == 0 %}
+        <div class="text-center py-5" data-aos="fade-up">
+            <h4>Your cart is empty</h4>
+            <a href="{% url 'shop:shop_home' %}" class="btn btn-primary mt-3">Browse Items</a>
+        </div>
+    {% else %}
+
+        {% for item in items %}
+        <div class="cart-card mb-3" data-aos="fade-up" data-aos-delay="{{ forloop.counter0 }}00">
+            <div class="d-flex justify-content-between align-items-center">
+
+                <div class="d-flex align-items-center">
+                    <img src="{{ item.item.image.url }}" width="90" class="rounded me-3">
+                    <div>
+                        <h5 class="fw-bold">{{ item.item.name }}</h5>
+                        <p class="text-muted mb-1">₦{{ item.item.price }}</p>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center">
+                    <button class="quantity-btn decrease" data-id="{{ item.item.id }}">−</button>
+                    <span class="mx-3 fs-5">{{ item.quantity }}</span>
+                    <button class="quantity-btn increase" data-id="{{ item.item.id }}">+</button>
+                </div>
+
+                <h5 class="fw-bold text-success">₦{{ item.total_price }}</h5>
+
+                <button class="btn btn-sm btn-danger remove-item" data-id="{{ item.item.id }}">
+                    <i class="fa fa-trash"></i>
+                </button>
+
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="text-end mt-4">
+            <h3>Total: <span class="text-success fw-bold">₦{{ cart.get_total_price }}</span></h3>
+            <button id="payBtn" class="btn btn-lg btn-success mt-3 px-4">
+                Pay with Paystack
+            </button>
+        </div>
+
+    {% endif %}
+
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<script>AOS.init();</script>
+
+<script>
+function showToast(msg) {
+    let t = document.getElementById("toast");
+    t.innerText = msg;
+    t.style.right = "20px";
+    setTimeout(() => { t.style.right = "-400px"; }, 2500);
+}
+
+function showLoader() {
+    document.getElementById("loader").style.display = "flex";
+}
+
+document.querySelectorAll(".increase, .decrease, .remove-item").forEach(btn => {
+    btn.addEventListener("click", function () {
+
+        showLoader();
+
+        fetch("{% url 'shop:update_cart_ajax' %}", {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}",
+                "X-Requested-With": "XMLHttpRequest",
+            },
+            body: new URLSearchParams({
+                "item_id": this.dataset.id,
+                "action": this.classList.contains("increase") ? "increase" :
+                          this.classList.contains("decrease") ? "decrease" : "remove"
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            location.reload();
+        });
+    });
+});
+
+// Paystack Button
+document.getElementById("payBtn")?.addEventListener("click", function () {
+    showLoader();
+    window.location.href = "{% url 'shop:checkout' %}";
+});
+</script>
+
+{% endblock %}

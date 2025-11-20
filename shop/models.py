@@ -32,6 +32,7 @@ class Item(models.Model):
         ('sss2','SSS 2'),
         ('sss3','SSS 3'),
         ]
+    
     name = models.CharField(max_length=200)
     slug = AutoSlugField(populate_from='name', unique=True)    
     description = models.TextField(blank=True)
@@ -58,10 +59,9 @@ class Cart(models.Model):
     session_key = models.CharField(max_length=120, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    def total(self):
-        return sum(ci.line_total() for ci in self.items.all())
-
-
+    def __str__(self):
+        return f"{self.user.get_full_name}'cart created" if self.user.is_authenticated else "anonymous cart"
+    
 class CartItem(models.Model):
     cart = models.ForeignKey(Cart, related_name='items', on_delete=models.CASCADE)
     item = models.ForeignKey(Item, on_delete=models.CASCADE)
@@ -69,8 +69,14 @@ class CartItem(models.Model):
 
     def line_total(self):
         return self.item.price * self.qty
+    
+    def grand_total(self):
+        return sum(ci.line_total() for ci in self.items.all())
 
-
+    def __str__(self):
+        return f"{self.cart} got updated"
+    
+    
 class Order(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     reference = models.CharField(max_length=120, unique=True)

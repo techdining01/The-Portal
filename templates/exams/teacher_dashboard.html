@@ -7,7 +7,7 @@
       <h2 class="mb-3 fw-bold">👨‍🏫 Teacher Dashboard</h2>
     </div>
     <div class="d-flex align-items-center">
-      <a href="{% url 'manage_quizzes' %}" class="btn btn-success btn-sm me-2">Advance</a>
+      <a href="{% url 'exams:manage_quizzes' %}" class="btn btn-success btn-sm me-2">Advance</a>
     </div>
   </div>
 
@@ -88,7 +88,7 @@
                    <td>{{ student.get_full_name|default:student.username }}</td>
                  <td>{{ student.student_class.name }}</td>
                    <td>
-                     <a href="{% url 'student_report_pdf' student.id %}" class="btn btn-sm btn-primary">
+                     <a href="{% url 'exams:student_report_pdf' student.id %}" class="btn btn-sm btn-primary">
                        Download PDF
                      </a>
                    </td>
@@ -125,8 +125,8 @@
         <div class="card mt-3">
           <div class="card-header"><strong>Exams Management</strong></div>
           <div class="card-body">
-            <a href="{% url 'create_quiz' %}" class="btn btn-primary btn-sm">Create Exam</a>
-            <a href="{% url 'manage_quizzes_teacher' %}" class="btn btn-warning btn-sm">Edit Exams</a>
+            <a href="{% url 'exams:create_quiz' %}" class="btn btn-primary btn-sm">Create Exam</a>
+            <a href="{% url 'exams:manage_quizzes_teacher' %}" class="btn btn-warning btn-sm">Edit Exams</a>
           </div>
         </div>
       </div>
@@ -348,7 +348,7 @@
     broadcastForm.addEventListener('submit', function(e){
       e.preventDefault();
       const formData = new FormData(this);
-      fetch("{% url 'teacher_broadcast' %}", { method:'POST', body: formData, headers:{ 'X-CSRFToken': csrftoken() }})
+      fetch("{% url 'exams:teacher_broadcast' %}", { method:'POST', body: formData, headers:{ 'X-CSRFToken': csrftoken() }})
         .then(r=>r.json()).then(d=>{ showToast(d.message||'Broadcast sent','success'); fetchTeacherDashboard(); })
         .catch(()=> showToast('Broadcast failed','danger'));
     });
@@ -356,7 +356,7 @@
 
   // main fetch that uses the shared page state
   function fetchTeacherDashboard(){
-    const url = `{% url 'teacher_dashboard_data' %}?page=${quizPage}&notif_page=${notifPage}&grade_page=${gradePage}&broadcast_page=${broadcastPage}`;
+    const url = `{% url 'exams:teacher_dashboard_data' %}?page=${quizPage}&notif_page=${notifPage}&grade_page=${gradePage}&broadcast_page=${broadcastPage}`;
     fetch(url, { credentials:'same-origin' })
       .then(res => { if(!res.ok) throw new Error('Failed to fetch dashboard data'); return res.json(); })
       .then(data => {
@@ -526,7 +526,7 @@
       // main fetch and DOM update 
       // grading attempts
       function fetchTeacherDashboard() {
-        fetch(`{% url 'teacher_dashboard_data' %}?page=${quizPage}&notif_page=${notifPage}&grade_page=${gradePage}&broadcast_page=${broadcastPage}`)
+        fetch(`{% url 'exams:teacher_dashboard_data' %}?page=${quizPage}&notif_page=${notifPage}&grade_page=${gradePage}&broadcast_page=${broadcastPage}`)
           .then(res => { if (!res.ok) throw new Error('Failed to fetch dashboard data'); return res.json(); })
           .then(data => {
 

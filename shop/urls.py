@@ -8,14 +8,15 @@ app_name = "shop"
 urlpatterns = [
     path("", views.shop_home, name="shop_home"),
     path("product/<slug:slug>/", views.product_detail, name="detail"),
-    path("add-to-cart/", views.add_to_cart, name="add_to_cart"),
-    path("cart/", views.cart_view, name="cart"),
-    path('cart/update/', views.update_cart_item, name='update_cart_item'),
-    path("checkout/", views.initiate_checkout, name="checkout"),
-    path("paystack/webhook/", views.paystack_webhook, name="paystack_webhook"),
-    path("api/items/", api_views.api_items, name="api_items"),
-    path("api/order/<str:reference>/", api_views.api_order_status, name="api_order_status"),
-    path("shop/paystack/webhook/", views.paystack_webhook, name="shop_paystack_webhook"),
+    # Cart URLs
+    path("cart/", views.cart_page, name="cart"),
+    path("cart/add/<int:item_id>/", views.add_to_cart, name="add_to_cart"),
+    path("cart/remove/<int:item_id>/", views.remove_from_cart, name="remove_from_cart"),
+    path("cart/update/", views.update_cart_ajax, name="update_cart_ajax"),
+    path("cart/clear/", views.clear_cart, name="clear_cart"),
+    # Checkout URLs
+    path("checkout/", views.checkout, name="checkout"),
+    path("paystack/verify/", views.verify_payment, name="verify_payment"),
     # Admin URLs
     path("admin/items/", views.admin_items, name="admin_items"),
     path("admin/items/add/", views.admin_add_item, name="admin_add_item"),
