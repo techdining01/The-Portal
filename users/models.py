@@ -19,9 +19,10 @@ class User(AbstractUser):
         ('female', 'Female'),
         ('male', 'Male')
     )
-
+    surname = models.CharField(max_length=150, blank=True, null=True)
+    first_name = models.CharField(max_length=150, blank=True, null=True)
+    other_name = models.CharField(max_length=150, blank=True, null=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
-    other_name = models.CharField(max_length=100, blank=True, null=True)
     date_joined = models.DateTimeField(auto_now=True)
     gender = models.CharField(max_length=10, choices=GENDER, null=True, blank=True)
     age = models.PositiveIntegerField(default=8)
@@ -32,7 +33,9 @@ class User(AbstractUser):
 
     address = models.TextField(blank=True, null=True)
     phone_number = models.CharField(max_length=15, blank=True, null=True)
+    parent_name = models.CharField(max_length=150, blank=True, null=True)
     parent_email = models.EmailField(blank=True, null=True)
+    pareent_phone_number = models.CharField(max_length=15, blank=True, null=True)
     approved = models.BooleanField(default=False)  # SuperAdmin must approve Admins
 
     profile_picture = models.ImageField(

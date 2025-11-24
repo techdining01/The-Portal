@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'users',
     'exams',
     'shop',
+    'pickup',
 ]
 
 # Messages config (optional but neat)
@@ -65,6 +66,9 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'cores.middleware.auto_logout.AutoLogoutMiddleware',
+    # 'shop.middleware.CartMiddleware',
+    # 'shop.context_processors.ecommerce_settings',
+
 ]
 
 # Session expires after 10 minutes (600 seconds)
@@ -146,6 +150,9 @@ SCHOOL_NAME = os.getenv("SCHOOL_NAME", "The Brills School")
 SCHOOL_ADDRESS = os.getenv("SCHOOL_ADDRESS", "No 1, Adaba Awotan/Akufo Road. Ibadan. Oyo State")
 SCHOOL_SLOGAN = os.getenv("SCHOOL_SLOGAN", "Knowledge is Light")
 PORTAL_DOMAIN = os.getenv("PORTAL_DOMAIN", "https://www.thebrillsschool.edu.ng")
+SITE_NAME = os.getenv("PORTAL_DOMAIN", "https://www.thebrillsschool.edu.ng")
+CURRENCY = os.getenv('NGN')
+CURRENCY_SYMBOL = os.getenv('₦')
 
 # AWS S3 Settings for media file storage
 AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID', 'your_aws_access_key')
@@ -171,6 +178,7 @@ PAYSTACK_MODE = os.getenv("PAYSTACK_MODE", "test").lower()
 PAYSTACK_PUBLIC_KEY = PAYSTACK_LIVE_PUBLIC_KEY if PAYSTACK_MODE == "live" else PAYSTACK_TEST_PUBLIC_KEY
 PAYSTACK_SECRET_KEY = PAYSTACK_LIVE_SECRET_KEY if PAYSTACK_MODE == "live" else PAYSTACK_TEST_SECRET_KEY
 PAYSTACK_BASE_URL = "https://api.paystack.co"
+DEFAULT_FROM_EMAIL = "no-reply@brillspay.school"
 
 # Security & Hosts (production)
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,thebrillsschool.edu.ng").split(",")

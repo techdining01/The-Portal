@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Receipt {{ order.reference }}</title>
+  <style>
+    body { font-family: Helvetica, Arial, sans-serif; padding:20px; }
+    .header { display:flex; justify-content: space-between; align-items:center; }
+    .items { width:100%; border-collapse: collapse; margin-top: 12px; }
+    .items th, .items td { padding:8px; border:1px solid #ddd; }
+    .total { text-align:right; margin-top: 10px; font-size: 1.2em; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h2>BrillsPay</h2>
+      <div>Ref: {{ order.reference }}</div>
+    </div>
+    <div>
+      <strong>Paid at:</strong> {{ order.paid_at }}
+    </div>
+  </div>
+
+  <table class="items">
+    <thead><tr><th>Product</th><th>Student</th><th>Qty</th><th>Unit</th><th>Line</th></tr></thead>
+    <tbody>
+      {% for item in order.order_items.all %}
+      <tr>
+        <td>{{ item.product.name }}</td>
+        <td>{% if item.student %}{{ item.student }}{% endif %}</td>
+        <td>{{ item.quantity }}</td>
+        <td>₦{{ item.unit_price }}</td>
+        <td>₦{{ item.line_total }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="total">Total: ₦{{ order.total }}</div>
+</body>
+</html>

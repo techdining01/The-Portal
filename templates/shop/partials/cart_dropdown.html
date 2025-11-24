@@ -1,0 +1,18 @@
+<div class="list-group">
+  {% for it in items %}
+  <div class="list-group-item d-flex justify-content-between align-items-start">
+    <div>
+      <div class="fw-bold">{{ it.product.name }}</div>
+      <small>₦{{ it.product.price }} x {{ it.quantity }} {% if it.student %} for {{ it.student.registration_number }}{% endif %}</small>
+    </div>
+    <div>₦{{ it.product.price|floatformat:2|add:'0'|floatformat:2 }}</div>
+  </div>
+  {% endfor %}
+  <div class="list-group-item d-flex justify-content-between">
+    <div><strong>Total</strong></div>
+    <div><strong>₦{{ total }}</strong></div>
+  </div>
+  <div class="list-group-item text-center">
+    <a href="{% url 'shop:cart_page' %}" class="btn btn-sm btn-primary">Open Cart</a>
+  </div>
+</div>

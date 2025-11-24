@@ -1,0 +1,79 @@
+{% extends "shop_base.html" %}
+{% block content %}
+<div class="container">
+  <h4>Your cart</h4>
+  <div id="cartList" class="list-group">
+    {% for it in items %}
+    <div class="list-group-item d-flex justify-content-between align-items-center cart-item" data-item-id="{{ it.id }}" data-aos="fade-right">
+      <div>
+        <strong>{{ it.product.name }}</strong>
+        <div><small>{% if it.student %}For: {{ it.student }}{% endif %}</small></div>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <input class="form-control form-control-sm qty-input" type="number" min="1" value="{{ it.quantity }}" style="width:80px">
+        <div><strong>₦{{ it.subtotal }}</strong></div>
+        <button class="btn btn-sm btn-danger btn-remove">Remove</button>
+      </div>
+    </div>
+    {% empty %}
+    <div class="alert alert-info">Cart is empty</div>
+    {% endfor %}
+  </div>
+  <div class="mt-3 d-flex justify-content-between">
+    <div><strong>Total: ₦{{ total }}</strong></div>
+    <div>
+      <a href="{% url 'shop:product_list' %}" class="btn btn-outline-secondary">Continue shopping</a>
+      <a href="#" id="checkoutInlineBtn" class="btn btn-primary">Pay with Paystack</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll(".qty-input").forEach(input=>{
+  input.addEventListener("change", async (e)=>{
+    const item = e.target.closest(".cart-item");
+    const id = item.dataset.itemId;
+    const qty = e.target.value;
+    const fd = new FormData();
+    fd.append("item_id", id);
+    fd.append("quantity", qty);
+    fd.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+    const res = await fetch("{% url 'shop:cart_update_ajax' %}", {method:"POST", body: fd});
+    const j = await res.json();
+    if(j.ok){
+      // update UI
+      e.target.closest(".cart-item").querySelector("strong").innerText = `₦${j.item_subtotal}`; // optional target
+      // update total
+    } else {
+      alert("Error updating cart");
+    }
+  })
+});
+
+document.querySelectorAll(".btn-remove").forEach(btn=>{
+  btn.addEventListener("click", async (e)=>{
+    const item = e.target.closest(".cart-item");
+    const id = item.dataset.itemId;
+    const fd = new FormData();
+    fd.append("item_id", id);
+    fd.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+    const res = await fetch("{% url 'shop:cart_remove_ajax' %}", {method:"POST", body: fd});
+    const j = await res.json();
+    if(j.ok){
+      gsap.to(item, {opacity:0, height:0, duration:0.4, onComplete: ()=> item.remove()});
+    } else {
+      alert("Error removing");
+    }
+  })
+});
+
+// Checkout inline button handler: navigate to checkout page which includes inline payment
+document.getElementById("checkoutInlineBtn").addEventListener("click", function(e){
+  e.preventDefault();
+  // open mobile friendly modal or redirect to /shop/checkout-inline/ page with form
+  window.location.href = "{% url 'shop:checkout_inline' %}";
+});
+</script>
+{% endblock %}

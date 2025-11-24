@@ -1,0 +1,19 @@
+body {
+    background: #f7f9fc;
+}
+
+.product-card {
+    transition: transform .3s ease;
+}
+
+.product-card:hover {
+    transform: scale(1.05);
+}
+
+.btn {
+    border-radius: 10px;
+}
+
+.navbar-brand {
+    letter-spacing: 1px;
+}

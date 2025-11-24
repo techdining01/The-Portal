@@ -13,145 +13,296 @@
     <link rel="stylesheet" href="{% static 'fontawesome/all.min.css' %}">
 
 
-    <!-- Bootstrap (kept local/static or CDN) -->
+  <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
   <!-- AOS CSS -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" rel="stylesheet">
 
   <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-
-  <!-- Site CSS -->
-  <link rel="stylesheet" href="{% static 'css/main.css' %}">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
   <!-- Fontawesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-<style>
-    /* small helper styles for animated site */
- 
+  <style>
+    /* Base Styles - Mobile First */
+    :root {
+      --primary-color: #0052cc;
+      --primary-hover: #003d99;
+      --secondary-color: #dc3545;
+      --accent-color: #ff6b35;
+      --text-dark: #333333;
+      --text-light: #6c757d;
+      --bg-light: #f8f9fa;
+      --border-light: #e9ecef;
+      --shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+      --shadow-hover: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: var(--bg-light);
+      color: var(--text-dark);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Improved Typography for Mobile */
+    @media (max-width: 768px) {
       body {
-        font-family: 'Poppins', sans-serif;
-        background-color: #f4f6f9;
-        color: #333;
-        margin: 0;
-        padding: 0;
-        }
+        font-size: 15px;
+      }
+      
+      h1 { font-size: 1.75rem; }
+      h2 { font-size: 1.5rem; }
+      h3 { font-size: 1.375rem; }
+      h4 { font-size: 1.25rem; }
+      h5 { font-size: 1.125rem; }
+      h6 { font-size: 1rem; }
+    }
 
-        a {
-        color: #0052cc;
-        text-decoration: none;
-        }
-        a:hover {
-        color: #003d99;
-        }
+    @media (min-width: 769px) {
+      body {
+        font-size: 16px;
+      }
+      
+      h1 { font-size: 2.25rem; }
+      h2 { font-size: 2rem; }
+      h3 { font-size: 1.75rem; }
+    }
 
-        .navbar {
-        background-color: #ffffff;
-        border-bottom: 1px solid #e5e8eb;
-        }
+    /* Sticky Navigation */
+    .navbar {
+      background-color: #ffffff;
+      border-bottom: 1px solid var(--border-light);
+      box-shadow: var(--shadow);
+      position: sticky;
+      top: 0;
+      z-index: 1030;
+      transition: all 0.3s ease;
+    }
 
-        .navbar-brand {
-        font-weight: 600;
-        font-size: 1.4rem;
-        }
+    .navbar-brand {
+      font-weight: 700;
+      color: var(--text-dark) !important;
+    }
 
-        .main {
-        min-height: 80vh;
-        flex-grow: 1;
-        }
+    .navbar-brand img {
+      height: 45px;
+      width: auto;
+      object-fit: contain;
+    }
 
-        .header {
-        background-color: #ffffff;  
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        position: fixed;
-        top: 0;
-        width: 100%;
-        z-index: 1000;
-        }   
+    /* Custom Button Styles */
+    .btn-primary {
+      background-color: var(--primary-color);
+      border-color: var(--primary-color);
+      font-weight: 500;
+      padding: 0.05rem 0.05rem;
+      transition: all 0.3s ease;
+    }
 
-        .hero-section {
-        position: relative;
-        height: 90vh;
+    .btn-primary:hover {
+      background-color: var(--primary-hover);
+      border-color: var(--primary-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 82, 204, 0.3);
+    }
+
+    .btn-outline-primary {
+      color: var(--primary-color);
+      border-color: var(--primary-color);
+      font-weight: 500;
+    }
+
+    .btn-outline-primary:hover {
+      background-color: var(--primary-color);
+      border-color: var(--primary-color);
+      transform: translateY(-2px);
+    }
+
+    /* Enhanced Cards */
+    .feature-card, .card {
+      border: none;
+      border-radius: 12px;
+      transition: all 0.3s ease;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .feature-card:hover, .card:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--shadow-hover);
+    }
+
+    /* Cart Badge */
+    .cart-badge {
+      background-color: var(--secondary-color);
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      font-size: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      top: -8px;
+      right: -8px;
+    }
+
+    /* Mobile Menu */
+    .mobile-menu {
+      position: fixed;
+      top: 0;
+      right: -100%;
+      width: 280px;
+      height: 100vh;
+      background: white;
+      box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
+      transition: right 0.3s ease;
+      z-index: 1050;
+      overflow-y: auto;
+    }
+
+    .mobile-menu.open {
+      right: 0;
+    }
+
+    .backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1040;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .backdrop.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* Loading Spinner */
+    .loading-spinner {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.9);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .loading-spinner.active {
+      display: flex;
+    }
+
+    /* Footer */
+    footer {
+      background: linear-gradient(135deg, #0d1b2a 0%, #1b263b 100%);
+      color: #a0aec0;
+      margin-top: auto;
+    }
+
+    footer a {
+      color: #a0aec0;
+      transition: all 0.3s ease;
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      color: #ffffff;
+      transform: translateX(5px);
+    }
+
+    /* Custom Utilities */
+    .text-primary { color: var(--primary-color) !important; }
+    .bg-primary { background-color: var(--primary-color) !important; }
+    
+    .border-primary { border-color: var(--primary-color) !important; }
+    .btn-primary { 
+      background-color: var(--primary-color) !important;
+      border-color: var(--primary-color) !important;
+    }
+
+    /* Smooth scrolling */
+    html {
+      scroll-behavior: smooth;
+    }
+
+    /* Focus styles for accessibility */
+    a:focus, button:focus, input:focus, select:focus, textarea:focus {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 2px;
+    }
+
+    /* Touch-friendly elements for mobile */
+    @media (max-width: 768px) {
+      .btn, .nav-link, .dropdown-item {
+        min-height: 44px;
         display: flex;
         align-items: center;
-        justify-content: center;
-        color: #fff;
-        text-align: center;
-        }
-        .hero-section::before {
-        content: "";
-        position: absolute;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        background: rgba(0, 0, 80, 0.5);
-        z-index: 0;
-        }
-        .hero-section .container {
-        z-index: 1;
-        }
+      }
+      
+      input, select, textarea {
+        font-size: 16px; /* Prevents zoom on iOS */
+      }
+    }
 
-        .btn-primary {
-        background-color: #0052cc;
-        border: none;
-        }
-        .btn-primary:hover {
-        background-color: #003d99;
-        }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
 
-        .section {
-        padding: 60px 0;
-        }
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
 
-        .feature-card {
-        border: none;
-        border-radius: 12px;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        .feature-card:hover {
-        transform: translateY(-6px);
-        box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.1);
-        }
+    ::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 4px;
+    }
 
-        .card:hover {
-        border: none;
-        border-radius: 12px;
-        transform: translateY(-6px);
-        box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.1);
-        }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #a8a8a8;
+    }
 
-        footer {
-        bottom: 0;
-        background-color: #0d1b2a;
-        color: #a0aec0;
-        padding: 40px 0;
-       
-        }
-
-        footer a {
-        color: #a0aec0;
-        }
-        
-        footer a:hover {
-        color: #ffffff;
-        transform: translateY(-6px);
-        box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.1);
-        }
-
-        @media screen {
-          
-        }
-
-</style>
-       
+    /* Print Styles */
+    @media print {
+      .navbar, footer, .no-print {
+        display: none !important;
+      }
+      
+      body {
+        background: white !important;
+        color: black !important;
+        font-size: 12pt;
+      }
+      
+      .container {
+        max-width: 100% !important;
+      }
+    }
+  </style>      
     
 </head>
-<body class="bg-gray-100">
+<body class="d-flex flex-column min-vh-100">
 
-    <!-- Navbar -->
-     
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm header">
+
+  <!-- Sticky Navigation -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm header">
     <div class="container">
       <a class="navbar-brand d-flex align-items-center" href="/">
         <img  class="me-3" src="{% static 'images/school_logo.png' %}" alt="{{ SCHOOL_NAME }}" style="height: 2.6rem; max-width: 100%;" >
@@ -190,14 +341,182 @@
   {% endfor %}
 {% endif %}
 
-    <!-- Page Content -->
-    <main>
-      <div class="container mt-3 py-5">
-        {% block content %}{% endblock %}
-      </div>
-    </main>
+  <!-- Main Content -->
+  <main class="main-content flex-grow-1 py-4">
+    <div class="container">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
 
-    <!-- Bootstrap JS -->
+  <!-- Footer -->
+  <footer class="mt-auto py-4 py-md-5">
+    <div class="container">
+      <div class="row g-4">
+        <div class="col-md-6 col-lg-3">
+          <h5 class="text-white mb-3">{{ SCHOOL_NAME }}</h5>
+          <p class="text-grey mb-0">Providing quality education and seamless payment solutions for parents and students.</p>
+        </div>
+        
+        <div class="col-md-6 col-lg-3">
+          <h5 class="text-white mb-3">Quick Links</h5>
+          <ul class="list-unstyled">
+            <li class="mb-2"><a href="{% url 'shop:product_list' %}"><i class="fas fa-chevron-right me-2 small"></i>Home</a></li>
+            <li class="mb-2"><a href="{% url 'shop:product_list' %}"><i class="fas fa-chevron-right me-2 small"></i>Products</a></li>
+            <li class="mb-2"><a href="{% url 'pickup:pickup_generate' %}"><i class="fas fa-chevron-right me-2 small"></i>Pickup Codes</a></li>
+          </ul>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <h5 class="text-white mb-3">Contact Info</h5>
+              <ul class="list-unstyled">
+                  <li>📞 +234 807 982 3665</li>
+                  <li>📧 info@thebrillsschool.com</li>
+                  <li>📍 No. 1 Adaba, Awotan-Akufo Road, Ibadan</li>
+              </ul>
+        </div>  
+        <div class="col-md-6 col-lg-3">
+          <h5 class="text-white mb-3">Follow Us</h5>
+          <div class="d-flex gap-3 mb-3">
+            <a href="https://www.facebook.com/thebrills/" target="_blank" class="text-light fs-5">
+              <i class="fab fa-facebook"></i>
+            </a>
+            <a href="https://www.instagram.com/thebrillsschools/" target="_blank" class="text-light fs-5">
+              <i class="fab fa-instagram"></i>
+            </a>
+            <a href="https://www.youtube.com/channel/UCHCdkgNTXKHTbecF9r39llA" target="_blank" class="text-light fs-5">
+              <i class="fab fa-youtube"></i>
+            </a>
+            <a href="https://x.com/thebrillsschool" target="_blank" class="text-light fs-5">
+              <i class="fab fa-twitter"></i>
+            </a>
+          </div>
+          <small class="text-muted">Stay connected with us on social media</small>
+        </div>
+      </div>
+      
+      <hr class="my-4 border-white">
+      
+      <div class="text-center">
+        <small class="text-white">
+          &copy; <span id="currentYear"></span> — {{ SCHOOL_NAME }}. All Rights Reserved. 
+          Powered by <a href="mailto:logiclanesolutions@gmail.com" class="text-warning text-decoration-none">LogicLane Solutions</a>.
+        </small>
+        <br>
+        <small class="text-white">www.thebrillsschool.edu.ng</small>
+      </div>
+    </div>
+  </footer>
+
+  <!-- JavaScript Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+
+  <script>
+    // Initialize current year
+    document.getElementById('currentYear').textContent = new Date().getFullYear();
+
+    // Loading functions
+    function showLoading() {
+      document.getElementById('loadingSpinner').classList.add('active');
+    }
+
+    function hideLoading() {
+      document.getElementById('loadingSpinner').classList.remove('active');
+    }
+
+    // Initialize AOS
+    AOS.init({
+      duration: 800,
+      once: false,
+      mirror: true,
+      easing: "ease-out-quart"
+    });
+
+    // GSAP animations
+    gsap.registerPlugin(ScrollTrigger);
+
+    // Basic GSAP enter animation triggered by scroll
+    gsap.utils.toArray('.gsap-fade-up').forEach(el => {
+      gsap.fromTo(el, {y: 40, autoAlpha: 0}, {
+        y: 0, 
+        autoAlpha: 1,
+        scrollTrigger: {
+          trigger: el,
+          start: 'top 85%',
+          end: 'bottom 20%',
+          toggleActions: 'play reverse play reverse',
+        },
+        duration: 0.8,
+        ease: 'power2.out'
+      });
+    });
+
+    // Hero animation
+    document.addEventListener('DOMContentLoaded', function() {
+      const heroTitle = document.querySelector('.gsap-hero-title');
+      const heroSub = document.querySelector('.gsap-hero-sub');
+
+      if (heroTitle || heroSub) {
+        gsap.from(".gsap-hero-title", { 
+          y: 30, 
+          opacity: 0, 
+          duration: 0.8, 
+          ease: "power3.out", 
+          stagger: 0.08 
+        });
+        gsap.from(".gsap-hero-sub", { 
+          y: 20, 
+          opacity: 0, 
+          duration: 0.9, 
+          delay: 0.12, 
+          ease: "power3.out" 
+        });
+      }
+
+      // Feature cards animation
+      gsap.utils.toArray('.feature-card').forEach((card, i) => {
+        gsap.from(card, {
+          y: 20, 
+          opacity: 0, 
+          duration: 0.6, 
+          delay: i * 0.08,
+          scrollTrigger: { 
+            trigger: card, 
+            start: 'top 80%', 
+            end: 'bottom 20%',
+            toggleActions: 'play none none none' 
+          },
+          ease: 'power2.out'
+        });
+      });
+    });
+
+    // Toast notification function
+    function showToast(message, type = 'success') {
+      // Create toast element
+      const toast = document.createElement('div');
+      toast.className = `toast align-items-center text-bg-${type} border-0 position-fixed top-0 end-0 m-3`;
+      toast.style.zIndex = '10060';
+      
+      toast.innerHTML = `
+        <div class="d-flex">
+          <div class="toast-body">${message}</div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+      `;
+      
+      document.body.appendChild(toast);
+      const bsToast = new bootstrap.Toast(toast);
+      bsToast.show();
+      
+      // Remove from DOM after hide
+      toast.addEventListener('hidden.bs.toast', () => {
+        toast.remove();
+      });
+    }
+  </script>
+  <!-- Bootstrap JS -->
     <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
     <script src="{% static 'js/chart.min.js' %}"></script>
 
@@ -208,24 +527,11 @@
                 el.style.display = 'none';
             });
         }, 3000);
-        
-    
-        //let idleTime = 0;
-        //const logoutURL = "{% url 'users:logout' %}";  // adjust if different
-
-        // Increment idle time every minute
-        //setInterval(() => {
-        //idleTime++;
-        //if (idleTime >= 10) {  // 10 minutes
-        //    window.location.href = logoutURL;
-        //}
-        //}, 60000); // 1 minute
-
-        // Reset idle time on user activity
-        //['mousemove', 'keydown', 'scroll', 'click'].forEach(event => {
-        //window.addEventListener(event, () => idleTime = 0);
-        //}); 
-
+        setTimeout(() => {
+            document.querySelectorAll('.alert').forEach(el => {
+                el.style.display = 'none';
+            });
+        }, 3000);
 
         let idleTime = 0;
         const logoutURL = "{% url 'users:logout' %}";
@@ -248,88 +554,7 @@
 
 
 
-</script>
-
-    <!-- footer -->
-    <footer class="bg-dark text-light text-center py-4 mt-5 ">
-       <small class="mb-0">&copy; <span id="date"></span>—{{ SCHOOL_NAME }} . All Rights Reserved. Powered by <a href="mailto:logiclanesolutions@gmail.com" class="text-warning text-decoration-none">LogicLane Solutions</a>.</small><br>
-        <small>www.thebrillsschool.edu.ng</small>
-        <div class="mt-2">
-            <a href="https://www.facebook.com/thebrills/"target=" _blank" class=" foot text-light"><i class="fab fa-facebook fa-lg foot"></i></a>
-            <a href="https://x.com/thebrillsschool" target="_blank" class=" foot text-light"><img src="{% static 'images/x.png' %}" style="height:25px; width:25px;" class="me-2 foot"></a>
-            <a href="https://www.instagram.com/thebrillsschools/" target="_blank" class=" foot text-light me-3"><i class="fab fa-instagram fa-lg foot"></i></a>
-            <a href="https://www.youtube.com/channel/UCHCdkgNTXKHTbecF9r39llA" target="_blank" class="text-light me-3"><i class="fab fa-youtube fa-lg foot"></i></a>
-         </div>
-    </footer>
-
-    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
-    <script>
-        // Set current year in footer
-        document.getElementById('date').textContent = new Date().getFullYear();
     </script>
-
-  <!-- JS libs -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
-  <!-- ScrollTrigger -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-   
-  <!-- GSAP -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-
-  <!-- AOS JS -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
-
-
-    <script>
-        AOS.init({
-        duration: 800,
-        once: false,
-        mirror: true,
-        easing: "ease-out-quart"
-    });
-
-      // GSAP examples - register ScrollTrigger
-    gsap.registerPlugin(ScrollTrigger);
-
-    // basic GSAP enter animation triggered by scroll
-    gsap.utils.toArray('.gsap-fade-up').forEach(el => {
-      gsap.fromTo(el, {y:40, autoAlpha:0}, {
-        y:0, autoAlpha:1,
-        scrollTrigger: {
-          trigger: el,
-          start: 'top 85%',
-          end: 'bottom 20%',
-          toggleActions: 'play reverse play reverse', // plays forward and reverses on scroll up
-        },
-        duration: 0.8,
-        ease: 'power2.out'
-      });
-    });
-
-    // Small global GSAP intro for hero
-    document.addEventListener('DOMContentLoaded', function() {
-      const heroTitle = document.querySelector('.gsap-hero-title');
-      const heroSub = document.querySelector('.gsap-hero-sub');
-
-      if (heroTitle || heroSub) {
-        gsap.from(".gsap-hero-title", { y: 30, opacity: 0, duration: .8, ease: "power3.out", stagger: 0.08 });
-        gsap.from(".gsap-hero-sub", { y: 20, opacity: 0, duration: .9, delay: .12, ease: "power3.out" });
-      }
-
-      // subtle reveal for feature cards when in viewport
-      gsap.utils.toArray('.feature-card').forEach((card, i) => {
-        gsap.from(card, {
-          y: 20, opacity: 0, duration: .6, delay: i * 0.08,
-          scrollTrigger: { trigger: card, start: 'top 80%', end: 'bottom 20%' ,toggleActions: 'play none none none' },
-          duration: 0.8,
-          ease: 'power2.out'
-        });
-      });
-    });
-  </script>
-  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
-<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 
   {% block extra_scripts %}{% endblock %}
 </body>

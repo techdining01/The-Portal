@@ -1,0 +1,52 @@
+{% extends "shop_base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container py-4">
+
+    <h2 class="mb-4 fade-in">BrillsPay — Generate Pickup Authorization</h2>
+
+    <div class="row">
+        <div class="col-md-6">
+
+            <label>Search Student</label>
+            <input type="text" id="searchField" class="form-control mb-2 fade-in"
+                   placeholder="Search by student name" oninput="searchStudents()">
+
+            <label>Select Class</label>
+            <select id="classFilter" class="form-control mb-2 fade-in" onchange="searchStudents()">
+                <option value="">All Classes</option>
+                {% for c in classes %}
+                    <option value="{{ c.name }}">{{ c.name }}</option>
+                {% endfor %}
+            </select>
+
+            <div id="searchResults"></div>
+
+            <div id="selectedStudent" class="mt-3"></div>
+
+            <input type="hidden" id="studentReg">
+
+        </div>
+
+        <div class="col-md-6 fade-in">
+            <label>Bearer Full Name</label>
+            <input id="bearerName" class="form-control mb-2">
+
+            <label>Bearer Phone</label>
+            <input id="bearerPhone" class="form-control mb-2">
+
+            <label>Parent Signature</label>
+            <canvas id="signaturePad" height="180" class="border w-100 mb-2"></canvas>
+            <button onclick="clearSignature()" class="btn btn-warning btn-sm mb-3">Clear Signature</button>
+
+            <button onclick="submitPickup()" class="btn btn-primary w-100">
+                Generate Pickup Authorization
+            </button>
+        </div>
+    </div>
+
+</div>
+
+<script src="{% static 'shop/js/pickup.js' %}"></script>
+{% endblock %}

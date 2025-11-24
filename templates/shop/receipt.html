@@ -1,0 +1,15 @@
+{% extends "shop_base.html" %}
+{% block title %}Receipt{% endblock %}
+
+{% block content %}
+<div class="card shadow p-5 text-center" data-aos="zoom-in">
+    <h3>Payment Successful</h3>
+    <p class="text-muted">{{ receipt.created_at }}</p>
+
+    <h2 class="fw-bold">₦{{ receipt.amount }}</h2>
+    <p>Ref: <b>{{ receipt.reference }}</b></p>
+
+    <a class="btn btn-primary mt-3"
+       href="javascript:window.print()">Download Receipt</a>
+</div>
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends "shop_base.html" %}
+{% block title %}Checkout{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-12 col-md-8 offset-md-2">
+    <div class="card shadow-sm" data-aos="zoom-in">
+      <div class="card-body">
+        <h4 class="mb-3">Checkout — BrillsPay</h4>
+        <p class="small text-muted">Total: <strong>₦{{ total }}</strong></p>
+
+        <div id="itemsList">
+          {% for it in items %}
+            <div class="d-flex justify-content-between py-1">
+              <div>{{ it.product.name }} {% if it.student %}<br><small>for {{ it.student.registration_number }}</small>{% endif %}</div>
+              <div>₦{{ it.product.price|floatformat:2 }} x {{ it.quantity }}</div>
+            </div>
+          {% endfor %}
+        </div>
+
+        <hr>
+        <div class="mb-3">
+          <label>Email</label>
+          <input id="payEmail" class="form-control" type="email" value="{{ prefill_email }}" placeholder="Parent Email" />
+        </div>
+        <div class="mb-3">
+          <label>Phone</label>
+          <input id="payPhone" class="form-control" type="tel" placeholder="Phone number" />
+        </div>
+
+        <button id="payBtn" class="btn btn-primary w-100">Pay with Paystack</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://js.paystack.co/v1/inline.js"></script>
+<script>
+const payBtn = document.getElementById("payBtn");
+payBtn.addEventListener("click", async ()=>{
+  const email = document.getElementById("payEmail").value;
+  const phone = document.getElementById("payPhone").value;
+  if(!email){ alert("Please provide email"); return; }
+
+  // Create an Order on server BEFORE calling Paystack - we'll create via an initialize endpoint (we'll reuse checkout callback to create order server side).
+  // For this example we'll create a minimal initialize on the server by posting to a new endpoint or reusing existing flow.
+  // Simpler approach: build reference client-side and pass to initialize API below that we call from server.
+
+  // Build payload to create order and initialize transaction
+  const payload = {
+    email: email,
+    phone: phone
+  };
+  const r = await fetch("{% url 'shop:checkout_inline' %}", {
+    method: "POST",
+    headers: {'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token }}'},
+    body: JSON.stringify(payload)
+  });
+  const j = await r.json();
+  if(!j.success){
+    alert(j.error || "Could not initialize payment");
+    return;
+  }
+  // j contains {authorization_url, reference, amount}
+  const paystackOptions = {
+    key: "{{ public_key }}",
+    email: j.email,
+    amount: j.amount, // in kobo
+    ref: j.reference,
+    metadata: {
+      custom_fields: [
+        {display_name: "Parent Phone", variable_name: "parent_phone", value: j.phone}
+      ]
+    },
+    onClose: function(){
+      // play reverse animation when popup closed
+      gsap.to(".card-animate",{scale:1,duration:0.25});
+      alert('Payment popup closed');
+    },
+    callback: function(response){
+      // response.reference
+      // verify with server
+      fetch("{% url 'shop:paystack_callback' %}?reference="+response.reference)
+      .then(res=>res.text())
+      .then(txt=>{
+        window.location.href = txt || "/"; // server redirect to receipt returns HTML; we will redirect server-side with order receipt url
+      }).catch(()=>{ window.location.href = "/"; });
+    }
+  };
+  // small entrance animation
+  gsap.to(".card-animate",{scale:1.02,duration:0.12});
+  var handler = PaystackPop.setup(paystackOptions);
+  handler.openIframe();
+});
+</script>
+
+{% endblock %}

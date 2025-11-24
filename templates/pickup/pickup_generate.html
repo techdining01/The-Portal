@@ -1,0 +1,20 @@
+{% extends "shop_base.html" %}
+{% block title %}Generate Pickup Code{% endblock %}
+
+{% block content %}
+<h2 class="mb-3">Generate Pickup Authorization</h2>
+
+<div data-aos="fade-up">
+    <label>Student Registration Number</label>
+    <input id="pickup-reg-no" class="form-control mb-2">
+
+    <label>Parent Signature (Type your full name)</label>
+    <input id="pickup-signature" class="form-control mb-3">
+
+    <button class="btn btn-primary" id="pickup-generate-btn">
+        Generate Code
+    </button>
+
+    <div id="pickup-result" class="mt-4"></div>
+</div>
+{% endblock %}

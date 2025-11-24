@@ -1,0 +1,45 @@
+{% extends "shop/base.html" %}
+{% block content %}
+<div class="card p-3 checkout-card" data-aos="fade-up">
+  <h5>Create pickup authorization</h5>
+  <form id="pickupCreateForm" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="mb-2">
+      <input class="form-control" name="student_reg" placeholder="Student registration number (or search)"/>
+    </div>
+    <div class="mb-2">
+      <input class="form-control" name="bearer_name" placeholder="Bearer full name"/>
+    </div>
+    <div class="mb-2">
+      <input class="form-control" name="bearer_phone" placeholder="Bearer phone"/>
+    </div>
+    <div class="mb-2">
+      <label class="form-label">Signature (optional image)</label>
+      <input type="file" name="signature" class="form-control"/>
+    </div>
+    <button id="pickupBtn" class="btn btn-primary">Generate code</button>
+  </form>
+  <div id="pickupResult" class="mt-3"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const form = document.getElementById("pickupCreateForm");
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById("pickupBtn");
+  btn.disabled = true;
+  const fd = new FormData(form);
+  const res = await fetch("{% url 'shop:pickup_generate' %}", {method:"POST", headers: {'X-CSRFToken': '{{ csrf_token }}'}, body: fd});
+  const data = await res.json();
+  btn.disabled = false;
+  if(data.ok){
+    document.getElementById("pickupResult").innerHTML = `<div class="alert alert-success">Code: <strong>${data.code}</strong><br>Verify URL: <a href="${data.verify_url}">${data.verify_url}</a></div>`;
+    gsap.from(".alert", {y:-20, opacity:0, duration:0.5});
+  } else {
+    document.getElementById("pickupResult").innerHTML = `<div class="alert alert-danger">${data.error || 'Error'}</div>`;
+  }
+});
+</script>
+{% endblock %}

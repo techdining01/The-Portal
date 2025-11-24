@@ -1,30 +1,49 @@
 from django.urls import path
-from . import views
-from . import api_views
+from . import views, student_api
 
 
 app_name = "shop"
 
 urlpatterns = [
-    path("", views.shop_home, name="shop_home"),
-    path("product/<slug:slug>/", views.product_detail, name="detail"),
-    # Cart URLs
-    path("cart/", views.cart_page, name="cart"),
-    path("cart/add/<int:item_id>/", views.add_to_cart, name="add_to_cart"),
-    path("cart/remove/<int:item_id>/", views.remove_from_cart, name="remove_from_cart"),
-    path("cart/update/", views.update_cart_ajax, name="update_cart_ajax"),
-    path("cart/clear/", views.clear_cart, name="clear_cart"),
-    # Checkout URLs
-    path("checkout/", views.checkout, name="checkout"),
-    path("paystack/verify/", views.verify_payment, name="verify_payment"),
-    # Admin URLs
-    path("admin/items/", views.admin_items, name="admin_items"),
-    path("admin/items/add/", views.admin_add_item, name="admin_add_item"),
-    path("admin/items/<int:item_id>/edit/", views.admin_edit_item, name="admin_edit_item"),
-    path("admin/items/<int:item_id>/delete/", views.admin_delete_item, name="admin_delete_item"),
-    path("admin/items/<int:item_id>/increase/", views.admin_increase_stock, name="admin_increase_stock"),
-    path("admin/items/<int:item_id>/decrease/", views.admin_decrease_stock, name="admin_decrease_stock"),
+     
+    # admin dashboard (simple)
+    path('orders/', views.order_history, name='order_history'),
+    path('orders/<int:order_id>/', views.order_detail, name='order_detail'),
+    path('orders/', views.order_list, name='order_list'),
+
+]
+
+    
+    # # Receipts
+    # path("checkout-inline/", views.checkout_inline_view, name="checkout_inline"),  # inline flow
+    # path("paystack/webhook/", views.paystack_webhook, name="paystack_webhook"),
+    # path("receipt/<slug:slug>/", views.receipt_view, name="receipt"),
+
+urlpatterns += [
+    # Storefront
+    path("", views.product_list, name="product_list"),
+    path("add-to-cart/", views.add_to_cart, name="add_to_cart"),
+    path("cart/", views.cart_view, name="cart_view"),  # you'll already have or add cart_view below
+    path("cart/update-qty/", views.cart_update_qty, name="cart_update_qty"),
+    path("cart/remove-item/", views.cart_remove_item, name="cart_remove_item"), path("product/<int:pk>/ajax/", views.product_detail_ajax, name="product_detail_ajax"),
+   
+    path("purchase/history/", views.parent_purchase_history, name="purchase_history_parent"),
+    path("purchase/student/<str:student_reg>/", views.student_purchase_history, name="purchase_history_student"),
+
+    #Student APIs
+    path("api/student/search/", student_api.search_student, name="student_search"),
+    path("api/student/verify/", student_api.verify_student, name="student_verify"),
+
+
+    path('admin/shop/dashboard/', views.shop_dashboard, name="shop_admin_dashboard"),
+    path("admin/dashboard/", views.management_dashboard, name="admin_dashboard"),
+
+    # Paystack
+    path("checkout/inline/init/", views.checkout_inline_init, name="checkout_inline_init"),
+    path("checkout/inline/verify/", views.paystack_verify_inline, name="paystack_verify_inline"),
+    path("paystack/webhook/", views.paystack_webhook, name="paystack_webhook"),
+    path("api/paystack/initialize/", views.api_paystack_initialize, name="api_paystack_init"),
 ]
 
 
-
+   

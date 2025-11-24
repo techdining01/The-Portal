@@ -1,0 +1,26 @@
+pickup_receipt.html
+{% extends "shop_base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container py-4 fade-in">
+
+    <h3 class="mb-3">Pickup Authorization Created</h3>
+
+    <div class="card p-3 shadow-sm">
+        <p><strong>Student:</strong> {{ auth.student.get_full_name }}</p>
+        <p><strong>Class:</strong> {{ auth.student.student_class }}</p>
+        <p><strong>Bearer:</strong> {{ auth.bearer_name }}</p>
+        <p><strong>Phone:</strong> {{ auth.bearer_phone }}</p>
+
+        <p class="mt-3"><strong>Pickup Code:</strong></p>
+        <h2 class="text-primary">{{ auth.code }}</h2>
+
+        <img src="{{ qr_url }}" class="img-fluid mt-3" width="180">
+
+        <a href="{% url 'shop:pickup_pdf' auth.code %}" class="btn btn-success mt-4 w-100">
+            Download PDF Slip
+        </a>
+    </div>
+</div>
+{% endblock %}

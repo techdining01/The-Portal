@@ -1,0 +1,82 @@
+{% extends "shop_base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container py-4 fade-in">
+
+    <h3>Checkout — BrillsPay</h3>
+
+    <div class="card p-3">
+        {% for item in cart_items %}
+            <div class="d-flex justify-content-between border-bottom py-2">
+                <span>{{ item.product.name }} (x{{ item.quantity }})</span>
+                <span>₦{{ item.product.price|floatformat:0 }}</span>
+            </div>
+        {% endfor %}
+
+        <h4 class="mt-3">Total: ₦{{ total|floatformat:0 }}</h4>
+
+        <button onclick="payWithPaystack()" class="btn btn-primary w-100 mt-4">
+            Pay with Paystack
+        </button>
+    </div>
+</div>
+
+<script src="https://js.paystack.co/v1/inline.js"></script>
+
+<script>
+function payWithPaystack() {
+    let handler = PaystackPop.setup({
+        key: '{{ paystack_public_key }}',
+        email: "guest@brillspay.ng",
+        amount: {{ total }} * 100,
+        ref: 'BRILLSPAY_' + Math.floor((Math.random() * 1000000000)),
+
+        callback: function(response){
+            window.location.href = "/shop/checkout/success/?ref=" + response.reference;
+        }
+    });
+
+    handler.openIframe();
+}
+
+async function startInlineCheckout() {
+  const form = document.getElementById("checkoutInlineForm");
+  const fd = new FormData(form);
+  const res = await fetch("{% url 'shop:checkout_inline' %}", {
+    method: "POST",
+    headers: {'X-CSRFToken': '{{ csrf_token }}'},
+    body: fd
+  });
+  const data = await res.json();
+  if (data.error) {
+    alert(data.error);
+    return;
+  }
+  const auth = data.authorization; // contains access_code, authorization_url, reference, etc
+  const orderRef = data.order_reference;
+  // Use Paystack inline
+  const handler = PaystackPop.setup({
+    key: "{{ PAYSTACK_PUBLIC_KEY }}", // render from settings via template context
+    email: auth.customer ? auth.customer.email : form.querySelector("[name='email']").value,
+    amount: auth.amount, // kobo
+    ref: auth.reference || orderRef,
+    callback: function(response){
+      // response.reference
+      // optionally verify transaction server-side by calling a verify endpoint
+      window.location.href = "{% url 'shop:receipt' slug='REPLACE_THIS' %}".replace('REPLACE_THIS', orderRef);
+    },
+    onClose: function(){
+      // animate reverse when popup closes
+      gsap.to(".checkout-card", {y: 20, opacity:0.6, duration:0.4, reverse:true});
+    }
+  });
+  handler.openIframe();
+}
+document.getElementById("paystackInlineBtn").addEventListener("click", function(e){
+  e.preventDefault(); startInlineCheckout();
+});
+</script>
+
+
+{% endblock %}

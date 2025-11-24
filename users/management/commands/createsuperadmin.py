@@ -18,8 +18,8 @@ class Command(BaseCommand):
                 email=email,
                 password=password,
                 role="superadmin",
-                first_name="hassan",
-                last_name="olalekan jamiu",
+                first_name="Janet",
+                last_name="Adeyemo",
                 approved = True
             )
             self.stdout.write(self.style.SUCCESS("✅ Superadmin created."))

@@ -1,0 +1,127 @@
+{% extends 'shop_base.html' %}
+
+{% block title %}Pickup Codes - {{ SCHOOL_NAME }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2 fw-bold text-dark mb-0">Pickup Codes</h1>
+        <a href="{% url 'shop:create_bearer_code' %}" 
+           class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Create New Code
+        </a>
+    </div>
+    
+    {% if bearer_codes %}
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0 py-3">
+            <h2 class="h5 fw-bold text-dark mb-0">My Pickup Codes</h2>
+        </div>
+        
+        <div class="card-body p-0">
+            {% for code in bearer_codes %}
+            <div class="border-bottom p-4">
+                <div class="row align-items-center mb-3">
+                    <div class="col-md-8">
+                        <h3 class="h5 fw-bold text-dark mb-1">
+                            <i class="fas fa-key text-primary me-2"></i>
+                            Code: {{ code.code }}
+                            {% if code.verification_pin %}
+                            <small class="text-muted fw-normal ms-2">PIN: {{ code.verification_pin }}</small>
+                            {% endif %}
+                        </h3>
+                        <p class="text-muted mb-0">
+                            For: {{ code.student.first_name }} {{ code.student.last_name }}
+                            {% if code.additional_children.exists %}
+                            + {{ code.additional_children.count }} other(s)
+                            {% endif %}
+                        </p>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="d-flex justify-content-md-end">
+                            <span class="badge {% if code.status == 'active' and not code.is_expired %}bg-success
+                                {% elif code.status == 'used' %}bg-info
+                                {% elif code.is_expired %}bg-secondary
+                                {% else %}bg-warning{% endif %}">
+                                {% if code.status == 'active' %}
+                                    {% if code.is_expired %}Expired{% else %}Active{% endif %}
+                                {% else %}
+                                    {{ code.get_status_display }}
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-4 mb-2">
+                        <small class="text-muted d-block">Bearer</small>
+                        <strong>{{ code.bearer_name }}</strong>
+                        {% if code.bearer_relationship %}
+                        <small class="text-muted d-block">{{ code.bearer_relationship }}</small>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-4 mb-2">
+                        <small class="text-muted d-block">Pickup Time</small>
+                        <strong>{{ code.pickup_date|date:"M j, Y" }} at {{ code.pickup_time|time:"g:i A" }}</strong>
+                    </div>
+                    
+                    <div class="col-md-4 mb-2">
+                        <small class="text-muted d-block">Children</small>
+                        <strong>{{ code.total_children }} child(ren)</strong>
+                    </div>
+                </div>
+                
+                <!-- Additional Children -->
+                {% if code.additional_children.exists %}
+                <div class="mb-3">
+                    <small class="text-muted d-block mb-2">Additional Children</small>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for child in code.additional_children.all %}
+                        <span class="badge bg-light text-dark">
+                            {{ child.first_name }} {{ child.last_name }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Notes -->
+                {% if code.notes %}
+                <div class="mb-3">
+                    <small class="text-muted d-block mb-1">Notes</small>
+                    <p class="text-muted small mb-0">{{ code.notes }}</p>
+                </div>
+                {% endif %}
+                
+                <div class="d-flex gap-2">
+                    <a href="{% url 'shop:bearer_code_detail' code.code %}" 
+                       class="btn btn-primary btn-sm">
+                        <i class="fas fa-eye me-1"></i>View Details
+                    </a>
+                    
+                    {% if code.qr_code %}
+                    <a href="{{ code.qr_code.url }}" download 
+                       class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-download me-1"></i>Download QR Code
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width: 120px; height: 120px;">
+            <i class="fas fa-users text-muted fs-1"></i>
+        </div>
+        <h3 class="h4 text-dark mb-2">No pickup codes yet</h3>
+        <p class="text-muted mb-4">Create your first pickup code to authorize someone to pick up your child.</p>
+        <a href="{% url 'shop:create_bearer_code' %}" class="btn btn-primary">Create Pickup Code</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

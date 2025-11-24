@@ -1,99 +1,137 @@
+import uuid
+from datetime import timedelta
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
+from django.urls import reverse
 from autoslug import AutoSlugField
 
-User = settings.AUTH_USER_MODEL
+UserModel = settings.AUTH_USER_MODEL
 
-class Item(models.Model):
-    PRODUCT_TYPES = [
-        ('uniform','Uniform'),
+def generate_reference():
+    return uuid.uuid4().hex
+
+def generate_receipt_slug():
+    return uuid.uuid4().hex[:22]
+
+class Category(models.Model):
+    name = models.CharField(max_length=120)
+    slug = models.SlugField(unique=True)
+    description = models.TextField(blank=True, null=True)
+
+    def __str__(self): return self.name
+
+class Product(models.Model):
+    PRODUCT_TYPE_CHOICES = [
+        ('school_fee','School Fee'),
         ('textbook','Textbook'),
-        ('school fee','School Fee'),
+        ('registration_fee','Registration Fee'),
+        ('uniform','Uniform'),
         ('other','Other'),
     ]
-
-    CLASSES = [
-        ('playgroup','Playgroup'),
-        ('kg1','KG 1'),
-        ('kg2','KG 2'),
-        ('nursery1','Nursery 1'),
-        ('nursery2','Nursery 2'),
-        ('nursery3','Nursery 3'),
-        ('pry1','Primary 1'),
-        ('pry2','Primary 2'),
-        ('pry3','Primary 3'),
-        ('pry4','Primary 4'),
-        ('pry5','Primary 5'),
-        ('jss1','JSS 1'),
-        ('jss2','JSS 2'),
-        ('jss3','JSS 3'),
-        ('sss1','SSS 1'),
-        ('sss2','SSS 2'),
-        ('sss3','SSS 3'),
-        ]
-    
-    name = models.CharField(max_length=200)
-    slug = AutoSlugField(populate_from='name', unique=True)    
-    description = models.TextField(blank=True)
-    price = models.DecimalField(max_digits=10, decimal_places=2)  # Naira
-    applicable_class = models.CharField(max_length=20, choices=CLASSES, default='pry1')
-    product_type = models.CharField(max_length=20, choices=PRODUCT_TYPES, default='other')
-    is_active = models.BooleanField(default=True)
+    name = models.CharField(max_length=255)
+    sku = models.CharField(max_length=50, unique=True, blank=True, null=True)
+    product_type = models.CharField(max_length=50, choices=PRODUCT_TYPE_CHOICES)
+    slug = AutoSlugField(populate_from='name', unique=True)
+    image = models.ImageField(upload_to='product/', null=True, blank=True)
+    description = models.TextField(blank=True, null=True)
+    price = models.DecimalField(max_digits=12, decimal_places=2)
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True)
+    in_stock = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    image = models.ImageField(upload_to='shop/', null=True, blank=True)
-    stock = models.PositiveIntegerField(default=0)
 
+    @property
+    def get_image_url(self):
+        if hasattr(self, 'image') and self.image:
+            return self.image.url
+        return '/static/images/default_product.png'
 
-    def in_stock(self):
-        return self.stock > 0
-
-
-    def __str__(self):
-        return self.name
-
+    
+    def __str__(self): return self.name
 
 class Cart(models.Model):
-    # Anonymous carts can store session_key, registered carts link to user
-    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
-    session_key = models.CharField(max_length=120, null=True, blank=True)
+    owner = models.ForeignKey(UserModel, on_delete=models.CASCADE, null=True, blank=True)
+    session_key = models.CharField(max_length=64, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
-        return f"{self.user.get_full_name}'cart created" if self.user.is_authenticated else "anonymous cart"
-    
 class CartItem(models.Model):
-    cart = models.ForeignKey(Cart, related_name='items', on_delete=models.CASCADE)
-    item = models.ForeignKey(Item, on_delete=models.CASCADE)
-    qty = models.PositiveIntegerField(default=1)
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="items")
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)
+    # Link by registration_number (to_field)
+    student = models.ForeignKey(UserModel, on_delete=models.SET_NULL, null=True, blank=True, to_field="registration_number", related_name="student_cart_items")
+    added_at = models.DateTimeField(auto_now_add=True)
 
-    def line_total(self):
-        return self.item.price * self.qty
-    
-    def grand_total(self):
-        return sum(ci.line_total() for ci in self.items.all())
+    class Meta:
+        unique_together = ("cart", "product", "student")
 
-    def __str__(self):
-        return f"{self.cart} got updated"
-    
-    
+    def subtotal(self):
+        return self.product.price * self.quantity
+
 class Order(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
-    reference = models.CharField(max_length=120, unique=True)
-    amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)  # Naira
-    status = models.CharField(max_length=20, default='pending')  # pending, success, failed
+    STATUS = [
+        ('pending','Pending'),
+        ('paid','Paid'),
+        ('failed','Failed'),
+        ('cancelled','Cancelled'),
+    ]
+    reference = models.CharField(max_length=64, unique=True, default=generate_reference)
+    cart = models.ForeignKey(Cart, on_delete=models.SET_NULL, null=True, blank=True)
+    parent = models.ForeignKey(UserModel, on_delete=models.SET_NULL, null=True, blank=True)
+    email = models.EmailField()
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    status = models.CharField(max_length=20, choices=STATUS, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
     paid_at = models.DateTimeField(null=True, blank=True)
+    paystack_payment_ref = models.CharField(max_length=255, blank=True, null=True)
+    receipt_slug = models.SlugField(max_length=80, unique=True, default=generate_receipt_slug)
 
-    def __str__(self):
-        return f"{self.reference} - {self.amount}"
+    def __str__(self): return f"Order {self.reference}"
 
+    def get_receipt_url(self):
+        return reverse("shop:receipt", args=[self.receipt_slug])
 
 class OrderItem(models.Model):
-    order = models.ForeignKey(Order, related_name='order_items', on_delete=models.CASCADE)
-    item = models.ForeignKey(Item, on_delete=models.CASCADE)
-    qty = models.PositiveIntegerField(default=1)
-    price = models.DecimalField(max_digits=10, decimal_places=2)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="order_items")
+    product = models.ForeignKey(Product, on_delete=models.PROTECT)
+    quantity = models.PositiveIntegerField(default=1)
+    unit_price = models.DecimalField(max_digits=12, decimal_places=2)
+    student = models.ForeignKey(UserModel, on_delete=models.SET_NULL, null=True, blank=True, to_field="registration_number", related_name="student_order_items")
 
+    def line_total(self):
+        return self.unit_price * self.quantity
 
+class TransactionBackup(models.Model):
+    order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True, blank=True)
+    paystack_reference = models.CharField(max_length=255, blank=True, null=True)
+    raw_payload = models.JSONField()
+    verified = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class Receipt(models.Model):
+    """
+    Persistent receipt record. Keeps a snapshot of the order data for reporting + PDF generation.
+    """
+    order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name="receipt")
+    created_at = models.DateTimeField(auto_now_add=True)
+    pdf_file = models.FileField(upload_to="receipts/", null=True, blank=True)  # optional store of generated PDF
+    html_snapshot = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"Receipt for {self.order.reference}"
+
+class StudentPurchase(models.Model):
+    """
+    Record of each purchased product assigned to a student (useful for student history / inventory)
+    """
+    order_item = models.OneToOneField(OrderItem, on_delete=models.CASCADE, related_name="student_purchase")
+    student = models.ForeignKey(UserModel, on_delete=models.CASCADE, to_field="registration_number", related_name="purchases")
+    created_at = models.DateTimeField(auto_now_add=True)
+    fulfilled = models.BooleanField(default=False)  # e.g., uniform collected
+    fulfilled_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.student} - {self.order_item.product.name}"
 

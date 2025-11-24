@@ -1,0 +1,89 @@
+{% extends "shop_base.html" %}
+{% block title %}Your Cart - BrillsPay{% endblock %}
+{% block content %}
+{% load static %}
+
+
+<div class="container py-4">
+  <h4>Your Cart</h4>
+  {% if items %}
+  <div class="list-group">
+    {% for it in items %}
+    <div class="list-group-item d-flex align-items-center justify-content-between">
+      <div class="d-flex align-items-center gap-3">
+        <img src="{{ it.product.get_image_url }}" style="width:70px;height:70px;object-fit:cover;border-radius:8px" alt="">
+        <div>
+          <div class="fw-bold">{{ it.product.name }}</div>
+          <div><small>For: {% if it.student %}{{ it.student }}{% else %}Not assigned{% endif %}</small></div>
+        </div>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <input data-item-id="{{ it.id }}" class="form-control form-control-sm qty-input" type="number" value="{{ it.quantity }}" min="1" style="width:80px">
+        <div class="text-end">
+          <div>₦<span class="item-subtotal">{{ it.subtotal|floatformat:2 }}</span></div>
+          <button class="btn btn-sm btn-danger remove-item-btn" data-item-id="{{ it.id }}">Remove</button>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="mt-3 d-flex justify-content-between">
+    <div>
+      <a href="{% url 'shop:product_list' %}" class="btn btn-outline-secondary">Continue shopping</a>
+    </div>
+    <div>
+      <div class="mb-2">Total: ₦<strong id="cart-total">{{ total }}</strong></div>
+      <a href="{% url 'shop:checkout_inline_init' %}" class="btn btn-success">Proceed to Checkout</a>
+    </div>
+  </div>
+  {% else %}
+    <p>Your cart is empty. <a href="{% url 'shop:product_list' %}">Shop now</a></p>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll(".qty-input").forEach(input=>{
+  let timeout;
+  input.addEventListener("input", e=>{
+    clearTimeout(timeout);
+    timeout = setTimeout(async ()=>{
+      const itemId = input.dataset.itemId;
+      const qty = input.value;
+      const data = new URLSearchParams();
+      data.append("item_id", itemId);
+      data.append("quantity", qty);
+      const res = await fetch("{% url 'shop:cart_update_qty' %}", {method:"POST", headers:{'X-CSRFToken':'{{ csrf_token }}'}, body:data});
+      const json = await res.json();
+      if(json.ok){
+        input.closest(".list-group-item").querySelector(".item-subtotal").innerText = parseFloat(json.subtotal).toFixed(2);
+        // update total (you might want to fetch actual total from server)
+        // naive: recalc totals from DOM
+        let total=0;
+        document.querySelectorAll(".item-subtotal").forEach(s => total += parseFloat(s.innerText));
+        document.getElementById("cart-total").innerText = total.toFixed(2);
+      }
+    }, 400);
+  });
+});
+
+document.querySelectorAll(".remove-item-btn").forEach(btn=>{
+  btn.addEventListener("click", async e=>{
+    const itemId = btn.dataset.itemId;
+    const data = new URLSearchParams();
+    data.append("item_id", itemId);
+    const res = await fetch("{% url 'shop:cart_remove_item' %}", {method:"POST", headers:{'X-CSRFToken':'{{ csrf_token }}'}, body:data});
+    const json = await res.json();
+    if(json.ok){
+      btn.closest(".list-group-item").remove();
+      // update total
+      let total=0;
+      document.querySelectorAll(".item-subtotal").forEach(s => total += parseFloat(s.innerText));
+      document.getElementById("cart-total").innerText = total.toFixed(2);
+    }
+  });
+});
+</script>
+{% endblock %}

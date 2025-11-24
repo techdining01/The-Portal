@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BrillsPay - {% block title %}{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet">
+  <style>
+    :root{--brand:#0d6efd}
+    .brand{font-weight:700;color:var(--brand)}
+    .card-animate{transform-origin:center}
+    .mobile-sticky-cart{position:fixed;bottom:16px;right:16px;z-index:9999}
+    @media (max-width:576px){
+      .desktop-only{display:none}
+    }
+  </style>
+  {% block head_extra %}{% endblock %}
+</head>
+<body class="bg-light">
+<nav class="navbar navbar-expand-lg navbar-white bg-white shadow-sm">
+  <div class="container">
+    <a class="navbar-brand brand" href="{% url 'shop:product_list' %}">BrillsPay</a>
+    <div class="ms-auto d-flex align-items-center gap-2">
+      <a href="{% url 'shop:cart_data' %}" class="btn btn-outline-primary btn-sm desktop-only">Cart</a>
+      <button id="mobileCartBtn" class="btn btn-primary btn-sm mobile-only" onclick="window.location.href='{% url 'shop:cart_data' %}'">Cart</button>
+    </div>
+  </div>
+</nav>
+
+<main class="container py-4">
+  {% block content %}{% endblock %}
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.0/gsap.min.js"></script>
+<script>
+  AOS.init({duration:500, once:true});
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>
