@@ -6,16 +6,8 @@ from django.utils import timezone
 
 class Class(models.Model):
 
-    # CLASS_NAME_CHOICES = [
-    #     ("JSS1", "Junior Secondary School 1"),
-    #     ("JSS2", "Junior Secondary School 2"),
-    #     ("JSS3", "Junior Secondary School 3"),
-    #     ("SSS1", "Senior Secondary School 1"),  
-    #     ("SSS2", "Senior Secondary School 2"),
-    #     ("SSS3", "Senior Secondary School 3"),
-    # ]
-
     name = models.CharField(max_length=50, unique=True)  # e.g. JSS1, JSS2
+    is_active = models.BooleanField()
 
     def __str__(self):
         return self.name

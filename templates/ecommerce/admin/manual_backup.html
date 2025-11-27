@@ -1,0 +1,331 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block title %}Create Manual Backup{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-plus-circle"></i> Create Manual Backup
+        </h1>
+        <a href="{% url 'ecommerce:backup_management' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Backups
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Backup Configuration</h6>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- Backup Type -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Backup Type *</label>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check card h-100">
+                                        <input class="form-check-input" type="radio" name="backup_type" 
+                                               id="backup_payment" value="payment" checked>
+                                        <label class="form-check-label card-body" for="backup_payment">
+                                            <h6 class="card-title">
+                                                <i class="fas fa-credit-card text-primary me-2"></i>
+                                                Payment Backup
+                                            </h6>
+                                            <p class="card-text small text-muted mb-0">
+                                                Backup specific payment transactions with complete details
+                                            </p>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check card h-100">
+                                        <input class="form-check-input" type="radio" name="backup_type" 
+                                               id="backup_order" value="order">
+                                        <label class="form-check-label card-body" for="backup_order">
+                                            <h6 class="card-title">
+                                                <i class="fas fa-shopping-cart text-success me-2"></i>
+                                                Order Backup
+                                            </h6>
+                                            <p class="card-text small text-muted mb-0">
+                                                Backup complete order details including items and students
+                                            </p>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Record Selection -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Select Record *</label>
+                            <div id="paymentSelection" class="backup-selection">
+                                <select name="record_id" class="form-select" id="paymentSelect" required>
+                                    <option value="">Select a payment...</option>
+                                    <!-- Payments will be loaded via AJAX -->
+                                </select>
+                                <div class="form-text">
+                                    Choose a payment record to backup
+                                </div>
+                            </div>
+                            <div id="orderSelection" class="backup-selection" style="display: none;">
+                                <select name="record_id" class="form-select" id="orderSelect" disabled>
+                                    <option value="">Select an order...</option>
+                                    <!-- Orders will be loaded via AJAX -->
+                                </select>
+                                <div class="form-text">
+                                    Choose an order record to backup
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Backup Reason -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Backup Reason</label>
+                            <textarea name="reason" class="form-control" rows="3" 
+                                      placeholder="Explain why you're creating this manual backup..."></textarea>
+                            <div class="form-text">
+                                This helps track the purpose of manual backups for audit purposes
+                            </div>
+                        </div>
+
+                        <!-- Backup Options -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Backup Options</label>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" name="include_related" id="include_related" checked>
+                                <label class="form-check-label" for="include_related">
+                                    Include related data (recommended)
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" name="verify_integrity" id="verify_integrity" checked>
+                                <label class="form-check-label" for="verify_integrity">
+                                    Verify data integrity after backup
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="encrypt_data" id="encrypt_data">
+                                <label class="form-check-label" for="encrypt_data">
+                                    Encrypt backup data (additional security)
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Selected Record Preview -->
+                        <div id="recordPreview" class="card bg-light mb-4" style="display: none;">
+                            <div class="card-body">
+                                <h6 class="card-title">Record Preview</h6>
+                                <div id="previewContent">
+                                    <!-- Preview content will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Backup Summary -->
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-info-circle"></i> Backup Summary</h6>
+                            <ul class="mb-0 small">
+                                <li>Backup will be stored in the transaction backups database</li>
+                                <li>Data integrity will be verified using SHA256 checksum</li>
+                                <li>Backup reference will be automatically generated</li>
+                                <li>You will be able to view and verify the backup immediately</li>
+                            </ul>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'ecommerce:backup_management' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-database"></i> Create Backup
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Recent Manual Backups -->
+            <div class="card shadow mt-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-history"></i> Recent Manual Backups
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Reference</th>
+                                    <th>Type</th>
+                                    <th>Record</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for backup in recent_manual_backups %}
+                                <tr>
+                                    <td><code>{{ backup.reference_number }}</code></td>
+                                    <td>{{ backup.get_transaction_type_display }}</td>
+                                    <td>{{ backup.original_id }}</td>
+                                    <td>{{ backup.created_at|date:"M j, Y" }}</td>
+                                    <td>
+                                        <span class="badge bg-success">Active</span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-3">
+                                        No manual backups found
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Load payment and order data
+    loadPayments();
+    loadOrders();
+
+    // Handle backup type change
+    $('input[name="backup_type"]').change(function() {
+        const type = $(this).val();
+        
+        if (type === 'payment') {
+            $('#paymentSelection').show();
+            $('#orderSelection').hide();
+            $('#paymentSelect').prop('disabled', false);
+            $('#orderSelect').prop('disabled', true);
+            $('#orderSelect').val('');
+        } else {
+            $('#paymentSelection').hide();
+            $('#orderSelection').show();
+            $('#paymentSelect').prop('disabled', true);
+            $('#orderSelect').prop('disabled', false);
+            $('#paymentSelect').val('');
+        }
+        
+        $('#recordPreview').hide();
+    });
+
+    // Handle record selection
+    $('#paymentSelect, #orderSelect').change(function() {
+        const type = $('input[name="backup_type"]:checked').val();
+        const recordId = $(this).val();
+        
+        if (recordId) {
+            loadRecordPreview(type, recordId);
+        } else {
+            $('#recordPreview').hide();
+        }
+    });
+});
+
+function loadPayments() {
+    fetch('/ecommerce/api/payments/')
+    .then(response => response.json())
+    .then(data => {
+        const select = $('#paymentSelect');
+        select.empty().append('<option value="">Select a payment...</option>');
+        
+        data.payments.forEach(payment => {
+            select.append(new Option(
+                `${payment.reference} - ₦${payment.amount} - ${payment.status}`,
+                payment.id
+            ));
+        });
+    })
+    .catch(error => {
+        console.error('Error loading payments:', error);
+    });
+}
+
+function loadOrders() {
+    fetch('/ecommerce/api/orders/')
+    .then(response => response.json())
+    .then(data => {
+        const select = $('#orderSelect');
+        select.empty().append('<option value="">Select an order...</option>');
+        
+        data.orders.forEach(order => {
+            select.append(new Option(
+                `${order.order_number} - ₦${order.total_amount} - ${order.status}`,
+                order.id
+            ));
+        });
+    })
+    .catch(error => {
+        console.error('Error loading orders:', error);
+    });
+}
+
+function loadRecordPreview(type, recordId) {
+    fetch(`/ecommerce/api/${type}s/${recordId}/`)
+    .then(response => response.json())
+    .then(data => {
+        const preview = $('#previewContent');
+        preview.empty();
+        
+        if (type === 'payment') {
+            preview.html(`
+                <p><strong>Reference:</strong> ${data.reference}</p>
+                <p><strong>Amount:</strong> ₦${data.amount}</p>
+                <p><strong>Status:</strong> ${data.status}</p>
+                <p><strong>Method:</strong> ${data.payment_method}</p>
+                <p><strong>Order:</strong> ${data.order_number}</p>
+            `);
+        } else {
+            preview.html(`
+                <p><strong>Order Number:</strong> ${data.order_number}</p>
+                <p><strong>Total Amount:</strong> ₦${data.total_amount}</p>
+                <p><strong>Status:</strong> ${data.status}</p>
+                <p><strong>Items:</strong> ${data.items_count}</p>
+                <p><strong>Customer:</strong> ${data.customer_name}</p>
+            `);
+        }
+        
+        $('#recordPreview').show();
+    })
+    .catch(error => {
+        console.error('Error loading record preview:', error);
+        $('#previewContent').html('<p class="text-danger">Error loading record details</p>');
+        $('#recordPreview').show();
+    });
+}
+</script>
+
+<style>
+.backup-selection .form-check.card {
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.backup-selection .form-check-input:checked + .form-check-label.card {
+    border-color: #0d6efd;
+    background-color: #f8f9fa;
+}
+
+.form-check-input {
+    margin-top: 0.5rem;
+}
+</style>
+{% endblock %}

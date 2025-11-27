@@ -1,0 +1,303 @@
+{% extends 'base.html' %}
+
+{% block title %}Register - School E-commerce{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white text-center py-4">
+                    <h3 class="mb-0">
+                        <i class="fas fa-user-plus"></i> Create Account
+                    </h3>
+                    <p class="mb-0 mt-2">Join School E-commerce today</p>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" id="registerForm">
+                        {% csrf_token %}
+                        
+                        <!-- Personal Information -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="id_first_name" class="form-label">First Name *</label>
+                                {{ form.first_name }}
+                                {% if form.first_name.errors %}
+                                <div class="text-danger small">{{ form.first_name.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="id_surname" class="form-label">Surname *</label>
+                                {{ form.surname }}
+                                {% if form.surname.errors %}
+                                <div class="text-danger small">{{ form.surname.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Contact Information -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="id_username" class="form-label">Username *</label>
+                                {{ form.username }}
+                                <div class="form-text">Choose a unique username</div>
+                                {% if form.username.errors %}
+                                <div class="text-danger small">{{ form.username.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="id_email" class="form-label">Email Address *</label>
+                                {{ form.email }}
+                                {% if form.email.errors %}
+                                <div class="text-danger small">{{ form.email.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Password -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="id_password1" class="form-label">Password *</label>
+                                {{ form.password1 }}
+                                <div class="password-requirements">
+                                    <small class="text-muted">
+                                        Your password must contain at least 8 characters, including letters and numbers.
+                                    </small>
+                                </div>
+                                {% if form.password1.errors %}
+                                <div class="text-danger small">{{ form.password1.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="id_password2" class="form-label">Confirm Password *</label>
+                                {{ form.password2 }}
+                                {% if form.password2.errors %}
+                                <div class="text-danger small">{{ form.password2.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Role Selection -->
+                        <div class="mb-4">
+                            <label class="form-label">Account Type *</label>
+                            <div class="row">
+                                <div class="col-md-6 mb-2">
+                                    <div class="form-check card h-100">
+                                        <input class="form-check-input" type="radio" name="role" 
+                                               id="role_parent" value="parent" checked>
+                                        <label class="form-check-label card-body" for="role_parent">
+                                            <h6 class="card-title">
+                                                <i class="fas fa-users text-primary me-2"></i>
+                                                Parent Account
+                                            </h6>
+                                            <p class="card-text small text-muted mb-0">
+                                                For parents managing student payments and purchases
+                                            </p>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <div class="form-check card h-100">
+                                        <input class="form-check-input" type="radio" name="role" 
+                                               id="role_teacher" value="teacher">
+                                        <label class="form-check-label card-body" for="role_teacher">
+                                            <h6 class="card-title">
+                                                <i class="fas fa-chalkboard-teacher text-success me-2"></i>
+                                                Teacher Account
+                                            </h6>
+                                            <p class="card-text small text-muted mb-0">
+                                                For school staff and teachers (requires approval)
+                                            </p>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Terms and Conditions -->
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="agree_terms" required>
+                                <label class="form-check-label" for="agree_terms">
+                                    I agree to the <a href="#" target="_blank">Terms of Service</a> and 
+                                    <a href="#" target="_blank">Privacy Policy</a>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg" id="submitBtn">
+                                <i class="fas fa-user-plus me-2"></i>Create Account
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="text-center mt-4">
+                        <p class="mb-0">
+                            Already have an account? 
+                            <a href="{% url 'login' %}" class="text-decoration-none fw-bold">
+                                Login here
+                            </a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Benefits -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card border-0 bg-light">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">Why Register?</h5>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <i class="fas fa-shopping-cart fa-2x text-primary mb-2"></i>
+                                    <h6>Easy Payments</h6>
+                                    <p class="small">Pay school fees and purchase items securely</p>
+                                </div>
+                                <div class="col-md-4">
+                                    <i class="fas fa-history fa-2x text-success mb-2"></i>
+                                    <h6>Order History</h6>
+                                    <p class="small">Track all your purchases and payments</p>
+                                </div>
+                                <div class="col-md-4">
+                                    <i class="fas fa-bell fa-2x text-warning mb-2"></i>
+                                    <h6>Notifications</h6>
+                                    <p class="small">Get updates on payments and orders</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Add Bootstrap classes to form fields
+    $('input[type="text"], input[type="email"], input[type="password"]').addClass('form-control');
+    
+    // Password strength indicator
+    $('#id_password1').on('input', function() {
+        const password = $(this).val();
+        const strength = checkPasswordStrength(password);
+        updatePasswordStrength(strength);
+    });
+
+    // Form submission handling
+    $('#registerForm').on('submit', function(e) {
+        const password1 = $('#id_password1').val();
+        const password2 = $('#id_password2').val();
+        
+        if (password1 !== password2) {
+            e.preventDefault();
+            showAlert('Passwords do not match!', 'danger');
+            return false;
+        }
+        
+        if (! $('#agree_terms').is(':checked')) {
+            e.preventDefault();
+            showAlert('Please agree to the terms and conditions', 'warning');
+            return false;
+        }
+        
+        // Show loading state
+        $('#submitBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Creating Account...');
+    });
+
+    // Role selection styling
+    $('input[name="role"]').change(function() {
+        $('.form-check.card').removeClass('selected');
+        $(this).closest('.form-check.card').addClass('selected');
+    });
+
+    // Initialize role selection
+    $('input[name="role"]:checked').closest('.form-check.card').addClass('selected');
+});
+
+function checkPasswordStrength(password) {
+    let strength = 0;
+    
+    if (password.length >= 8) strength++;
+    if (password.match(/[a-z]/) && password.match(/[A-Z]/)) strength++;
+    if (password.match(/\d/)) strength++;
+    if (password.match(/[^a-zA-Z\d]/)) strength++;
+    
+    return strength;
+}
+
+function updatePasswordStrength(strength) {
+    const indicator = $('#passwordStrength');
+    
+    if (!indicator.length) {
+        $('#id_password1').after('<div class="password-strength mt-2"><div class="progress" style="height: 5px;"><div class="progress-bar" id="passwordStrength"></div></div><small class="text-muted" id="passwordText"></small></div>');
+    }
+    
+    const strengthText = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong'];
+    const strengthColors = ['danger', 'danger', 'warning', 'info', 'success'];
+    
+    $('#passwordStrength')
+        .css('width', (strength * 25) + '%')
+        .removeClass('bg-danger bg-warning bg-info bg-success')
+        .addClass('bg-' + strengthColors[strength]);
+    
+    $('#passwordText')
+        .text('Password Strength: ' + strengthText[strength])
+        .removeClass('text-danger text-warning text-info text-success')
+        .addClass('text-' + strengthColors[strength]);
+}
+
+function showAlert(message, type) {
+    const alert = $('<div class="alert alert-' + type + ' alert-dismissible fade show" role="alert">' +
+                   '<i class="fas fa-exclamation-circle me-2"></i>' + message +
+                   '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
+                   '</div>');
+    
+    $('#registerForm').prepend(alert);
+    
+    // Auto dismiss after 5 seconds
+    setTimeout(function() {
+        alert.alert('close');
+    }, 5000);
+}
+</script>
+
+<style>
+.form-check.card {
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.form-check.card.selected {
+    border-color: #198754;
+    background-color: #f8fff9;
+}
+
+.form-check-input {
+    margin-top: 0.5rem;
+}
+
+.password-strength {
+    margin-top: 0.5rem;
+}
+
+.alert {
+    border-radius: 10px;
+}
+
+.card {
+    border-radius: 15px;
+}
+
+.btn-success {
+    border-radius: 10px;
+    padding: 12px;
+    font-weight: 600;
+}
+</style>
+{% endblock %}

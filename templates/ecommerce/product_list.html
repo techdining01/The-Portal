@@ -1,0 +1,169 @@
+{% extends 'shop_base.html' %}
+
+{% block title %}Products - School E-commerce{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <!-- Filters Sidebar -->
+        <div class="col-md-3">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-filter"></i> Filters</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Search -->
+                    <form method="get" class="mb-3">
+                        <div class="input-group">
+                            <input type="text" name="search" class="form-control" placeholder="Search products..." value="{{ request.GET.search }}">
+                            <button class="btn btn-outline-primary" type="submit">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Categories -->
+                    <h6>Categories</h6>
+                    <div class="list-group mb-3">
+                        <a href="{% url 'ecommerce:product_list' %}" 
+                           class="list-group-item list-group-item-action {% if not request.GET.category %}active{% endif %}">
+                            All Categories
+                        </a>
+                        {% for category in categories %}
+                        <a href="?category={{ category.id }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" 
+                           class="list-group-item list-group-item-action {% if request.GET.category == category.id|stringformat:'i' %}active{% endif %}">
+                            {{ category.name }}
+                        </a>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Product Types -->
+                    <h6>Product Types</h6>
+                    <div class="list-group mb-3">
+                        <a href="{% url 'ecommerce:product_list' %}" 
+                           class="list-group-item list-group-item-action {% if not request.GET.type %}active{% endif %}">
+                            All Types
+                        </a>
+                        {% for type_code, type_name in product_types %}
+                        <a href="?type={{ type_code }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" 
+                           class="list-group-item list-group-item-action {% if request.GET.type == type_code %}active{% endif %}">
+                            {{ type_name }}
+                        </a>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Classes -->
+                    <h6>Classes</h6>
+                    <div class="list-group">
+                        <a href="{% url 'ecommerce:product_list' %}" 
+                           class="list-group-item list-group-item-action {% if not request.GET.class %}active{% endif %}">
+                            All Classes
+                        </a>
+                        {% for class in classes %}
+                        <a href="?class={{ class.id }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" 
+                           class="list-group-item list-group-item-action {% if request.GET.class == class.id|stringformat:'i' %}active{% endif %}">
+                            {{ class.name }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Products Grid -->
+        <div class="col-md-9">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Available Products</h2>
+                <div>
+                    <a href="{% url 'ecommerce:cart_view' %}" class="btn btn-primary">
+                        <i class="fas fa-shopping-cart"></i> View Cart
+                        {% if cart_count > 0 %}
+                        <span class="badge bg-danger">{{ cart_count }}</span>
+                        {% endif %}
+                    </a>
+                </div>
+            </div>
+
+            <!-- Products Grid -->
+            <div class="row">
+                {% for product in products %}
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card product-card h-100">
+                        {% if product.image %}
+                        <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}" style="height: 200px; object-fit: cover;">
+                        {% else %}
+                        <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                            <i class="fas fa-image fa-3x text-muted"></i>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="card-body">
+                            <h5 class="card-title">{{ product.name }}</h5>
+                            <p class="card-text text-muted">{{ product.description|truncatewords:20 }}</p>
+                            
+                            <div class="mb-2">
+                                <span class="badge bg-info">{{ product.get_product_type_display }}</span>
+                                <span class="badge bg-secondary">{{ product.category.name }}</span>
+                                {% if product.track_stock %}
+                                    {% if product.is_low_stock %}
+                                    <span class="badge badge-low-stock">Low Stock</span>
+                                    {% endif %}
+                                    {% if not product.in_stock %}
+                                    <span class="badge badge-out-of-stock">Out of Stock</span>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                            
+                            <h4 class="text-primary">₦{{ product.price }}</h4>
+                            
+                            {% if product.applicable_class %}
+                            <p class="text-muted small">For: {{ product.applicable_class.name }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="card-footer">
+                            <a href="{% url 'ecommerce:product_detail' product.id %}" class="btn btn-primary w-100">
+                                <i class="fas fa-info-circle"></i> View Details
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <div class="alert alert-info text-center">
+                        <h4>No products found</h4>
+                        <p>Try adjusting your search filters.</p>
+                        <a href="{% url 'ecommerce:product_list' %}" class="btn btn-primary">Clear Filters</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                    <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                        <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                    </li>
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

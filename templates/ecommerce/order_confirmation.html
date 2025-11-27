@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+
+{% block title %}Order Confirmation - #{{ order.order_number }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header {% if order.status == 'paid' %}bg-success{% else %}bg-warning{% endif %} text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-receipt"></i> 
+                        Order #{{ order.order_number }} 
+                        <span class="badge bg-light text-dark float-end">{{ order.get_status_display }}</span>
+                    </h4>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Payment Status Alert -->
+                    {% if order.status == 'paid' %}
+                    <div class="alert alert-success">
+                        <h5><i class="fas fa-check-circle"></i> Payment Confirmed!</h5>
+                        <p class="mb-0">Your payment has been successfully processed. Thank you for your purchase!</p>
+                    </div>
+                    {% elif order.status == 'processing' %}
+                    <div class="alert alert-info">
+                        <h5><i class="fas fa-sync-alt fa-spin"></i> Processing Payment</h5>
+                        <p class="mb-0">
+                            Your payment is being processed. This may take a few moments. 
+                            You will receive an email confirmation shortly.
+                        </p>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <h5><i class="fas fa-clock"></i> Payment Pending</h5>
+                        <p class="mb-0">
+                            Your payment is being verified. Please wait a moment or refresh the page.
+                        </p>
+                    </div>
+                    {% endif %}
+
+                    <!-- Order Details -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Order Information</h5>
+                            <p><strong>Order Number:</strong> {{ order.order_number }}</p>
+                            <p><strong>Order Date:</strong> {{ order.created_at|date:"F j, Y, g:i a" }}</p>
+                            <p><strong>Total Amount:</strong> ₦{{ order.total_amount }}</p>
+                            {% if order.paid_at %}
+                            <p><strong>Paid At:</strong> {{ order.paid_at|date:"F j, Y, g:i a" }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h5>Payment Method</h5>
+                            <p>{{ order.get_payment_method_display }}</p>
+                            
+                            {% if order.payment_reference %}
+                            <p><strong>Reference:</strong> {{ order.payment_reference }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Order Items -->
+                    <h5 class="mt-4">Items Purchased</h5>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Student</th>
+                                    <th>Quantity</th>
+                                    <th class="text-end">Price</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in order.items.all %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ item.product.name }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ item.product.get_product_type_display }}</small>
+                                    </td>
+                                    <td>{{ item.student.get_full_name }}</td>
+                                    <td>{{ item.quantity }}</td>
+                                    <td class="text-end">₦{{ item.price }}</td>
+                                    <td class="text-end">₦{{ item.total_price }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="4" class="text-end"><strong>Total:</strong></td>
+                                    <td class="text-end"><strong>₦{{ order.total_amount }}</strong></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <!-- Billing Information -->
+                    {% if order.billing_address %}
+                    <div class="mt-4">
+                        <h5>Billing Information</h5>
+                        <p><strong>Address:</strong> {{ order.billing_address }}</p>
+                        {% if order.billing_phone %}
+                        <p><strong>Phone:</strong> {{ order.billing_phone }}</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Action Buttons -->
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        {% if order.status != 'paid' %}
+                        <button onclick="window.location.reload()" class="btn btn-primary me-md-2">
+                            <i class="fas fa-sync-alt"></i> Refresh Status
+                        </button>
+                        {% endif %}
+                        
+                        <a href="{% url 'ecommerce:order_detail' order.id %}" class="btn btn-outline-primary me-md-2">
+                            <i class="fas fa-eye"></i> View Details
+                        </a>
+                        
+                        <a href="{% url 'ecommerce:product_list' %}" class="btn btn-success">
+                            <i class="fas fa-shopping-cart"></i> Continue Shopping
+                        </a>
+                    </div>
+
+                    <!-- Auto-refresh for pending payments -->
+                    {% if order.status != 'paid' %}
+                    <script>
+                        // Auto-refresh every 10 seconds for pending payments
+                        setTimeout(function() {
+                            window.location.reload();
+                        }, 10000);
+                    </script>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Support Information -->
+            <div class="card mt-4">
+                <div class="card-body text-center">
+                    <h5>Need Help?</h5>
+                    <p class="text-muted">
+                        If you have any questions about your order, please contact our support team.
+                    </p>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <i class="fas fa-phone text-primary"></i>
+                            <strong>Phone Support</strong>
+                            <p>+234-XXX-XXXX-XXX</p>
+                        </div>
+                        <div class="col-md-6">
+                            <i class="fas fa-envelope text-primary"></i>
+                            <strong>Email Support</strong>
+                            <p>support@schoolcommerce.com</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

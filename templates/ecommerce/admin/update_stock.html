@@ -1,0 +1,173 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block title %}Update Stock - {{ product.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-boxes"></i> Update Stock
+        </h1>
+        <a href="{% url 'ecommerce:admin_products' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Products
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Stock Management</h6>
+                </div>
+                <div class="card-body">
+                    <!-- Product Info -->
+                    <div class="row mb-4">
+                        <div class="col-3">
+                            {% if product.image %}
+                            <img src="{{ product.image.url }}" alt="{{ product.name }}" 
+                                 class="img-fluid rounded">
+                            {% else %}
+                            <div class="bg-light rounded d-flex align-items-center justify-content-center" 
+                                 style="width: 80px; height: 80px;">
+                                <i class="fas fa-image text-muted"></i>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-9">
+                            <h5>{{ product.name }}</h5>
+                            <p class="text-muted mb-1">SKU: {{ product.sku }}</p>
+                            <p class="text-muted mb-0">Category: {{ product.category.name }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Current Stock Status -->
+                    <div class="alert 
+                        {% if product.is_low_stock %}alert-warning
+                        {% elif not product.in_stock %}alert-danger
+                        {% else %}alert-success{% endif %}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>Current Stock:</strong> {{ product.stock_quantity }} units
+                            </div>
+                            <div>
+                                {% if product.is_low_stock %}
+                                <span class="badge bg-warning">Low Stock</span>
+                                {% elif not product.in_stock %}
+                                <span class="badge bg-danger">Out of Stock</span>
+                                {% else %}
+                                <span class="badge bg-success">In Stock</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if product.track_stock %}
+                        <small class="d-block mt-1">
+                            Low stock threshold: {{ product.low_stock_threshold }} units
+                        </small>
+                        {% endif %}
+                    </div>
+
+                    <!-- Stock Update Form -->
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label">New Stock Quantity *</label>
+                            {{ form.new_stock }}
+                            {% if form.new_stock.errors %}
+                            <div class="text-danger">{{ form.new_stock.errors }}</div>
+                            {% endif %}
+                            <div class="form-text">
+                                Enter the new total quantity in stock
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Reason for Update (Optional)</label>
+                            {{ form.reason }}
+                            <div class="form-text">
+                                E.g., "New shipment received", "Stock count correction", etc.
+                            </div>
+                        </div>
+
+                        <!-- Stock Change Preview -->
+                        <div class="card bg-light mb-4">
+                            <div class="card-body">
+                                <h6 class="card-title">Stock Change Preview</h6>
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <small class="text-muted">Current</small>
+                                        <div class="h5">{{ product.stock_quantity }}</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <small class="text-muted">Change</small>
+                                        <div class="h5" id="stock-change">0</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <small class="text-muted">New Total</small>
+                                        <div class="h5" id="new-total">{{ product.stock_quantity }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'ecommerce:admin_products' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Update Stock
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Recent Stock History -->
+            <div class="card shadow mt-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-history"></i> Recent Stock Changes
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted text-center">
+                        <i>Stock history feature coming soon</i>
+                    </p>
+                    <!-- You can implement stock history logging here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    function updateStockPreview() {
+        const currentStock = {{ product.stock_quantity }};
+        const newStock = parseInt($('#{{ form.new_stock.id_for_label }}').val()) || 0;
+        const change = newStock - currentStock;
+        
+        $('#stock-change').text(change >= 0 ? `+${change}` : change);
+        $('#new-total').text(newStock);
+        
+        // Update color based on change
+        const changeElement = $('#stock-change');
+        changeElement.removeClass('text-success text-danger');
+        if (change > 0) {
+            changeElement.addClass('text-success');
+        } else if (change < 0) {
+            changeElement.addClass('text-danger');
+        }
+    }
+    
+    // Initial update
+    updateStockPreview();
+    
+    // Update on input change
+    $('#{{ form.new_stock.id_for_label }}').on('input', updateStockPreview);
+});
+</script>
+{% endblock %}

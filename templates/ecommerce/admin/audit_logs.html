@@ -1,0 +1,477 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block title %}Audit Logs{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-clipboard-list"></i> Audit Logs
+        </h1>
+        <div class="btn-group">
+            <button class="btn btn-outline-primary" onclick="window.location.reload()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+            <button class="btn btn-outline-secondary" onclick="exportAuditLogs()">
+                <i class="fas fa-download"></i> Export
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Action Type</label>
+                    <select name="action_type" class="form-select">
+                        <option value="">All Actions</option>
+                        {% for action_code, action_name in action_types %}
+                        <option value="{{ action_code }}" {% if request.GET.action_type == action_code %}selected{% endif %}>
+                            {{ action_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">User</label>
+                    <select name="user" class="form-select">
+                        <option value="">All Users</option>
+                        <!-- Users would be populated via AJAX -->
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Date From</label>
+                    <input type="date" name="date_from" class="form-control" value="{{ request.GET.date_from }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Date To</label>
+                    <input type="date" name="date_to" class="form-control" value="{{ request.GET.date_to }}">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-filter"></i> Apply Filters
+                    </button>
+                    <a href="{% url 'ecommerce:audit_logs' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i> Clear Filters
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Audit Logs Table -->
+    <div class="card shadow">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">
+                Audit Trail ({{ page_obj.paginator.count }} records)
+            </h6>
+            <div class="text-muted small">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Action</th>
+                            <th>User</th>
+                            <th>Table</th>
+                            <th>Record ID</th>
+                            <th>Description</th>
+                            <th>IP Address</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in page_obj %}
+                        <tr>
+                            <td>
+                                <small>
+                                    {{ log.created_at|date:"M j, Y" }}<br>
+                                    <span class="text-muted">{{ log.created_at|date:"g:i:s A" }}</span>
+                                </small>
+                            </td>
+                            <td>
+                                <span class="badge 
+                                    {% if log.action_type == 'create' %}bg-success
+                                    {% elif log.action_type == 'update' %}bg-warning
+                                    {% elif log.action_type == 'delete' %}bg-danger
+                                    {% elif log.action_type == 'payment' %}bg-info
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ log.get_action_type_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if log.user %}
+                                <div>
+                                    <strong>{{ log.user.get_full_name|default:log.user.username }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ log.user.email }}</small>
+                                </div>
+                                {% else %}
+                                <span class="text-muted">System</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <code>{{ log.table_name }}</code>
+                            </td>
+                            <td>
+                                <small>{{ log.record_id }}</small>
+                            </td>
+                            <td>
+                                <div class="log-description">
+                                    {{ log.description|default:"-" }}
+                                    {% if log.reference %}
+                                    <br>
+                                    <small class="text-muted">Ref: {{ log.reference }}</small>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <small>
+                                    {% if log.user_ip %}
+                                    <code>{{ log.user_ip }}</code>
+                                    {% else %}
+                                    <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </small>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary" 
+                                            onclick="viewLogDetails({{ log.id }})"
+                                            title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    {% if log.old_values or log.new_values %}
+                                    <button class="btn btn-outline-info" 
+                                            onclick="viewChanges({{ log.id }})"
+                                            title="View Changes">
+                                        <i class="fas fa-code-compare"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-4">
+                                <i class="fas fa-clipboard-list fa-2x text-muted mb-2"></i>
+                                <p class="text-muted">No audit logs found</p>
+                                {% if request.GET.action_type or request.GET.user or request.GET.date_from %}
+                                <a href="{% url 'ecommerce:audit_logs' %}" class="btn btn-primary">
+                                    Clear Filters
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            Previous
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                {{ num }}
+                            </a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            Next
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h4>{{ page_obj.paginator.count }}</h4>
+                    <p class="mb-0">Total Logs</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h4>{{ page_obj.object_list|dictsort:"action_type"|first }}</h4>
+                    <p class="mb-0">Creates</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <h4>{{ page_obj.object_list|dictsortreversed:"action_type"|first }}</h4>
+                    <p class="mb-0">Updates</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h4>{{ page_obj.object_list|dictsort:"user"|first }}</h4>
+                    <p class="mb-0">Unique Users</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Log Details Modal -->
+<div class="modal fade" id="logDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Audit Log Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="logDetailsContent">
+                <!-- Content loaded via AJAX -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Changes Modal -->
+<div class="modal fade" id="changesModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Field Changes</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="changesContent">
+                <!-- Content loaded via AJAX -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function viewLogDetails(logId) {
+    fetch(`/ecommerce/api/audit-logs/${logId}/`)
+    .then(response => response.json())
+    .then(data => {
+        const content = document.getElementById('logDetailsContent');
+        content.innerHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <table class="table table-sm">
+                        <tr>
+                            <th>Timestamp:</th>
+                            <td>${data.created_at}</td>
+                        </tr>
+                        <tr>
+                            <th>Action:</th>
+                            <td>
+                                <span class="badge ${getActionBadgeClass(data.action_type)}">
+                                    ${data.action_type_display}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>User:</th>
+                            <td>${data.user_name || 'System'}</td>
+                        </tr>
+                        <tr>
+                            <th>IP Address:</th>
+                            <td>${data.user_ip || 'N/A'}</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <table class="table table-sm">
+                        <tr>
+                            <th>Table:</th>
+                            <td><code>${data.table_name}</code></td>
+                        </tr>
+                        <tr>
+                            <th>Record ID:</th>
+                            <td>${data.record_id}</td>
+                        </tr>
+                        <tr>
+                            <th>Reference:</th>
+                            <td>${data.reference || 'N/A'}</td>
+                        </tr>
+                        <tr>
+                            <th>User Agent:</th>
+                            <td><small class="text-muted">${data.user_agent || 'N/A'}</small></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <div class="mt-3">
+                <h6>Description:</h6>
+                <p class="bg-light p-3 rounded">${data.description || 'No description provided'}</p>
+            </div>
+            ${data.changed_fields ? `
+            <div class="mt-3">
+                <h6>Changed Fields:</h6>
+                <div class="bg-light p-3 rounded">
+                    ${data.changed_fields.join(', ')}
+                </div>
+            </div>
+            ` : ''}
+        `;
+        
+        const modal = new bootstrap.Modal(document.getElementById('logDetailsModal'));
+        modal.show();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error loading log details');
+    });
+}
+
+function viewChanges(logId) {
+    fetch(`/ecommerce/api/audit-logs/${logId}/changes/`)
+    .then(response => response.json())
+    .then(data => {
+        const content = document.getElementById('changesContent');
+        
+        let changesHtml = '';
+        
+        if (data.old_values && data.new_values) {
+            changesHtml = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Old Values</h6>
+                        <pre class="bg-light p-3 rounded" style="max-height: 400px; overflow-y: auto;"><code>${JSON.stringify(data.old_values, null, 2)}</code></pre>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>New Values</h6>
+                        <pre class="bg-light p-3 rounded" style="max-height: 400px; overflow-y: auto;"><code>${JSON.stringify(data.new_values, null, 2)}</code></pre>
+                    </div>
+                </div>
+            `;
+        } else if (data.old_values) {
+            changesHtml = `
+                <div class="alert alert-info">
+                    <h6>Deleted Record Data</h6>
+                    <pre class="bg-light p-3 rounded" style="max-height: 400px; overflow-y: auto;"><code>${JSON.stringify(data.old_values, null, 2)}</code></pre>
+                </div>
+            `;
+        } else if (data.new_values) {
+            changesHtml = `
+                <div class="alert alert-success">
+                    <h6>Created Record Data</h6>
+                    <pre class="bg-light p-3 rounded" style="max-height: 400px; overflow-y: auto;"><code>${JSON.stringify(data.new_values, null, 2)}</code></pre>
+                </div>
+            `;
+        } else {
+            changesHtml = '<p class="text-muted">No change data available</p>';
+        }
+        
+        content.innerHTML = changesHtml;
+        const modal = new bootstrap.Modal(document.getElementById('changesModal'));
+        modal.show();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error loading changes data');
+    });
+}
+
+function getActionBadgeClass(actionType) {
+    const classes = {
+        'create': 'bg-success',
+        'update': 'bg-warning',
+        'delete': 'bg-danger',
+        'payment': 'bg-info',
+        'refund': 'bg-warning',
+        'status_change': 'bg-primary',
+        'default': 'bg-secondary'
+    };
+    return classes[actionType] || classes['default'];
+}
+
+function exportAuditLogs() {
+    const params = new URLSearchParams(window.location.search);
+    params.set('format', 'csv');
+    
+    const exportUrl = `{% url 'ecommerce:audit_logs' %}?${params.toString()}`;
+    window.location.href = exportUrl;
+}
+
+// Load users for filter
+$(document).ready(function() {
+    fetch('/ecommerce/api/users/')
+    .then(response => response.json())
+    .then(data => {
+        const select = $('select[name="user"]');
+        data.users.forEach(user => {
+            select.append(new Option(
+                `${user.name} (${user.email})`,
+                user.id
+            ));
+        });
+        
+        // Set selected value if present in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const selectedUser = urlParams.get('user');
+        if (selectedUser) {
+            select.val(selectedUser);
+        }
+    })
+    .catch(error => {
+        console.error('Error loading users:', error);
+    });
+});
+</script>
+
+<style>
+.log-description {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+    .log-description {
+        max-width: 150px;
+    }
+}
+</style>
+{% endblock %}

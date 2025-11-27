@@ -1,0 +1,129 @@
+school_ecommerce/
+├── manage.py
+├── requirements.txt
+├── .env
+├── .gitignore
+├── README.md
+├── school_ecommerce/
+│   ├── __init__.py
+│   ├── settings.py
+│   ├── urls.py
+│   ├── wsgi.py
+│   └── asgi.py
+├── ecommerce/
+│   ├── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── models.py
+│   ├── views.py
+│   ├── urls.py
+│   ├── forms.py
+│   ├── paystack_service.py
+│   ├── webhook_handlers.py
+│   ├── backup_service.py
+│   ├── signals.py
+│   ├── context_processors.py
+│   ├── migrations/
+│   │   ├── __init__.py
+│   │   ├── 0001_initial.py
+│   │   ├── 0002_payment_backup_system.py
+│   │   └── ...
+│   └── tests/
+│       ├── __init__.py
+│       ├── test_models.py
+│       ├── test_views.py
+│       └── test_payments.py
+├── users/
+│   ├── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── models.py
+│   ├── views.py
+│   ├── urls.py
+│   ├── forms.py
+│   ├── migrations/
+│   │   ├── __init__.py
+│   │   ├── 0001_initial.py
+│   │   └── ...
+│   └── tests/
+│       ├── __init__.py
+│       └── test_models.py
+├── templates/
+│   ├── base.html
+│   ├── admin/
+│   │   ├── base_admin.html
+│   │   ├── dashboard.html
+│   │   ├── products.html
+│   │   ├── product_form.html
+│   │   ├── update_stock.html
+│   │   ├── orders.html
+│   │   ├── categories.html
+│   │   ├── backup_management.html
+│   │   ├── view_backup.html
+│   │   ├── manual_backup.html
+│   │   └── audit_logs.html
+│   ├── ecommerce/
+│   │   ├── product_list.html
+│   │   ├── product_detail.html
+│   │   ├── cart.html
+│   │   ├── checkout.html
+│   │   ├── payment.html
+│   │   ├── manual_payment.html
+│   │   ├── order_confirmation.html
+│   │   ├── order_history.html
+│   │   ├── order_detail.html
+│   │   └── emails/
+│   │       ├── payment_confirmation.html
+│   │       └── payment_confirmation.txt
+│   └── users/
+│       ├── login.html
+│       ├── register.html
+│       ├── profile.html
+│       └── password_reset.html
+├── static/
+│   ├── css/
+│   │   ├── style.css
+│   │   └── admin.css
+│   ├── js/
+│   │   ├── main.js
+│   │   ├── cart.js
+│   │   └── admin.js
+│   ├── images/
+│   │   ├── logo.png
+│   │   └── favicon.ico
+│   └── vendor/
+│       ├── bootstrap/
+│       ├── fontawesome/
+│       └── jquery/
+├── media/
+│   ├── profiles/
+│   │   ├── default_profile.png
+│   │   └── ...
+│   ├── signatures/
+│   │   └── ...
+│   ├── products/
+│   │   └── ...
+│   ├── payment_proofs/
+│   │   └── ...
+│   └── backups/
+│       └── ...
+├── logs/
+│   ├── django.log
+│   ├── payments.log
+│   ├── webhooks.log
+│   └── backups.log
+├── backups/
+│   ├── database/
+│   │   ├── backup_20240101.sql
+│   │   └── ...
+│   ├── transactions/
+│   │   ├── transactions_20240101.json
+│   │   └── ...
+│   └── audit/
+│       ├── audit_logs_20240101.json
+│       └── ...
+└── docs/
+    ├── setup.md
+    ├── deployment.md
+    ├── api.md
+    └── backup_procedures.md

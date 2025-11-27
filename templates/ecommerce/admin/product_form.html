@@ -1,0 +1,217 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-{% if product %}edit{% else %}plus{% endif %}"></i> {{ title }}
+        </h1>
+        <a href="{% url 'ecommerce:admin_products' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Products
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Product Details</h6>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <!-- Basic Information -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <h6 class="border-bottom pb-2">Basic Information</h6>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Product Name *</label>
+                                    {{ form.name }}
+                                    {% if form.name.errors %}
+                                    <div class="text-danger">{{ form.name.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Category *</label>
+                                    {{ form.category }}
+                                    {% if form.category.errors %}
+                                    <div class="text-danger">{{ form.category.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Product Type *</label>
+                                    {{ form.product_type }}
+                                    {% if form.product_type.errors %}
+                                    <div class="text-danger">{{ form.product_type.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Price (₦) *</label>
+                                    {{ form.price }}
+                                    {% if form.price.errors %}
+                                    <div class="text-danger">{{ form.price.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <h6 class="border-bottom pb-2">Additional Information</h6>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Applicable Class</label>
+                                    {{ form.applicable_class }}
+                                    <div class="form-text">
+                                        For school fees - select which class this applies to
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">SKU</label>
+                                    {{ form.sku }}
+                                    <div class="form-text">
+                                        Leave blank to auto-generate
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Product Image</label>
+                                    {{ form.image }}
+                                    {% if product.image %}
+                                    <div class="mt-2">
+                                        <img src="{{ product.image.url }}" alt="{{ product.name }}" 
+                                             style="max-width: 100px; max-height: 100px;" class="rounded">
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="form-check form-switch mb-3">
+                                    {{ form.is_available }}
+                                    <label class="form-check-label" for="{{ form.is_available.id_for_label }}">
+                                        Product is available for purchase
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Description -->
+                        <div class="mb-4">
+                            <label class="form-label">Description</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                            <div class="text-danger">{{ form.description.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Inventory Management -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="border-bottom pb-2">Inventory Management</h6>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-check form-switch mb-3">
+                                    {{ form.track_stock }}
+                                    <label class="form-check-label" for="{{ form.track_stock.id_for_label }}">
+                                        Track stock for this product
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Stock Quantity</label>
+                                    {{ form.stock_quantity }}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Low Stock Threshold</label>
+                                    {{ form.low_stock_threshold }}
+                                    <div class="form-text">
+                                        Alert when stock reaches this level
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'ecommerce:admin_products' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> 
+                                {% if product %}Update Product{% else %}Create Product{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Help Card -->
+        <div class="col-lg-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-info-circle"></i> Product Guidelines
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <h6>Product Types:</h6>
+                    <ul class="small">
+                        <li><strong>School Fee:</strong> For tuition and school fees</li>
+                        <li><strong>Registration:</strong> Registration forms and fees</li>
+                        <li><strong>Uniform:</strong> School uniforms and attire</li>
+                        <li><strong>Textbook:</strong> Books and learning materials</li>
+                        <li><strong>Stationery:</strong> Writing materials and supplies</li>
+                        <li><strong>Other:</strong> Miscellaneous items</li>
+                    </ul>
+                    
+                    <h6 class="mt-3">Stock Management:</h6>
+                    <ul class="small">
+                        <li>Enable stock tracking for physical products</li>
+                        <li>Set low stock threshold for alerts</li>
+                        <li>For digital products (like fees), disable stock tracking</li>
+                    </ul>
+                    
+                    <h6 class="mt-3">Image Guidelines:</h6>
+                    <ul class="small">
+                        <li>Recommended size: 500x500 pixels</li>
+                        <li>Supported formats: JPG, PNG, WebP</li>
+                        <li>Max file size: 5MB</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Show/hide stock fields based on track_stock checkbox
+    function toggleStockFields() {
+        const trackStock = $('#{{ form.track_stock.id_for_label }}').is(':checked');
+        $('#{{ form.stock_quantity.id_for_label }}').closest('.mb-3').toggle(trackStock);
+        $('#{{ form.low_stock_threshold.id_for_label }}').closest('.mb-3').toggle(trackStock);
+    }
+    
+    // Initial toggle
+    toggleStockFields();
+    
+    // Bind change event
+    $('#{{ form.track_stock.id_for_label }}').change(toggleStockFields);
+});
+</script>
+{% endblock %}

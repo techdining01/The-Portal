@@ -2,7 +2,7 @@
 from django.core.management.base import BaseCommand
 from django.utils.text import slugify
 from decimal import Decimal
-from shop.models import Category, Product
+from ecommerce.models import Category, Product
 import random
 
 class Command(BaseCommand):

@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.urls import reverse
 from .models import PickupAuthorization
 from django.contrib.auth import get_user_model
-from shop.models import StudentPurchase
+from ecommerce.models import StudentFeePayment, TransactionBackup
 
 User = get_user_model()
 
@@ -16,7 +16,7 @@ User = get_user_model()
 def create_pickup_view(request):
     """
     POST (AJAX): { student_reg, bearer_name, bearer_phone, optionally signature (file) }
-    Returns JSON with code and verify_url
+    Returns JSON with code and verify_url,
     """
     if request.method != "POST":
         return JsonResponse({"error":"POST only"}, status=405)

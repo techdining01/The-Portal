@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block title %}Manual Payment - Order #{{ order.order_number }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-warning">
+                    <h4 class="mb-0">
+                        <i class="fas fa-university"></i> Bank Transfer Payment
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Bank Transfer Instructions -->
+                    <div class="alert alert-info">
+                        <h5>Bank Transfer Instructions</h5>
+                        <p>Please transfer the exact amount to the bank account below:</p>
+                        
+                        <div class="bank-details p-3 bg-light rounded mt-3">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Bank Name:</strong> {{ bank_details.bank_name }}</p>
+                                    <p><strong>Account Name:</strong> {{ bank_details.account_name }}</p>
+                                    <p><strong>Account Number:</strong> {{ bank_details.account_number }}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Amount:</strong> ₦{{ bank_details.amount }}</p>
+                                    <p><strong>Reference:</strong> {{ bank_details.reference }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <p class="mt-3 mb-0">
+                            <strong>Important:</strong> Please use the exact reference number above so we can identify your payment.
+                        </p>
+                    </div>
+
+                    <!-- Payment Details Form -->
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <h5 class="mb-3">Payment Confirmation</h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Transfer Date *</label>
+                                {{ form.transfer_date }}
+                                {% if form.transfer_date.errors %}
+                                <div class="text-danger">
+                                    {{ form.transfer_date.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Transfer Reference Number *</label>
+                                {{ form.transfer_reference }}
+                                {% if form.transfer_reference.errors %}
+                                <div class="text-danger">
+                                    {{ form.transfer_reference.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Upload Proof of Payment (Optional)</label>
+                            {{ form.transfer_proof }}
+                            <div class="form-text">
+                                You can upload a screenshot of your transfer confirmation or receipt.
+                                Accepted formats: JPG, PNG, PDF (Max 5MB)
+                            </div>
+                            {% if form.transfer_proof.errors %}
+                            <div class="text-danger">
+                                {{ form.transfer_proof.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Note:</strong> Your order will be processed once we verify your payment. 
+                            This may take 1-2 business days.
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-paper-plane"></i> Submit Payment Details
+                            </button>
+                            <a href="{% url 'ecommerce:order_detail' order.id %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Order
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Support Information -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h6><i class="fas fa-question-circle text-primary"></i> Need Help?</h6>
+                    <p class="mb-2">If you encounter any issues with your bank transfer, please contact our support team:</p>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-phone me-2"></i> Phone: +234-XXX-XXXX-XXX</li>
+                        <li><i class="fas fa-envelope me-2"></i> Email: support@schoolcommerce.com</li>
+                        <li><i class="fas fa-clock me-2"></i> Support Hours: Mon-Fri, 9AM-5PM</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -316,7 +316,7 @@
       <!-- Desktop Navigation -->
       <div class="collapse navbar-collapse" id="navbarMain">
         <div class="navbar-nav ms-auto align-items-center">
-          <a class="nav-link mx-2 fw-medium" href="{% url 'shop:product_list' %}">BrillsPay</a>
+          <a class="nav-link mx-2 fw-medium" href="{% url 'ecommerce:product_list' %}">BrillsPay</a>
           <a class="nav-link mx-2 fw-medium" href="{% url 'exams:home' %}">CBT</a>
           <a class="nav-link mx-2 fw-medium" href="{% url 'school_portal:about' %}">About</a>
           
@@ -330,13 +330,13 @@
                 Admin
               </a>
               <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="{% url 'shop:admin_dashboard' %}">
+                <li><a class="dropdown-item" href="#">
                   <i class="fas fa-chart-line me-2"></i>Dashboard
                 </a></li>
-                <li><a class="dropdown-item" href="{% url 'shop:product_list' %}">
+                <li><a class="dropdown-item" href="{% url 'ecommerce:product_list' %}">
                   <i class="fas fa-boxes me-2"></i>Products
                 </a></li>
-                <li><a class="dropdown-item" href="{% url 'shop:order_list' %}">
+                <li><a class="dropdown-item" href="#">
                   <i class="fas fa-clipboard-list me-2"></i>Orders
                 </a></li>
                 <li><a class="dropdown-item" href="{% url 'pickup:pickup_generate' %}">
@@ -409,8 +409,8 @@
         <div class="col-md-6 col-lg-3">
           <h5 class="text-white mb-3">Quick Links</h5>
           <ul class="list-unstyled">
-            <li class="mb-2"><a href="{% url 'shop:product_list' %}"><i class="fas fa-chevron-right me-2 small"></i>Home</a></li>
-            <li class="mb-2"><a href="{% url 'shop:product_list' %}"><i class="fas fa-chevron-right me-2 small"></i>Products</a></li>
+            <li class="mb-2"><a href="{% url 'ecommerce:product_list' %}"><i class="fas fa-chevron-right me-2 small"></i>Home</a></li>
+            <li class="mb-2"><a href="{% url 'ecommerce:product_list' %}"><i class="fas fa-chevron-right me-2 small"></i>Products</a></li>
             <li class="mb-2"><a href="{% url 'pickup:pickup_generate' %}"><i class="fas fa-chevron-right me-2 small"></i>Pickup Codes</a></li>
           </ul>
         </div>
@@ -450,6 +450,11 @@
           Powered by <a href="mailto:logiclanesolutions@gmail.com" class="text-warning text-decoration-none">LogicLane Solutions</a>.
         </small>
         <br>
+        <p class="text-white">
+          <i class="fas fa-shield-alt"></i> Secure Payments | 
+          <i class="fas fa-lock"></i> Data Protected | 
+          <i class="fas fa-history"></i> Transaction Backups
+      </p>
         <small class="text-white">www.thebrillsschool.edu.ng</small>
       </div>
     </div>

@@ -6,13 +6,68 @@ from django.utils import timezone
 from django.contrib.auth import get_user_model
 from .models import Notification
 from django.urls import reverse
-from .forms import TeacherAdminForm, EditUserRegistrationForm, EditTeacherAdminForm, UserRegistrationForm, loginForm
+from .forms import TeacherAdminForm, EditUserRegistrationForm, EditTeacherAdminForm, UserRegistrationForm, loginForm, UserProfileForm
 from django.core.paginator import Paginator
 from django.http import JsonResponse, HttpResponseForbidden
 from django.views.decorators.http import require_POST   
 from exams.models import ActionLog  
 
 User = get_user_model()
+
+
+@login_required
+def profile(request):
+    """User profile view"""
+    if request.method == 'POST':
+        form = UserProfileForm(request.POST, request.FILES, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Profile updated successfully!')
+            return redirect('users:profile')
+    else:
+        form = UserProfileForm(instance=request.user)
+    
+    # Calculate total spent (you might want to implement this properly)
+    total_spent = sum(order.total_amount for order in request.user.order_set.filter(status='paid'))
+    
+    context = {
+        'form': form,
+        'total_spent': total_spent,
+    }
+    return render(request, 'users/profile.html', context)
+
+@login_required
+def dashboard(request):
+    """User dashboard view"""
+    user = request.user
+    
+    if user.is_parent():
+        # Parent dashboard
+        children = user.children.all()
+        recent_orders = user.order_set.order_by('-created_at')[:5]
+        
+        context = {
+            'children': children,
+            'recent_orders': recent_orders,
+        }
+        return render(request, 'users/parent_dashboard.html', context)
+    
+    elif user.is_student():
+        # Student dashboard
+        orders = user.order_set.order_by('-created_at')[:10]
+        
+        context = {
+            'orders': orders,
+        }
+        return render(request, 'users/student_dashboard.html', context)
+    
+    elif user.is_admin():
+        # Redirect to admin dashboard
+        return redirect('ecommerce:admin_dashboard')
+    
+    else:
+        # Default dashboard
+        return render(request, 'users/dashboard.html')
 
 
 def signup_view(request):

@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -43,8 +44,15 @@ INSTALLED_APPS = [
     'cores',
     'users',
     'exams',
-    'shop',
     'pickup',
+    'ecommerce',
+
+
+    # Third party
+    'crispy_forms',
+    'crispy_bootstrap5',
+    'django_tables2',
+    'django_htmx',
 ]
 
 # Messages config (optional but neat)
@@ -66,6 +74,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'cores.middleware.auto_logout.AutoLogoutMiddleware',
+    'django_htmx.middleware.HtmxMiddleware',
     # 'shop.middleware.CartMiddleware',
     # 'shop.context_processors.ecommerce_settings',
 
@@ -92,7 +101,9 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'cores.context_processors.school_settings', 
-                'django.template.context_processors.static', 
+                'django.template.context_processors.static',
+                'ecommerce.context_processors.paystack_keys',
+                'ecommerce.context_processors.cart_count', 
             ],
         },
     },
@@ -129,6 +140,19 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+
+# Crispy Forms
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+CRISPY_TEMPLATE_PACK = "bootstrap5"
+
+
+# Login URLs
+LOGIN_URL = '/users/login/'
+LOGIN_REDIRECT_URL = '/school_portal/'
+LOGOUT_REDIRECT_URL = '/users/login/'
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
 # Internationalization
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'Africa/Lagos'
@@ -147,7 +171,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # School config (dynamic)
 SCHOOL_NAME = os.getenv("SCHOOL_NAME", "The Brills School")
-SCHOOL_ADDRESS = os.getenv("SCHOOL_ADDRESS", "No 1, Adaba Awotan/Akufo Road. Ibadan. Oyo State")
+SCHOOL_ADDRESS = os.getenv("SCHOOL_ADDRESS", "No 1, Adaba Awotan-Akufo Road. Ibadan. Oyo State")
 SCHOOL_SLOGAN = os.getenv("SCHOOL_SLOGAN", "Knowledge is Light")
 PORTAL_DOMAIN = os.getenv("PORTAL_DOMAIN", "https://www.thebrillsschool.edu.ng")
 SITE_NAME = os.getenv("PORTAL_DOMAIN", "https://www.thebrillsschool.edu.ng")
@@ -180,10 +204,174 @@ PAYSTACK_SECRET_KEY = PAYSTACK_LIVE_SECRET_KEY if PAYSTACK_MODE == "live" else P
 PAYSTACK_BASE_URL = "https://api.paystack.co"
 DEFAULT_FROM_EMAIL = "no-reply@brillspay.school"
 
+# Payment Gateways
+OPAY_PUBLIC_KEY = os.getenv('OPAY_PUBLIC_KEY', default='')
+OPAY_SECRET_KEY = os.getenv('OPAY_SECRET_KEY', default='')
+
+
 # Security & Hosts (production)
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,thebrillsschool.edu.ng").split(",")
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', default='localhost,127.0.0.1,.https://newsiest-interlineally-guy.ngrok-free.dev').split(',')
+
 CSRF_TRUSTED_ORIGINS = os.getenv("CSRF_TRUSTED_ORIGINS", "https://thebrillsschool.edu.ng").split(",")
 
 CRONJOBS = [
     ('0 2 * * *', 'core.cron.daily_backup'),
 ]
+
+
+# Email
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND')
+EMAIL_HOST = os.getenv('EMAIL_HOST', default='')
+EMAIL_PORT = os.getenv('EMAIL_PORT', default=587)
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', default=True)
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', default='noreply@schoolcommerce.com')
+
+
+# Backup Configuration
+BACKUP_CONFIG = {
+    'ENABLED': os.getenv('BACKUP_ENABLED', default=True),
+    'RETENTION_DAYS': os.getenv('BACKUP_RETENTION_DAYS', default=30),
+    'ENCRYPTION_KEY': os.getenv('BACKUP_ENCRYPTION_KEY', default=''),
+    'SCHEDULE': {
+        'DAILY_BACKUP_TIME': '02:00',
+        'WEEKLY_EXPORT_DAY': 'sunday',
+    }
+}
+
+# Celery Configuration
+CELERY_BROKER_URL = os.getenv('REDIS_URL', default='redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = os.getenv('REDIS_URL', default='redis://localhost:6379/0')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+
+# Celery Beat Schedule
+CELERY_BEAT_SCHEDULE = {
+    'daily-backup': {
+        'task': 'ecommerce.tasks.perform_daily_backup',
+        'schedule': timedelta(days=1),
+    },
+    'cleanup-old-backups': {
+        'task': 'ecommerce.tasks.cleanup_old_backups',
+        'schedule': timedelta(days=7),
+    },
+}
+
+# Ensure logs directory exists
+LOGS_DIR = BASE_DIR / 'logs'
+LOGS_DIR.mkdir(exist_ok=True)
+
+# Logging Configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'filters': {
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse',
+        },
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'filters': ['require_debug_true'],
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple'
+        },
+        'file_django': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': LOGS_DIR / 'django.log',
+            'formatter': 'verbose',
+        },
+        'file_payments': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': LOGS_DIR / 'payments.log',
+            'formatter': 'verbose',
+        },
+        'file_webhooks': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': LOGS_DIR / 'webhooks.log',
+            'formatter': 'verbose',
+        },
+        'file_backups': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': LOGS_DIR / 'backups.log',
+            'formatter': 'verbose',
+        },
+        'mail_admins': {
+            'level': 'ERROR',
+            'filters': ['require_debug_false'],
+            'class': 'django.utils.log.AdminEmailHandler'
+        }
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file_django', 'mail_admins'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['console', 'file_django', 'mail_admins'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        'payments': {
+            'handlers': ['console', 'file_payments'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'webhooks': {
+            'handlers': ['console', 'file_webhooks'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'backups': {
+            'handlers': ['console', 'file_backups'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    }
+}
+
+# Media files configuration
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+# Static files configuration
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
+
+# Backup configuration
+BACKUP_ROOT = BASE_DIR / 'backups'
+
+# Security settings for production
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True

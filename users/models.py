@@ -7,18 +7,23 @@ from PIL import Image
 from exams.models import Class, Subject
 
 
+
+
 class User(AbstractUser):
     ROLE_CHOICES = [
         ('superadmin', 'Super Admin'),
         ('admin', 'Admin'),
         ('teacher', 'Teacher'),
         ('student', 'Student'),
+        ('parent', 'Parent'),
     ]
 
     GENDER = (
         ('female', 'Female'),
         ('male', 'Male')
     )
+    
+    # Personal Information
     surname = models.CharField(max_length=150, blank=True, null=True)
     first_name = models.CharField(max_length=150, blank=True, null=True)
     other_name = models.CharField(max_length=150, blank=True, null=True)
@@ -28,16 +33,26 @@ class User(AbstractUser):
     age = models.PositiveIntegerField(default=8)
     date_of_birth = models.CharField(max_length=20, blank=True, null=True)
     student_class = models.ForeignKey(
-        Class, on_delete=models.CASCADE, null=True, to_field="name", related_name="student_class"
+        Class, on_delete=models.CASCADE, null=True, blank=True, to_field="name", related_name="student_class"
     )
 
+    # Contact Information
     address = models.TextField(blank=True, null=True)
     phone_number = models.CharField(max_length=15, blank=True, null=True)
+    
+    # Parent/Guardian Information (for students)
     parent_name = models.CharField(max_length=150, blank=True, null=True)
     parent_email = models.EmailField(blank=True, null=True)
-    pareent_phone_number = models.CharField(max_length=15, blank=True, null=True)
-    approved = models.BooleanField(default=False)  # SuperAdmin must approve Admins
+    parent_phone_number = models.CharField(max_length=15, blank=True, null=True)
+    
+    # Parent relationship (for parent users)
+    children = models.ManyToManyField('self', symmetrical=False, blank=True, 
+                                     limit_choices_to={'role': 'student'})
+    
+    # Approval system
+    approved = models.BooleanField(default=False)
 
+    # Profile picture
     profile_picture = models.ImageField(
         upload_to="profiles/",
         default="profiles/default_profile.png",
@@ -45,7 +60,7 @@ class User(AbstractUser):
         blank=True
     )
 
-    # Teachers/Admin
+    # Teachers/Admin specific fields
     qualification = models.CharField(max_length=200, blank=True, null=True)
     subject_assigned = models.ForeignKey(
         Subject, on_delete=models.CASCADE, null=True, blank=True
@@ -57,7 +72,7 @@ class User(AbstractUser):
     # Exam Access Control
     can_take_exam = models.BooleanField(default=False)
 
-    # The NEW registration number field
+    # Registration number
     registration_number = models.CharField(
         max_length=20,
         unique=True,
@@ -87,20 +102,26 @@ class User(AbstractUser):
         return reg_no
 
     def save(self, *args, **kwargs):
-
         # Generate unique registration number for students only
         if self.role == "student" and not self.registration_number:
             self.registration_number = User.create_unique_reg_no()
+            
+        # Set username to email if not set
+        if not self.username and self.email:
+            self.username = self.email
 
         super().save(*args, **kwargs)
 
         # Resize profile picture AFTER saving
-        if self.profile_picture:
+        if self.profile_picture and hasattr(self.profile_picture, 'path'):
             try:
                 img = Image.open(self.profile_picture.path)
-                img.thumbnail((200, 200))
-                img.save(self.profile_picture.path, optimize=True, quality=85)
-            except Exception:
+                if img.height > 200 or img.width > 200:
+                    output_size = (200, 200)
+                    img.thumbnail(output_size)
+                    img.save(self.profile_picture.path, optimize=True, quality=85)
+            except (FileNotFoundError, ValueError):
+                # Handle case where file doesn't exist yet
                 pass
 
     def is_teacher(self):
@@ -108,14 +129,35 @@ class User(AbstractUser):
 
     def is_student(self):
         return self.role == "student"
+    
+    def is_parent(self):
+        return self.role == "parent"
 
     def can_approve(self):
         return self.role in ["superadmin", "admin"]
 
+    def get_full_name(self):
+        name_parts = [self.first_name or '', self.surname or '', self.other_name or '']
+        return ' '.join(filter(None, name_parts)).strip() or self.username
+
     def __str__(self):
-        return f"{self.username} ({self.role})"
+        return f"{self.get_full_name()} ({self.role})"
 
 
+class Parent(models.Model):
+    user = models.OneToOneField('User', on_delete=models.CASCADE, related_name='parent_profile')
+    address = models.TextField()
+    signature = models.ImageField(upload_to='signatures/', blank=True, null=True)
+    occupation = models.CharField(max_length=150, blank=True, null=True)
+    emergency_contact = models.CharField(max_length=15, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    @property
+    def number_of_wards(self):
+        return self.user.children.count()
+    
+    def __str__(self):
+        return f"Parent of {self.user.first_name} {self.user.surname}"
 
 # class User(AbstractUser):
 #     ROLE_CHOICES = [

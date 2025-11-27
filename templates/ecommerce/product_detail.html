@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ product.name }} - School E-commerce{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-6">
+            {% if product.image %}
+            <img src="{{ product.image.url }}" class="img-fluid rounded" alt="{{ product.name }}">
+            {% else %}
+            <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 400px;">
+                <i class="fas fa-image fa-5x text-muted"></i>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="col-md-6">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'ecommerce:product_list' %}">Products</a></li>
+                    <li class="breadcrumb-item"><a href="?category={{ product.category.id }}">{{ product.category.name }}</a></li>
+                    <li class="breadcrumb-item active">{{ product.name }}</li>
+                </ol>
+            </nav>
+            
+            <h1 class="display-5">{{ product.name }}</h1>
+            
+            <div class="mb-3">
+                <span class="badge bg-info">{{ product.get_product_type_display }}</span>
+                <span class="badge bg-secondary">{{ product.category.name }}</span>
+                {% if product.track_stock %}
+                    {% if product.is_low_stock %}
+                    <span class="badge badge-low-stock">Low Stock</span>
+                    {% endif %}
+                    {% if not product.in_stock %}
+                    <span class="badge badge-out-of-stock">Out of Stock</span>
+                    {% endif %}
+                {% endif %}
+            </div>
+            
+            <h2 class="text-primary mb-3">₦{{ product.price }}</h2>
+            
+            {% if product.applicable_class %}
+            <p class="text-muted"><strong>For Class:</strong> {{ product.applicable_class.name }}</p>
+            {% endif %}
+            
+            <div class="mb-4">
+                <h5>Description</h5>
+                <p>{{ product.description|linebreaks }}</p>
+            </div>
+            
+            {% if product.in_stock or not product.track_stock %}
+            <form method="post" action="{% url 'ecommerce:add_to_cart' product.id %}">
+                {% csrf_token %}
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-6">
+                        <label class="form-label">Select Student</label>
+                        {{ form.student }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Quantity</label>
+                        {{ form.quantity }}
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-cart-plus"></i> Add to Cart
+                        </button>
+                    </div>
+                </div>
+                
+                {% if form.errors %}
+                <div class="alert alert-danger mt-2">
+                    {% for field in form %}
+                        {% for error in field.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </form>
+            {% else %}
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle"></i> This product is currently out of stock.
+            </div>
+            {% endif %}
+            
+            <div class="mt-4">
+                <a href="{% url 'ecommerce:product_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Continue Shopping
+                </a>
+                <a href="{% url 'ecommerce:cart_view' %}" class="btn btn-success">
+                    <i class="fas fa-shopping-cart"></i> View Cart
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Student lookup functionality
+    $('#id_student').select2({
+        placeholder: "Select a student",
+        allowClear: true,
+        width: '100%'
+    });
+});
+</script>
+{% endblock %}

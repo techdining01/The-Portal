@@ -27,4 +27,9 @@ urlpatterns = [
     path("manage/load/", views.load_users, name="load_users"),  # AJAX
     path("manage/delete/<int:user_id>/", views.delete_user, name="delete_user"),
     
+
+    # Profile and dashboard
+    path('profile/', views.profile, name='profile'),
+    path('dashboard/', views.dashboard, name='dashboard'),
+    
     ]

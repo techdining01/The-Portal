@@ -1,379 +1,87 @@
 {% load static %}
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>BrillsPay - {% block title %}{% endblock %}</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}BrillsPay ecommerce{% endblock %}</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+     <!-- Fontawesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+    <style>
+    </style>
+    <style>
+      /* Basic custom styles */
+      body { background-color: #f8f9fa; }
+      .navbar-brand { font-weight: 700; color: #2c3e50; }
+      .cart-count { font-size: 0.8rem; background: red; color: #fff; padding: 2px 6px; border-radius: 50%; }
+      .product-card { transition: transform 0.2s ease-in-out; }
+      .product-card:hover { transform: translateY(-5px); }
+      .modal-lg { max-width: 800px; }
+      .card:hover { transform: translateY(-5px); transition: 0.3s; }
 
-  
-  <!-- Bootstrap CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  
-  <!-- Bootstrap Icons -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+       /* Footer */
+        footer {
+          background: linear-gradient(135deg, #0d1b2a 0%, #1b263b 100%);
+          color: #a0aec0;
+          margin-top: auto;
+        }
 
-  <!-- AOS CSS -->
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" rel="stylesheet">
+        footer a {
+          color: #a0aec0;
+          transition: all 0.3s ease;
+          text-decoration: none;
+        }
 
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-  <!-- Fontawesome -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-  <style>
-    /* Base Styles - Mobile First */
-    :root {
-      --primary-color: #0052cc;
-      --primary-hover: #003d99;
-      --secondary-color: #dc3545;
-      --accent-color: #ff6b35;
-      --text-dark: #333333;
-      --text-light: #6c757d;
-      --bg-light: #f8f9fa;
-      --border-light: #e9ecef;
-      --shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-      --shadow-hover: 0 8px 25px rgba(0, 0, 0, 0.15);
-    }
-
-    body {
-      font-family: 'Poppins', sans-serif;
-      background-color: var(--bg-light);
-      color: var(--text-dark);
-      line-height: 1.6;
-      overflow-x: hidden;
-    }
-
-    /* Improved Typography for Mobile */
-    @media (max-width: 768px) {
-      body {
-        font-size: 15px;
-      }
-      
-      h1 { font-size: 1.75rem; }
-      h2 { font-size: 1.5rem; }
-      h3 { font-size: 1.375rem; }
-      h4 { font-size: 1.25rem; }
-      h5 { font-size: 1.125rem; }
-      h6 { font-size: 1rem; }
-    }
-
-    @media (min-width: 769px) {
-      body {
-        font-size: 16px;
-      }
-      
-      h1 { font-size: 2.25rem; }
-      h2 { font-size: 2rem; }
-      h3 { font-size: 1.75rem; }
-    }
-
-    /* Sticky Navigation */
-    .navbar {
-      background-color: #ffffff;
-      border-bottom: 1px solid var(--border-light);
-      box-shadow: var(--shadow);
-      position: sticky;
-      top: 0;
-      z-index: 1030;
-      transition: all 0.3s ease;
-    }
-
-    .navbar-brand {
-      font-weight: 700;
-      color: var(--text-dark) !important;
-    }
-
-    .navbar-brand img {
-      height: 45px;
-      width: auto;
-      object-fit: contain;
-    }
-
-    /* Custom Button Styles */
-    .btn-primary {
-      background-color: var(--primary-color);
-      border-color: var(--primary-color);
-      font-weight: 500;
-      /* padding: 0.75rem 1.5rem; */
-      transition: all 0.3s ease;
-    }
-
-    .btn-primary:hover {
-      background-color: var(--primary-hover);
-      border-color: var(--primary-hover);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0, 82, 204, 0.3);
-    }
-
-    .btn-outline-primary {
-      color: var(--primary-color);
-      border-color: var(--primary-color);
-      font-weight: 500;
-    }
-
-    .btn-outline-primary:hover {
-      background-color: var(--primary-color);
-      border-color: var(--primary-color);
-      transform: translateY(-2px);
-    }
-
-    /* Enhanced Cards */
-    .feature-card, .card {
-      border: none;
-      border-radius: 12px;
-      transition: all 0.3s ease;
-      box-shadow: var(--shadow);
-      overflow: hidden;
-    }
-
-    .feature-card:hover, .card:hover {
-      transform: translateY(-5px);
-      box-shadow: var(--shadow-hover);
-    }
-
-    /* Cart Badge */
-    .cart-badge {
-      background-color: var(--secondary-color);
-      color: white;
-      border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      font-size: 0.75rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: absolute;
-      top: -8px;
-      right: -8px;
-    }
-
-    /* Mobile Menu */
-    .mobile-menu {
-      position: fixed;
-      top: 0;
-      right: -100%;
-      width: 280px;
-      height: 100vh;
-      background: white;
-      box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
-      transition: right 0.3s ease;
-      z-index: 1050;
-      overflow-y: auto;
-    }
-
-    .mobile-menu.open {
-      right: 0;
-    }
-
-    .backdrop {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 1040;
-      opacity: 0;
-      visibility: hidden;
-      transition: all 0.3s ease;
-    }
-
-    .backdrop.active {
-      opacity: 1;
-      visibility: visible;
-    }
-
-    /* Loading Spinner */
-    .loading-spinner {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(255, 255, 255, 0.9);
-      z-index: 9999;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .loading-spinner.active {
-      display: flex;
-    }
-
-    /* Footer */
-    footer {
-      background: linear-gradient(135deg, #0d1b2a 0%, #1b263b 100%);
-      color: #a0aec0;
-      margin-top: auto;
-    }
-
-    footer a {
-      color: #a0aec0;
-      transition: all 0.3s ease;
-      text-decoration: none;
-    }
-
-    footer a:hover {
-      color: #ffffff;
-      transform: translateX(5px);
-    }
-
-    /* Custom Utilities */
-    .text-primary { color: var(--primary-color) !important; }
-    .bg-primary { background-color: var(--primary-color) !important; }
-    
-    .border-primary { border-color: var(--primary-color) !important; }
-    .btn-primary { 
-      background-color: var(--primary-color) !important;
-      border-color: var(--primary-color) !important;
-    }
-
-    /* Smooth scrolling */
-    html {
-      scroll-behavior: smooth;
-    }
-
-    /* Focus styles for accessibility */
-    a:focus, button:focus, input:focus, select:focus, textarea:focus {
-      outline: 2px solid var(--primary-color);
-      outline-offset: 2px;
-    }
-
-    /* Touch-friendly elements for mobile */
-    @media (max-width: 768px) {
-      .btn, .nav-link, .dropdown-item {
-        min-height: 44px;
-        display: flex;
-        align-items: center;
-      }
-      
-      input, select, textarea {
-        font-size: 16px; /* Prevents zoom on iOS */
-      }
-    }
-
-    /* Custom scrollbar */
-    ::-webkit-scrollbar {
-      width: 8px;
-    }
-
-    ::-webkit-scrollbar-track {
-      background: #f1f1f1;
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: #c1c1c1;
-      border-radius: 4px;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-      background: #a8a8a8;
-    }
-
-    /* Print Styles */
-    @media print {
-      .navbar, footer, .no-print {
-        display: none !important;
-      }
-      
-      body {
-        background: white !important;
-        color: black !important;
-        font-size: 12pt;
-      }
-      
-      .container {
-        max-width: 100% !important;
-      }
-    }
-  </style>
-  <style>
-    .brand {font-weight:800; color:var(--brand)}
-    .card-animate {transform-origin:center}
-    .mobile-hide {display:block}
-  </style>
-
-  {% block extra_head %}{% endblock %}
+        footer a:hover {
+          color: #ffffff;
+          transform: translateX(5px);
+        }
+    </style>
+    {% block head %}{% endblock %}
 </head>
-
-<body class="d-flex flex-column min-vh-100">
-
-  <!-- Sticky Navigation -->
-  <nav class="navbar navbar-expand-lg navbar-light">
-    <div class="container">
-      <!-- Brand -->
-      <a class="navbar-brand d-flex align-items-center" href="{% url 'school_portal:landing_page' %}">
-        <img src="{% static 'images/school_logo.png' %}" alt="{{ SCHOOL_NAME }} Logo" class="me-2 me-sm-3" style="height: 45px;">
-        <span class="d-none d-sm-inline">{{ SCHOOL_NAME }}</span>
-      </a>
-    
-      <!-- Desktop Navigation -->
-      <div class="collapse navbar-collapse" id="navbarMain">
-        <div class="navbar-nav ms-auto align-items-center">
-          <a class="nav-link mx-2 fw-medium" href="{% url 'school_portal:landing_page' %}">Home</a>
-          <a class="nav-link mx-2 fw-medium" href="{% url 'exams:home' %}">CBT</a>
-          <a class="nav-link mx-2 fw-medium" href="{% url 'school_portal:about' %}">About</a>
-          <a class="nav-link mx-2 fw-medium" href="{% url 'shop:cart_view' %}"> 🛒Cart <span id="nav-cart-count" class="badge bg-secondary">{{total}}</span></a>
-         
-          {% if user.is_authenticated %}
-            <a class="nav-link mx-2 fw-medium" href="{% url 'pickup:pickup_generate' %}">Pickup Codes</a>
-            
-            {% if user.role in 'admin superadmin' %}
-            <div class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle mx-2 fw-medium" href="#" role="button" data-bs-toggle="dropdown">
-                Admin
-              </a>
-              <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="{% url 'shop:admin_dashboard' %}">
-                  <i class="fas fa-chart-line me-2"></i>Dashboard
-                </a></li>
-                <li><a class="dropdown-item" href="{% url 'shop:product_list' %}">
-                  <i class="fas fa-boxes me-2"></i>Products
-                </a></li>
-                <li><a class="dropdown-item" href="{% url 'shop:order_list' %}">
-                  <i class="fas fa-clipboard-list me-2"></i>Orders
-                </a></li>
-                <li><a class="dropdown-item" href="{% url 'pickup:pickup_generate' %}">
-                  <i class="fas fa-check-circle me-2"></i>Verify Codes
-                </a></li>
-              </ul>
-            </div>
-            {% endif %}
-
-            <div class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle mx-2 fw-medium" href="#" role="button" data-bs-toggle="dropdown">
-                <i class="fas fa-user me-1"></i>{{ user.username|truncatechars:15 }}
-              </a>
-              <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="{% url 'users:logout' %}">
-                  <i class="fas fa-sign-out-alt me-2"></i>Logout
-                </a></li>
-              </ul>
-            </div>
-          {% else %}
-            <a class="nav-link mx-2 fw-medium" href="{% url 'users:login' %}">
-              <i class="fas fa-sign-in-alt me-1"></i>Login
-            </a>
-          {% endif %}
-        </div>
-      </div>
-
-      <!-- Mobile Menu Button -->
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
-        <span class="navbar-toggler-icon"></span>
-      </button>
+<body>
+<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+  <div class="container">
+    <a class="navbar-brand" href="{% url 'ecommerce:product_list' %}">BrillsPay</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+      <ul class="navbar-nav align-items-center">
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'ecommerce:product_list' %}">Shop</a>
+        </li>
+        <li class="nav-item position-relative">
+          <a class="nav-link" href="{% url 'ecommerce:cart_view' %}">
+            Cart
+            <span class="cart-count" id="cart-count">{{ cart.items.count }}</span>
+          </a>
+        </li>
+        {% if user.is_authenticated %}
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'users:logout' %}">Logout</a>
+        </li>
+        {% else %}
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'users:login' %}">Login</a>
+        </li>
+        {% endif %}
+      </ul>
     </div>
-  </nav>
+  </div>
+</nav>
 
-<main class="container py-4">
-  {% block content %}{% endblock %}
-</main> 
+<!-- Main Content -->
+  <main class="main-content flex-grow-1 py-4">
+    <div class="container">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
 
-    <!-- Footer -->
+  <!-- Footer -->
   <footer class="mt-auto py-4 py-md-5">
     <div class="container">
       <div class="row g-4">
@@ -385,18 +93,18 @@
         <div class="col-md-6 col-lg-3">
           <h5 class="text-white mb-3">Quick Links</h5>
           <ul class="list-unstyled">
-            <li class="mb-2"><a href="{% url 'shop:product_list' %}"><i class="fas fa-chevron-right me-2 small"></i>Home</a></li>
-            <li class="mb-2"><a href="{% url 'shop:product_list' %}"><i class="fas fa-chevron-right me-2 small"></i>Products</a></li>
+            <li class="mb-2"><a href="{% url 'ecommerce:product_list' %}"><i class="fas fa-chevron-right me-2 small"></i>Home</a></li>
+            <li class="mb-2"><a href="{% url 'ecommerce:product_list' %}"><i class="fas fa-chevron-right me-2 small"></i>Products</a></li>
             <li class="mb-2"><a href="{% url 'pickup:pickup_generate' %}"><i class="fas fa-chevron-right me-2 small"></i>Pickup Codes</a></li>
           </ul>
         </div>
         <div class="col-md-6 col-lg-3">
-            <h5 class="text-white mb-3">Contact Info</h5>
-              <ul class="list-unstyled">
-                  <li>📞 +234 807 982 3665</li>
-                  <li>📧 info@thebrillsschool.com</li>
-                  <li>📍 No. 1 Adaba, Awotan-Akufo Road, Ibadan</li>
-              </ul>
+          <h5 class="text-white mb-3">Contact Info</h5>
+          <ul class="list-unstyled">
+            <li>📞 +234 807 982 3665</li>
+            <li>📧 info@thebrillsschool.com</li>
+            <li>📍 No. 1 Adaba, Awotan-Akufo Road, Ibadan</li>
+          </ul>
         </div>  
         <div class="col-md-6 col-lg-3">
           <h5 class="text-white mb-3">Follow Us</h5>
@@ -424,18 +132,23 @@
         <small class="text-white">
           &copy; <span id="currentYear"></span> — {{ SCHOOL_NAME }}. All Rights Reserved. 
           Powered by <a href="mailto:logiclanesolutions@gmail.com" class="text-warning text-decoration-none">LogicLane Solutions</a>.
-        </small>
-        <br>
+        </small><br>
+        <p class="text-white">
+                <i class="fas fa-shield-alt"></i> Secure Payments | 
+                <i class="fas fa-lock"></i> Data Protected | 
+                <i class="fas fa-history"></i> Transaction Backups
+            </p>
         <small class="text-white">www.thebrillsschool.edu.ng</small>
       </div>
     </div>
   </footer>
-
+  
   <!-- JavaScript Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+  <script src="https://js.paystack.co/v1/inline.js"></script>
 
   <script>
     // Initialize current year
@@ -477,52 +190,14 @@
       });
     });
 
-    // Hero animation
-    document.addEventListener('DOMContentLoaded', function() {
-      const heroTitle = document.querySelector('.gsap-hero-title');
-      const heroSub = document.querySelector('.gsap-hero-sub');
-
-      if (heroTitle || heroSub) {
-        gsap.from(".gsap-hero-title", { 
-          y: 30, 
-          opacity: 0, 
-          duration: 0.8, 
-          ease: "power3.out", 
-          stagger: 0.08 
-        });
-        gsap.from(".gsap-hero-sub", { 
-          y: 20, 
-          opacity: 0, 
-          duration: 0.9, 
-          delay: 0.12, 
-          ease: "power3.out" 
-        });
-      }
-
-      // Feature cards animation
-      gsap.utils.toArray('.feature-card').forEach((card, i) => {
-        gsap.from(card, {
-          y: 20, 
-          opacity: 0, 
-          duration: 0.6, 
-          delay: i * 0.08,
-          scrollTrigger: { 
-            trigger: card, 
-            start: 'top 80%', 
-            end: 'bottom 20%',
-            toggleActions: 'play none none none' 
-          },
-          ease: 'power2.out'
-        });
-      });
-    });
+  // Bootstrap JS & dependencies 
 
     // Toast notification function
     function showToast(message, type = 'success') {
       // Create toast element
       const toast = document.createElement('div');
       toast.className = `toast align-items-center text-bg-${type} border-0 position-fixed top-0 end-0 m-3`;
-      toast.style.zIndex = '10060';
+      toast.style.zIndex = '1060';
       
       toast.innerHTML = `
         <div class="d-flex">
@@ -541,46 +216,5 @@
       });
     }
   </script>
-  <!-- Bootstrap JS -->
-    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
-    <script src="{% static 'js/chart.min.js' %}"></script>
-
-    <!-- Auto hide messages -->
-    <script>
-        setTimeout(() => {
-            document.querySelectorAll('.alert').forEach(el => {
-                el.style.display = 'none';
-            });
-        }, 3000);
-        setTimeout(() => {
-            document.querySelectorAll('.alert').forEach(el => {
-                el.style.display = 'none';
-            });
-        }, 3000);
-
-        let idleTime = 0;
-        const logoutURL = "{% url 'users:logout' %}";
-        const sessionExpiredURL = "{% url 'cores:session_expired' %}";
-
-        // Increment every minute
-        setInterval(() => {
-        idleTime++;
-        if (idleTime >= 10) {  // 10 minutes
-            // Notify server to log out
-            fetch(logoutURL)
-            .then(() => window.location.href = sessionExpiredURL);
-        }
-        }, 60000);  // 1 minute
-
-        // Reset on activity
-        ['mousemove', 'keydown', 'scroll', 'click'].forEach(event => {
-        window.addEventListener(event, () => idleTime = 0);
-        });
-
-
-
-    </script>
-
-  {% block extra_scripts %}{% endblock %}
 </body>
 </html>
