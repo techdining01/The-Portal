@@ -1,576 +1,976 @@
 {% load static %}
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ SCHOOL_NAME }} — {% block title %}Portal{% endblock %}</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ SCHOOL_NAME }} — {% block title %}Portal{% endblock %}</title>
 
-  <!-- Bootstrap CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  
-  <!-- Bootstrap Icons -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-
-  <!-- AOS CSS -->
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" rel="stylesheet">
-
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-  <!-- Fontawesome -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-  <style>
-    /* Base Styles - Mobile First */
-    :root {
-      --primary-color: #0052cc;
-      --primary-hover: #003d99;
-      --secondary-color: #dc3545;
-      --accent-color: #ff6b35;
-      --text-dark: #333333;
-      --text-light: #6c757d;
-      --bg-light: #f8f9fa;
-      --border-light: #e9ecef;
-      --shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-      --shadow-hover: 0 8px 25px rgba(0, 0, 0, 0.15);
-    }
-
-    body {
-      font-family: 'Poppins', sans-serif;
-      background-color: var(--bg-light);
-      color: var(--text-dark);
-      line-height: 1.6;
-      overflow-x: hidden;
-    }
-
-    /* Improved Typography for Mobile */
-    @media (max-width: 768px) {
-      body {
-        font-size: 15px;
-      }
-      
-      h1 { font-size: 1.75rem; }
-      h2 { font-size: 1.5rem; }
-      h3 { font-size: 1.375rem; }
-      h4 { font-size: 1.25rem; }
-      h5 { font-size: 1.125rem; }
-      h6 { font-size: 1rem; }
-    }
-
-    @media (min-width: 769px) {
-      body {
-        font-size: 16px;
-      }
-      
-      h1 { font-size: 2.25rem; }
-      h2 { font-size: 2rem; }
-      h3 { font-size: 1.75rem; }
-    }
-
-    /* Sticky Navigation */
-    .navbar {
-      background-color: #ffffff;
-      border-bottom: 1px solid var(--border-light);
-      box-shadow: var(--shadow);
-      position: sticky;
-      top: 0;
-      z-index: 1030;
-      transition: all 0.3s ease;
-    }
-
-    .navbar-brand {
-      font-weight: 700;
-      color: var(--text-dark) !important;
-    }
-
-    .navbar-brand img {
-      height: 45px;
-      width: auto;
-      object-fit: contain;
-    }
-
-    /* Custom Button Styles */
-    .btn-primary {
-      background-color: var(--primary-color);
-      border-color: var(--primary-color);
-      font-weight: 500;
-      padding: 0.75rem 1.5rem;
-      transition: all 0.3s ease;
-    }
-
-    .btn-primary:hover {
-      background-color: var(--primary-hover);
-      border-color: var(--primary-hover);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0, 82, 204, 0.3);
-    }
-
-    .btn-outline-primary {
-      color: var(--primary-color);
-      border-color: var(--primary-color);
-      font-weight: 500;
-    }
-
-    .btn-outline-primary:hover {
-      background-color: var(--primary-color);
-      border-color: var(--primary-color);
-      transform: translateY(-2px);
-    }
-
-    /* Enhanced Cards */
-    .feature-card, .card {
-      border: none;
-      border-radius: 12px;
-      transition: all 0.3s ease;
-      box-shadow: var(--shadow);
-      overflow: hidden;
-    }
-
-    .feature-card:hover, .card:hover {
-      transform: translateY(-5px);
-      box-shadow: var(--shadow-hover);
-    }
-
-    /* Cart Badge */
-    .cart-badge {
-      background-color: var(--secondary-color);
-      color: white;
-      border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      font-size: 0.75rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: absolute;
-      top: -8px;
-      right: -8px;
-    }
-
-    /* Mobile Menu */
-    .mobile-menu {
-      position: fixed;
-      top: 0;
-      right: -100%;
-      width: 280px;
-      height: 100vh;
-      background: white;
-      box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
-      transition: right 0.3s ease;
-      z-index: 1050;
-      overflow-y: auto;
-    }
-
-    .mobile-menu.open {
-      right: 0;
-    }
-
-    .backdrop {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 1040;
-      opacity: 0;
-      visibility: hidden;
-      transition: all 0.3s ease;
-    }
-
-    .backdrop.active {
-      opacity: 1;
-      visibility: visible;
-    }
-
-    /* Loading Spinner */
-    .loading-spinner {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(255, 255, 255, 0.9);
-      z-index: 9999;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .loading-spinner.active {
-      display: flex;
-    }
-
-    /* Footer */
-    footer {
-      background: linear-gradient(135deg, #0d1b2a 0%, #1b263b 100%);
-      color: #a0aec0;
-      margin-top: auto;
-    }
-
-    footer a {
-      color: #a0aec0;
-      transition: all 0.3s ease;
-      text-decoration: none;
-    }
-
-    footer a:hover {
-      color: #ffffff;
-      transform: translateX(5px);
-    }
-
-    /* Custom Utilities */
-    .text-primary { color: var(--primary-color) !important; }
-    .bg-primary { background-color: var(--primary-color) !important; }
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     
-    .border-primary { border-color: var(--primary-color) !important; }
-    .btn-primary { 
-      background-color: var(--primary-color) !important;
-      border-color: var(--primary-color) !important;
-    }
+    <!-- AOS CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" rel="stylesheet">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    /* Smooth scrolling */
-    html {
-      scroll-behavior: smooth;
-    }
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --primary-light: #3b82f6;
+            --secondary: #64748b;
+            --accent: #f59e0b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --border: #e2e8f0;
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-dark: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        }
 
-    /* Focus styles for accessibility */
-    a:focus, button:focus, input:focus, select:focus, textarea:focus {
-      outline: 2px solid var(--primary-color);
-      outline-offset: 2px;
-    }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    /* Touch-friendly elements for mobile */
-    @media (max-width: 768px) {
-      .btn, .nav-link, .dropdown-item {
-        min-height: 44px;
-        display: flex;
-        align-items: center;
-      }
-      
-      input, select, textarea {
-        font-size: 16px; /* Prevents zoom on iOS */
-      }
-    }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            color: #334155;
+            line-height: 1.6;
+            overflow-x: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
 
-    /* Custom scrollbar */
-    ::-webkit-scrollbar {
-      width: 8px;
-    }
+        /* Enhanced Sticky Navigation */
+        .navbar-main {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            padding: 0.75rem 0;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
 
-    ::-webkit-scrollbar-track {
-      background: #f1f1f1;
-    }
+        .navbar-main.scrolled {
+            background: rgba(255, 255, 255, 0.98);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            padding: 0.5rem 0;
+        }
 
-    ::-webkit-scrollbar-thumb {
-      background: #c1c1c1;
-      border-radius: 4px;
-    }
+        .navbar-brand {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            font-size: 1.5rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
 
-    ::-webkit-scrollbar-thumb:hover {
-      background: #a8a8a8;
-    }
+        .navbar-brand img {
+            height: 45px;
+            width: auto;
+            transition: transform 0.3s ease;
+        }
 
-    /* Print Styles */
-    @media print {
-      .navbar, footer, .no-print {
-        display: none !important;
-      }
-      
-      body {
-        background: white !important;
-        color: black !important;
-        font-size: 12pt;
-      }
-      
-      .container {
-        max-width: 100% !important;
-      }
-    }
-  </style>
+        .navbar-brand:hover img {
+            transform: scale(1.05);
+        }
 
-  {% block extra_head %}{% endblock %}
+        /* Custom Mobile Toggle Button */
+        .navbar-toggler {
+            border: none;
+            padding: 0.25rem;
+            background: transparent;
+            width: 40px;
+            height: 40px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .navbar-toggler:focus {
+            box-shadow: none;
+            outline: none;
+        }
+
+        .navbar-toggler-icon {
+            width: 24px;
+            height: 2px;
+            background: var(--dark);
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .navbar-toggler-icon::before,
+        .navbar-toggler-icon::after {
+            content: '';
+            position: absolute;
+            width: 24px;
+            height: 2px;
+            background: var(--dark);
+            left: 0;
+            transition: all 0.3s ease;
+        }
+
+        .navbar-toggler-icon::before {
+            top: -8px;
+        }
+
+        .navbar-toggler-icon::after {
+            top: 8px;
+        }
+
+        .navbar-toggler[aria-expanded="true"] .navbar-toggler-icon {
+            background: transparent;
+        }
+
+        .navbar-toggler[aria-expanded="true"] .navbar-toggler-icon::before {
+            transform: rotate(45deg);
+            top: 0;
+        }
+
+        .navbar-toggler[aria-expanded="true"] .navbar-toggler-icon::after {
+            transform: rotate(-45deg);
+            top: 0;
+        }
+
+        /* Mobile Navbar Collapse */
+        .navbar-collapse {
+            transition: all 0.3s ease-in-out;
+        }
+
+        @media (max-width: 991.98px) {
+            .navbar-collapse {
+                background: rgba(255, 255, 255, 0.98);
+                backdrop-filter: blur(20px);
+                border-radius: 12px;
+                box-shadow: var(--shadow-lg);
+                margin-top: 1rem;
+                padding: 1rem;
+                position: absolute;
+                top: 100%;
+                left: 1rem;
+                right: 1rem;
+                max-height: 80vh;
+                overflow-y: auto;
+            }
+
+            .navbar-nav {
+                text-align: center;
+            }
+
+            .nav-item {
+                margin: 0.25rem 0;
+            }
+
+            .dropdown-menu {
+                background: rgba(248, 250, 252, 0.9);
+                backdrop-filter: blur(10px);
+                border: none;
+                box-shadow: var(--shadow);
+                text-align: center;
+            }
+        }
+
+        .nav-link {
+            font-weight: 500;
+            color: var(--dark) !important;
+            padding: 0.5rem 1rem !important;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .nav-link:hover {
+            color: var(--primary) !important;
+            background: rgba(37, 99, 235, 0.05);
+            transform: translateY(-1px);
+        }
+
+        .nav-link.active {
+            color: var(--primary) !important;
+            background: rgba(37, 99, 235, 0.1);
+        }
+
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 1rem;
+            right: 1rem;
+            height: 2px;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+
+        /* Cart Badge */
+        .cart-badge {
+            background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        /* Enhanced Dropdown */
+        .dropdown-menu {
+            border: none;
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            padding: 0.5rem;
+            margin-top: 0.5rem;
+            animation: dropdownFade 0.3s ease;
+        }
+
+        @keyframes dropdownFade {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .dropdown-item {
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .dropdown-item:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateX(5px);
+        }
+
+        /* Enhanced Buttons */
+        .btn {
+            font-weight: 600;
+            border-radius: 10px;
+            padding: 0.75rem 1.5rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(37, 99, 235, 0.4);
+        }
+
+        .btn-outline-primary {
+            border: 2px solid var(--primary);
+            color: var(--primary);
+            background: transparent;
+        }
+
+        .btn-outline-primary:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        /* Enhanced Messages */
+        .alert {
+            border: none;
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            margin-bottom: 1rem;
+            backdrop-filter: blur(10px);
+            border-left: 4px solid;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.1);
+            color: #065f46;
+            border-left-color: var(--success);
+        }
+
+        .alert-error, .alert-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: #991b1b;
+            border-left-color: var(--danger);
+        }
+
+        .alert-warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: #92400e;
+            border-left-color: var(--warning);
+        }
+
+        .alert-info {
+            background: rgba(59, 130, 246, 0.1);
+            color: #1e40af;
+            border-left-color: var(--primary);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding-top: 100px;
+            padding-bottom: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding-top: 80px;
+            }
+        }
+
+        /* Enhanced Cards */
+        .card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: white;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Enhanced Footer */
+        footer {
+            background: var(--gradient-dark);
+            color: #cbd5e1;
+            margin-top: auto;
+            position: relative;
+            overflow: hidden;
+        }
+
+        footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        }
+
+        footer h5 {
+            color: white;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            position: relative;
+        }
+
+        footer h5::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 30px;
+            height: 2px;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+
+        footer a {
+            color: #cbd5e1;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        footer a:hover {
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .social-links a {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .social-links a:hover {
+            background: var(--primary);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(37, 99, 235, 0.4);
+        }
+
+        /* Mobile Backdrop for Navbar */
+        .navbar-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .navbar-backdrop.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Loading Animation */
+        .loading-spinner {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .loading-spinner.active {
+            display: flex;
+        }
+
+        /* Smooth Scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-dark);
+        }
+
+        /* Animation Classes */
+        .fade-in-up {
+            animation: fadeInUp 0.8s ease;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .scale-in {
+            animation: scaleIn 0.5s ease;
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+    </style>
+
+    {% block extra_head %}{% endblock %}
 </head>
 
-<body class="d-flex flex-column min-vh-100">
-  <!-- Loading Spinner -->
-  <div class="loading-spinner" id="loadingSpinner">
-    <div class="text-center">
-      <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
-        <span class="visually-hidden">Loading...</span>
-      </div>
-      <p class="mt-3 text-muted">Processing...</p>
+<body>
+    <!-- Loading Spinner -->
+    <div class="loading-spinner" id="loadingSpinner">
+        <div class="text-center">
+            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3 text-muted">Loading...</p>
+        </div>
     </div>
-  </div>
 
-  <!-- Sticky Navigation -->
-  <nav class="navbar navbar-expand-lg navbar-light">
-    <div class="container">
-      <!-- Brand -->
-      <a class="navbar-brand d-flex align-items-center" href="{% url 'school_portal:landing_page' %}">
-        <img src="{% static 'images/school_logo.png' %}" alt="{{ SCHOOL_NAME }} Logo" class="me-2 me-sm-3" style="height: 45px;">
-        <span class="d-none d-sm-inline">{{ SCHOOL_NAME }}</span>
-      </a>
+    <!-- Mobile Navbar Backdrop -->
+    <div class="navbar-backdrop" id="navbarBackdrop"></div>
 
-      <!-- Desktop Navigation -->
-      <div class="collapse navbar-collapse" id="navbarMain">
-        <div class="navbar-nav ms-auto align-items-center">
-          <a class="nav-link mx-2 fw-medium" href="{% url 'ecommerce:product_list' %}">BrillsPay</a>
-          <a class="nav-link mx-2 fw-medium" href="{% url 'exams:home' %}">CBT</a>
-          <a class="nav-link mx-2 fw-medium" href="{% url 'school_portal:about' %}">About</a>
-          
-         
-          {% if user.is_authenticated %}
-            <a class="nav-link mx-2 fw-medium" href="{% url 'pickup:pickup_generate' %}">Pickup Codes</a>
+    <!-- Sticky Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-main" id="mainNavbar">
+        <div class="container">
+            <!-- Brand -->
+            <a class="navbar-brand d-flex align-items-center" href="{% url 'ecommerce:product_list' %}">
+                <img src="{% static 'images/school_logo.png' %}" alt="{{ SCHOOL_NAME }}" class="me-3">
+                <span>{{ SCHOOL_NAME }}</span>
+            </a>
+
+            <!-- Mobile Toggle -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" 
+                    aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <!-- Navbar Content -->
+            <div class="collapse navbar-collapse" id="navbarContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'ecommerce:product_list' %}" data-bs-dismiss="navbarContent">
+                            <i class="fas fa-home me-2"></i>Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'ecommerce:product_list' %}" data-bs-dismiss="navbarContent">
+                            <i class="fas fa-shopping-bag me-2"></i>Products
+                        </a>
+                    </li>
+                    
+                    <!-- Cart -->
+                    <li class="nav-item">
+                        <a class="nav-link position-relative" href="{% url 'ecommerce:cart_view' %}" data-bs-dismiss="navbarContent">
+                            <i class="fas fa-shopping-cart me-2"></i>Cart
+                            {% with cart_total=request.session.cart_total|default:0 %}
+                                {% if cart_total > 0 %}
+                                    <span class="cart-badge">{{ cart_total }}</span>
+                                {% endif %}
+                            {% endwith %}
+                        </a>
+                    </li>
+
+                    {% if user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'ecommerce:order_history' %}" data-bs-dismiss="navbarContent">
+                                <i class="fas fa-receipt me-2"></i>Orders
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'pickup:pickup_generate' %}" data-bs-dismiss="navbarContent">
+                                <i class="fas fa-qrcode me-2"></i>Pickup Codes
+                            </a>
+                        </li>
+
+                        <!-- Admin Dropdown -->
+                        {% if user.role in 'admin superadmin' %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" 
+                               aria-expanded="false" data-bs-auto-close="outside">
+                                <i class="fas fa-cog me-2"></i>Admin
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{% url 'ecommerce:admin_dashboard' %}" data-bs-dismiss="navbarContent">
+                                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'ecommerce:admin_products' %}" data-bs-dismiss="navbarContent">
+                                    <i class="fas fa-box me-2"></i>Products
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'ecommerce:admin_orders' %}" data-bs-dismiss="navbarContent">
+                                    <i class="fas fa-list-alt me-2"></i>Orders
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'pickup:pickup_generate' %}" data-bs-dismiss="navbarContent">
+                                    <i class="fas fa-check-circle me-2"></i>Verify Codes
+                                </a></li>
+                            </ul>
+                        </li>
+                        {% endif %}
+                    {% endif %}
+                </ul>
+
+                <!-- User Section -->
+                <div class="navbar-nav">
+                    {% if user.is_authenticated %}
+                        <div class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" 
+                               data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside">
+                                <div class="d-flex align-items-center">
+                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" 
+                                         style="width: 35px; height: 35px; font-size: 0.9rem;">
+                                        {{ user.username|first|upper }}
+                                    </div>
+                                    <span class="ms-2 d-none d-lg-inline">{{ user.username }}</span>
+                                </div>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="#" data-bs-dismiss="navbarContent">
+                                    <i class="fas fa-user me-2"></i>Profile
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="{% url 'users:logout' %}" data-bs-dismiss="navbarContent">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                </a></li>
+                            </ul>
+                        </div>
+                    {% else %}
+                        <a class="btn btn-primary" href="{% url 'users:login' %}" data-bs-dismiss="navbarContent">
+                            <i class="fas fa-sign-in-alt me-2"></i>Login
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Messages -->
+    {% if messages %}
+    <div class="container mt-4">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show scale-in" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="fas 
+                    {% if message.tags == 'success' %}fa-check-circle
+                    {% elif message.tags == 'error' or message.tags == 'danger' %}fa-exclamation-circle
+                    {% elif message.tags == 'warning' %}fa-exclamation-triangle
+                    {% else %}fa-info-circle{% endif %}
+                    me-3 fa-lg"></i>
+                <div class="flex-grow-1">
+                    {{ message }}
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-5">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-lg-4 col-md-6">
+                    <h5>{{ SCHOOL_NAME }}</h5>
+                    <p class="mb-0">Providing quality education and seamless payment solutions for parents and students through innovative technology.</p>
+                </div>
+                
+                <div class="col-lg-2 col-md-6">
+                    <h5>Quick Links</h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <a href="{% url 'ecommerce:product_list' %}">
+                                <i class="fas fa-chevron-right me-2 fa-xs"></i>Home
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="{% url 'ecommerce:product_list' %}">
+                                <i class="fas fa-chevron-right me-2 fa-xs"></i>Products
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="{% url 'pickup:pickup_generate' %}">
+                                <i class="fas fa-chevron-right me-2 fa-xs"></i>Pickup Codes
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="col-lg-3 col-md-6">
+                    <h5>Contact Info</h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-3">
+                            <i class="fas fa-phone me-3 text-primary"></i>
+                            +234 807 982 3665
+                        </li>
+                        <li class="mb-3">
+                            <i class="fas fa-envelope me-3 text-primary"></i>
+                            info@thebrillsschool.com
+                        </li>
+                        <li class="mb-3">
+                            <i class="fas fa-map-marker-alt me-3 text-primary"></i>
+                            No. 1 Adaba, Awotan-Akufo Road, Ibadan
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="col-lg-3 col-md-6">
+                    <h5>Follow Us</h5>
+                    <div class="social-links d-flex gap-3 mb-4">
+                        <a href="https://www.facebook.com/thebrills/" target="_blank" title="Facebook">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="https://www.instagram.com/thebrillsschools/" target="_blank" title="Instagram">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="https://www.youtube.com/channel/UCHCdkgNTXKHTbecF9r39llA" target="_blank" title="YouTube">
+                            <i class="fab fa-youtube"></i>
+                        </a>
+                        <a href="https://x.com/thebrillsschool" target="_blank" title="Twitter">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                    </div>
+                    <small>Stay connected with us on social media</small>
+                </div>
+            </div>
             
-            {% if user.role in 'admin superadmin' %}
-            <div class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle mx-2 fw-medium" href="#" role="button" data-bs-toggle="dropdown">
-                Admin
-              </a>
-              <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="#">
-                  <i class="fas fa-chart-line me-2"></i>Dashboard
-                </a></li>
-                <li><a class="dropdown-item" href="{% url 'ecommerce:product_list' %}">
-                  <i class="fas fa-boxes me-2"></i>Products
-                </a></li>
-                <li><a class="dropdown-item" href="#">
-                  <i class="fas fa-clipboard-list me-2"></i>Orders
-                </a></li>
-                <li><a class="dropdown-item" href="{% url 'pickup:pickup_generate' %}">
-                  <i class="fas fa-check-circle me-2"></i>Verify Codes
-                </a></li>
-              </ul>
+            <hr class="my-4 border-secondary">
+            
+            <div class="text-center">
+                <small class="d-block mb-2">
+                    &copy; <span id="currentYear"></span> {{ SCHOOL_NAME }}. All Rights Reserved.
+                </small>
+                <small class="d-block mb-3">
+                    Powered by <a href="mailto:logiclanesolutions@gmail.com" class="text-warning">LogicLane Solutions</a>
+                </small>
+                <div class="d-flex justify-content-center gap-4 flex-wrap">
+                    <small><i class="fas fa-shield-alt me-1"></i> Secure Payments</small>
+                    <small><i class="fas fa-lock me-1"></i> Data Protected</small>
+                    <small><i class="fas fa-history me-1"></i> Transaction Backups</small>
+                </div>
+                <small class="d-block mt-2">www.thebrillsschool.edu.ng</small>
             </div>
-            {% endif %}
-
-            <div class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle mx-2 fw-medium" href="#" role="button" data-bs-toggle="dropdown">
-                <i class="fas fa-user me-1"></i>{{ user.username|truncatechars:15 }}
-              </a>
-              <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="{% url 'users:logout' %}">
-                  <i class="fas fa-sign-out-alt me-2"></i>Logout
-                </a></li>
-              </ul>
-            </div>
-          {% else %}
-            <a class="nav-link mx-2 fw-medium" href="{% url 'users:login' %}">
-              <i class="fas fa-sign-in-alt me-1"></i>Login
-            </a>
-          {% endif %}
         </div>
-      </div>
+    </footer>
 
-      <!-- Mobile Menu Button -->
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-    </div>
-  </nav>
+    <!-- JavaScript Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
 
-  <!-- Messages -->
-  {% if messages %}
-  <div class="container mt-3">
-    {% for message in messages %}
-    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-      <div class="d-flex align-items-center">
-        <i class="fas 
-          {% if message.tags == 'success' %}fa-check-circle text-success
-          {% elif message.tags == 'error' %}fa-exclamation-circle text-danger
-          {% elif message.tags == 'warning' %}fa-exclamation-triangle text-warning
-          {% else %}fa-info-circle text-info{% endif %} me-2"></i>
-        <span>{{ message }}</span>
-      </div>
-      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-    {% endfor %}
-  </div>
-  {% endif %}
+    <script>
+        // Initialize current year
+        document.getElementById('currentYear').textContent = new Date().getFullYear();
 
-  <!-- Main Content -->
-  <main class="main-content flex-grow-1 py-4">
-    <div class="container">
-      {% block content %}{% endblock %}
-    </div>
-  </main>
+        // Mobile navbar dismissal functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const navbar = document.getElementById('mainNavbar');
+            const navbarContent = document.getElementById('navbarContent');
+            const navbarBackdrop = document.getElementById('navbarBackdrop');
+            const navLinks = document.querySelectorAll('.nav-link, .dropdown-item');
+            const navbarToggler = document.querySelector('.navbar-toggler');
 
-  <!-- Footer -->
-  <footer class="mt-auto py-4 py-md-5">
-    <div class="container">
-      <div class="row g-4">
-        <div class="col-md-6 col-lg-3">
-          <h5 class="text-white mb-3">{{ SCHOOL_NAME }}</h5>
-          <p class="text-grey mb-0">Providing quality education and seamless payment solutions for parents and students.</p>
-        </div>
-        
-        <div class="col-md-6 col-lg-3">
-          <h5 class="text-white mb-3">Quick Links</h5>
-          <ul class="list-unstyled">
-            <li class="mb-2"><a href="{% url 'ecommerce:product_list' %}"><i class="fas fa-chevron-right me-2 small"></i>Home</a></li>
-            <li class="mb-2"><a href="{% url 'ecommerce:product_list' %}"><i class="fas fa-chevron-right me-2 small"></i>Products</a></li>
-            <li class="mb-2"><a href="{% url 'pickup:pickup_generate' %}"><i class="fas fa-chevron-right me-2 small"></i>Pickup Codes</a></li>
-          </ul>
-        </div>
-        <div class="col-md-6 col-lg-3">
-            <h5 class="text-white mb-3">Contact Info</h5>
-              <ul class="list-unstyled">
-                  <li>📞 +234 807 982 3665</li>
-                  <li>📧 info@thebrillsschool.com</li>
-                  <li>📍 No. 1 Adaba, Awotan-Akufo Road, Ibadan</li>
-              </ul>
-        </div>  
-        <div class="col-md-6 col-lg-3">
-          <h5 class="text-white mb-3">Follow Us</h5>
-          <div class="d-flex gap-3 mb-3">
-            <a href="https://www.facebook.com/thebrills/" target="_blank" class="text-light fs-5">
-              <i class="fab fa-facebook"></i>
-            </a>
-            <a href="https://www.instagram.com/thebrillsschools/" target="_blank" class="text-light fs-5">
-              <i class="fab fa-instagram"></i>
-            </a>
-            <a href="https://www.youtube.com/channel/UCHCdkgNTXKHTbecF9r39llA" target="_blank" class="text-light fs-5">
-              <i class="fab fa-youtube"></i>
-            </a>
-            <a href="https://x.com/thebrillsschool" target="_blank" class="text-light fs-5">
-              <i class="fab fa-twitter"></i>
-            </a>
-          </div>
-          <small class="text-muted">Stay connected with us on social media</small>
-        </div>
-      </div>
-      
-      <hr class="my-4 border-white">
-      
-      <div class="text-center">
-        <small class="text-white">
-          &copy; <span id="currentYear"></span> — {{ SCHOOL_NAME }}. All Rights Reserved. 
-          Powered by <a href="mailto:logiclanesolutions@gmail.com" class="text-warning text-decoration-none">LogicLane Solutions</a>.
-        </small>
-        <br>
-        <p class="text-white">
-          <i class="fas fa-shield-alt"></i> Secure Payments | 
-          <i class="fas fa-lock"></i> Data Protected | 
-          <i class="fas fa-history"></i> Transaction Backups
-      </p>
-        <small class="text-white">www.thebrillsschool.edu.ng</small>
-      </div>
-    </div>
-  </footer>
+            // Sticky navbar scroll effect
+            window.addEventListener('scroll', function() {
+                if (window.scrollY > 50) {
+                    navbar.classList.add('scrolled');
+                } else {
+                    navbar.classList.remove('scrolled');
+                }
+            });
 
-  <!-- JavaScript Libraries -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+            // Mobile backdrop functionality
+            navbarToggler.addEventListener('click', function() {
+                const isExpanded = this.getAttribute('aria-expanded') === 'true';
+                if (isExpanded) {
+                    navbarBackdrop.classList.add('active');
+                } else {
+                    navbarBackdrop.classList.remove('active');
+                }
+            });
 
-  <script>
-    // Initialize current year
-    document.getElementById('currentYear').textContent = new Date().getFullYear();
+            // Close navbar when clicking backdrop
+            navbarBackdrop.addEventListener('click', function() {
+                const bsCollapse = bootstrap.Collapse.getInstance(navbarContent);
+                bsCollapse.hide();
+                navbarBackdrop.classList.remove('active');
+            });
 
-    // Loading functions
-    function showLoading() {
-      document.getElementById('loadingSpinner').classList.add('active');
-    }
+            // Auto-close navbar when clicking nav links on mobile
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    // Only auto-close on mobile
+                    if (window.innerWidth < 992) {
+                        const bsCollapse = bootstrap.Collapse.getInstance(navbarContent);
+                        if (bsCollapse) {
+                            bsCollapse.hide();
+                            navbarBackdrop.classList.remove('active');
+                        }
+                    }
+                });
+            });
 
-    function hideLoading() {
-      document.getElementById('loadingSpinner').classList.remove('active');
-    }
+            // Close navbar when window is resized to desktop
+            window.addEventListener('resize', function() {
+                if (window.innerWidth >= 992) {
+                    const bsCollapse = bootstrap.Collapse.getInstance(navbarContent);
+                    if (bsCollapse) {
+                        bsCollapse.show();
+                    }
+                    navbarBackdrop.classList.remove('active');
+                }
+            });
 
-    // Initialize AOS
-    AOS.init({
-      duration: 800,
-      once: false,
-      mirror: true,
-      easing: "ease-out-quart"
-    });
+            // Initialize AOS
+            AOS.init({
+                duration: 800,
+                once: true,
+                mirror: false,
+                easing: 'ease-out-cubic'
+            });
 
-    // GSAP animations
-    gsap.registerPlugin(ScrollTrigger);
+            // GSAP Animations
+            gsap.registerPlugin(ScrollTrigger);
 
-    // Basic GSAP enter animation triggered by scroll
-    gsap.utils.toArray('.gsap-fade-up').forEach(el => {
-      gsap.fromTo(el, {y: 40, autoAlpha: 0}, {
-        y: 0, 
-        autoAlpha: 1,
-        scrollTrigger: {
-          trigger: el,
-          start: 'top 85%',
-          end: 'bottom 20%',
-          toggleActions: 'play reverse play reverse',
-        },
-        duration: 0.8,
-        ease: 'power2.out'
-      });
-    });
+            // Navbar entrance animation
+            gsap.from('#mainNavbar', {
+                y: -100,
+                opacity: 0,
+                duration: 0.8,
+                ease: 'power3.out'
+            });
 
-    // Hero animation
-    document.addEventListener('DOMContentLoaded', function() {
-      const heroTitle = document.querySelector('.gsap-hero-title');
-      const heroSub = document.querySelector('.gsap-hero-sub');
+            // Global fade-in animations
+            gsap.utils.toArray('.fade-in-up').forEach(element => {
+                gsap.from(element, {
+                    y: 50,
+                    opacity: 0,
+                    duration: 0.8,
+                    ease: 'power3.out',
+                    scrollTrigger: {
+                        trigger: element,
+                        start: 'top 85%',
+                        end: 'bottom 20%',
+                        toggleActions: 'play none none none'
+                    }
+                });
+            });
 
-      if (heroTitle || heroSub) {
-        gsap.from(".gsap-hero-title", { 
-          y: 30, 
-          opacity: 0, 
-          duration: 0.8, 
-          ease: "power3.out", 
-          stagger: 0.08 
+            // Card hover animations
+            gsap.utils.toArray('.card').forEach(card => {
+                card.addEventListener('mouseenter', () => {
+                    gsap.to(card, {
+                        y: -8,
+                        duration: 0.3,
+                        ease: 'power2.out'
+                    });
+                });
+                
+                card.addEventListener('mouseleave', () => {
+                    gsap.to(card, {
+                        y: 0,
+                        duration: 0.3,
+                        ease: 'power2.out'
+                    });
+                });
+            });
+
+            // Auto-hide alerts
+            setTimeout(() => {
+                document.querySelectorAll('.alert').forEach(alert => {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                });
+            }, 5000);
         });
-        gsap.from(".gsap-hero-sub", { 
-          y: 20, 
-          opacity: 0, 
-          duration: 0.9, 
-          delay: 0.12, 
-          ease: "power3.out" 
+
+        // Loading functions
+        function showLoading() {
+            document.getElementById('loadingSpinner').classList.add('active');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingSpinner').classList.remove('active');
+        }
+
+        // Add smooth scrolling to all links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
         });
-      }
+    </script>
 
-      // Feature cards animation
-      gsap.utils.toArray('.feature-card').forEach((card, i) => {
-        gsap.from(card, {
-          y: 20, 
-          opacity: 0, 
-          duration: 0.6, 
-          delay: i * 0.08,
-          scrollTrigger: { 
-            trigger: card, 
-            start: 'top 80%', 
-            end: 'bottom 20%',
-            toggleActions: 'play none none none' 
-          },
-          ease: 'power2.out'
-        });
-      });
-    });
-
-    // Toast notification function
-    function showToast(message, type = 'success') {
-      // Create toast element
-      const toast = document.createElement('div');
-      toast.className = `toast align-items-center text-bg-${type} border-0 position-fixed top-0 end-0 m-3`;
-      toast.style.zIndex = '1060';
-      
-      toast.innerHTML = `
-        <div class="d-flex">
-          <div class="toast-body">${message}</div>
-          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-        </div>
-      `;
-      
-      document.body.appendChild(toast);
-      const bsToast = new bootstrap.Toast(toast);
-      bsToast.show();
-      
-      // Remove from DOM after hide
-      toast.addEventListener('hidden.bs.toast', () => {
-        toast.remove();
-      });
-    }
-  </script>
-
-  {% block extra_scripts %}{% endblock %}
+    {% block extra_scripts %}{% endblock %}
 </body>
 </html>

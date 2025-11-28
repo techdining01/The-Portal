@@ -45,7 +45,10 @@ INSTALLED_APPS = [
     'users',
     'exams',
     'pickup',
-    'ecommerce',
+    'store',
+    'backup',
+    'salary',
+    # 'ecommerce',
 
 
     # Third party
@@ -102,8 +105,8 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'cores.context_processors.school_settings', 
                 'django.template.context_processors.static',
-                'ecommerce.context_processors.paystack_keys',
-                'ecommerce.context_processors.cart_count', 
+                # 'ecommerce.context_processors.paystack_keys',
+                # 'ecommerce.context_processors.cart_count', 
             ],
         },
     },
@@ -249,15 +252,26 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 
-# Celery Beat Schedule
+from celery.schedules import crontab
+
 CELERY_BEAT_SCHEDULE = {
+    # Daily backup at 2 AM
     'daily-backup': {
-        'task': 'ecommerce.tasks.perform_daily_backup',
-        'schedule': timedelta(days=1),
+        'task': 'backup.tasks.create_automated_backup',
+        'schedule': crontab(hour=2, minute=0),
+        'args': ('full',),
     },
-    'cleanup-old-backups': {
-        'task': 'ecommerce.tasks.cleanup_old_backups',
-        'schedule': timedelta(days=7),
+    
+    # Monthly salary report on 1st of every month
+    'monthly-salary-report': {
+        'task': 'salary.tasks.generate_monthly_salary_reports',
+        'schedule': crontab(day_of_month=1, hour=6, minute=0),
+    },
+    
+    # Check for pending salaries every Monday at 9 AM
+    'weekly-salary-check': {
+        'task': 'salary.tasks.process_pending_salaries',
+        'schedule': crontab(day_of_week=1, hour=9, minute=0),
     },
 }
 

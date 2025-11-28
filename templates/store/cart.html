@@ -1,0 +1,143 @@
+<!-- templates/store/cart.html -->
+{% extends 'store_base.html' %}
+
+{% block title %}Shopping Cart - BrillsPay{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <h1 class="text-3xl font-bold text-gray-900 mb-8">Shopping Cart</h1>
+
+    {% if cart.items.count > 0 %}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Cart Items -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-lg shadow-md">
+                {% for item in cart.items.all %}
+                <div class="p-6 border-b border-gray-200 last:border-b-0">
+                    <div class="flex items-center space-x-4">
+                        <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" 
+                             class="w-20 h-20 object-cover rounded-md">
+                        <div class="flex-1">
+                            <h3 class="font-semibold text-lg">{{ item.product.name }}</h3>
+                            <p class="text-gray-600 text-sm">₦{{ item.product.price }}</p>
+                            {% if item.student %}
+                                <p class="text-purple-600 text-sm">
+                                    <i class="fas fa-user-graduate mr-1"></i>
+                                    For: {{ item.student.get_full_name }}
+                                </p>
+                            {% endif %}
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <!-- Quantity Controls -->
+                            <form method="post" action="{% url 'update_cart_item' item.id %}" class="flex items-center">
+                                {% csrf_token %}
+                                <button type="button" 
+                                        onclick="this.parentElement.querySelector('input').stepDown(); this.parentElement.submit()"
+                                        class="quantity-btn decrease w-8 h-8 border border-gray-300 rounded-l-md flex items-center justify-center hover:bg-gray-100">
+                                    <i class="fas fa-minus text-xs"></i>
+                                </button>
+                                <input type="number" name="quantity" value="{{ item.quantity }}" min="1" 
+                                       class="quantity-input w-12 h-8 border-y border-gray-300 text-center" 
+                                       onchange="this.form.submit()">
+                                <button type="button" 
+                                        onclick="this.parentElement.querySelector('input').stepUp(); this.parentElement.submit()"
+                                        class="quantity-btn increase w-8 h-8 border border-gray-300 rounded-r-md flex items-center justify-center hover:bg-gray-100">
+                                    <i class="fas fa-plus text-xs"></i>
+                                </button>
+                            </form>
+                            
+                            <form method="post" action="{% url 'remove_from_cart' item.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="text-red-500 hover:text-red-700">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="mt-2 text-right font-semibold">
+                        ₦{{ item.subtotal }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Order Summary -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-lg shadow-md p-6 sticky top-4">
+                <h3 class="text-xl font-semibold mb-4">Order Summary</h3>
+                <div class="space-y-3 mb-6">
+                    <div class="flex justify-between">
+                        <span>Subtotal</span>
+                        <span>₦{{ cart.total_amount }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Shipping</span>
+                        <span class="text-green-600">Free</span>
+                    </div>
+                    <div class="border-t border-gray-200 pt-3 flex justify-between text-lg font-semibold">
+                        <span>Total</span>
+                        <span class="text-purple-600">₦{{ cart.total_amount }}</span>
+                    </div>
+                </div>
+                
+                <!-- Student Selection for New Items -->
+                {% if children %}
+                <div class="mb-4 p-4 bg-gray-50 rounded-lg">
+                    <h4 class="font-semibold mb-2">Tag Items to Students</h4>
+                    <p class="text-sm text-gray-600 mb-3">Select a student for new items added to cart:</p>
+                    <select id="student-select" class="w-full p-2 border border-gray-300 rounded-md">
+                        <option value="">-- Select Student --</option>
+                        {% for child in children %}
+                        <option value="{{ child.id }}">{{ child.get_full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+
+                <a href="{% url 'checkout' %}" 
+                   class="w-full bg-purple-600 text-white py-3 px-4 rounded-md hover:bg-purple-700 transition duration-200 font-semibold text-center block">
+                    Proceed to Checkout
+                </a>
+                
+                <a href="{% url 'product_list' %}" 
+                   class="w-full border border-gray-300 text-gray-700 py-3 px-4 rounded-md hover:bg-gray-50 transition duration-200 text-center block mt-3">
+                    Continue Shopping
+                </a>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-12">
+        <i class="fas fa-shopping-cart text-6xl text-gray-400 mb-4"></i>
+        <h3 class="text-xl font-semibold text-gray-600 mb-2">Your cart is empty</h3>
+        <p class="text-gray-500 mb-6">Add some items to get started!</p>
+        <a href="{% url 'product_list' %}" 
+           class="bg-purple-600 text-white px-6 py-3 rounded-md hover:bg-purple-700 transition duration-200">
+            Start Shopping
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    // Set selected student for future add to cart actions
+    document.getElementById('student-select')?.addEventListener('change', function() {
+        const studentId = this.value;
+        // Store in sessionStorage for future add to cart actions
+        if (studentId) {
+            sessionStorage.setItem('selectedStudent', studentId);
+        } else {
+            sessionStorage.removeItem('selectedStudent');
+        }
+    });
+
+    // Load previously selected student
+    document.addEventListener('DOMContentLoaded', function() {
+        const selectedStudent = sessionStorage.getItem('selectedStudent');
+        if (selectedStudent) {
+            document.getElementById('student-select').value = selectedStudent;
+        }
+    });
+</script>
+{% endblock %}

@@ -23,8 +23,8 @@ User = get_user_model()
 
 
 # Helper functions
-def is_admin_user(user):
-    return user.is_authenticated and user.is_admin()
+def is_admin_user(User):
+    return User.role in ['admin', 'superadmin']
 
 def send_payment_confirmation_email(order, payment):
     """Send payment confirmation email"""
@@ -106,11 +106,13 @@ class ProductDetailView(DetailView):
         context = super().get_context_data(**kwargs)
         context['form'] = AddToCartForm(parent_user=self.request.user)
         return context
+    
+from django.http import HttpResponse
 
 @login_required
 def add_to_cart(request, product_id):
     product = get_object_or_404(Product, id=product_id, is_available=True)
-    
+   
     if request.method == 'POST':
         form = AddToCartForm(request.POST, parent_user=request.user)
         
@@ -526,7 +528,7 @@ def admin_dashboard(request):
         'payment_stats': payment_stats,
     }
     
-    return render(request, 'admin/dashboard.html', context)
+    return render(request, 'ecommerce/admin/dashboard.html', context)
 
 @login_required
 @user_passes_test(is_admin_user)
@@ -557,7 +559,7 @@ def admin_products(request):
     
     categories = Category.objects.filter(is_active=True)
     
-    return render(request, 'admin/products.html', {
+    return render(request, 'ecommerce/admin/products.html', {
         'products': products,
         'categories': categories,
         'product_types': Product.PRODUCT_TYPES
@@ -583,7 +585,7 @@ def admin_orders(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
-    return render(request, 'admin/orders.html', {
+    return render(request, 'ecommerce/admin/orders.html', {
         'page_obj': page_obj,
         'orders': page_obj.object_list
     })
@@ -601,7 +603,7 @@ def add_product(request):
     else:
         form = ProductForm()
     
-    return render(request, 'admin/product_form.html', {
+    return render(request, 'ecommerce/admin/product_form.html', {
         'form': form,
         'title': 'Add New Product'
     })
@@ -677,7 +679,7 @@ def manage_categories(request):
     else:
         form = CategoryForm()
     
-    return render(request, 'admin/categories.html', {
+    return render(request, 'ecommerce/admin/categories.html', {
         'categories': categories,
         'form': form
     })
@@ -743,7 +745,7 @@ def audit_logs(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
-    return render(request, 'admin/audit_logs.html', {
+    return render(request, 'ecommerce/admin/audit_logs.html', {
         'page_obj': page_obj,
         'action_types': AuditLog.ACTION_TYPES
     })

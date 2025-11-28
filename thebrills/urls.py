@@ -26,7 +26,8 @@ urlpatterns = [
     path('users/', include('users.urls', namespace='users')),
     path('exams/', include('exams.urls', namespace='exams')),
     path('cores/', include('cores.urls', namespace='cores')),
-    path('ecommerce/', include('ecommerce.urls', namespace='ecommerce')),
+    path('store/', include('store.urls', namespace='store')),
+    path('salary/', include('salary.urls', namespace='salary')),
     path('pickup/', include('pickup.urls', namespace='pickup')),
 
 ]

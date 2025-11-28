@@ -1,0 +1,153 @@
+<!-- templates/base.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}BrillsPay - School Ecommerce{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .navbar-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="navbar-gradient shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="{% url 'product_list' %}" class="flex-shrink-0 flex items-center">
+                        <i class="fas fa-graduation-cap text-white text-2xl mr-3"></i>
+                        <span class="text-white text-xl font-bold">BrillsPay</span>
+                    </a>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'cart' %}" class="text-white hover:text-gray-200 relative">
+                            <i class="fas fa-shopping-cart text-lg"></i>
+                            {% if user.cart_set.first %}
+                                <span class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center">
+                                    {{ user.cart_set.first.items_count }}
+                                </span>
+                            {% endif %}
+                        </a>
+                        <a href="{% url 'order_history' %}" class="text-white hover:text-gray-200">
+                            <i class="fas fa-history text-lg"></i>
+                        </a>
+                        <div class="relative group">
+                            <button class="text-white hover:text-gray-200 flex items-center space-x-2">
+                                <i class="fas fa-user-circle text-lg"></i>
+                                <span>{{ user.get_full_name|default:user.username }}</span>
+                                <i class="fas fa-chevron-down text-xs"></i>
+                            </button>
+                            <div class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 hidden group-hover:block">
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <i class="fas fa-user mr-2"></i>Profile
+                                </a>
+                                <a href="{% url 'logout' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                                </a>
+                            </div>
+                        </div>
+                    {% else %}
+                        <a href="{% url 'login' %}" class="text-white hover:text-gray-200">Login</a>
+                        <a href="{% url 'register' %}" class="bg-white text-purple-600 px-4 py-2 rounded-md hover:bg-gray-100 transition duration-200">
+                            Register
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Messages -->
+    {% if messages %}
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} p-4 rounded-md mb-4 
+                    {% if message.tags == 'success' %}bg-green-100 text-green-700 border border-green-300
+                    {% elif message.tags == 'error' %}bg-red-100 text-red-700 border border-red-300
+                    {% else %}bg-blue-100 text-blue-700 border border-blue-300{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Main Content -->
+    <main>
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white mt-12">
+        <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">BrillsPay</h3>
+                    <p class="text-gray-300">Your trusted school ecommerce platform for uniforms, books, and educational materials.</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
+                    <ul class="space-y-2">
+                        <li><a href="{% url 'product_list' %}" class="text-gray-300 hover:text-white">Products</a></li>
+                        {% if user.is_authenticated %}
+                            <li><a href="{% url 'order_history' %}" class="text-gray-300 hover:text-white">Order History</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Contact</h3>
+                    <p class="text-gray-300">Email: support@brillspay.edu</p>
+                    <p class="text-gray-300">Phone: +234 800 000 0000</p>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-300">
+                <p>&copy; 2024 BrillsPay. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Simple JavaScript for interactive elements
+        document.addEventListener('DOMContentLoaded', function() {
+            // Dropdown menus
+            document.querySelectorAll('.group').forEach(group => {
+                group.addEventListener('mouseenter', function() {
+                    this.querySelector('.hidden').classList.remove('hidden');
+                });
+                group.addEventListener('mouseleave', function() {
+                    this.querySelector('.block').classList.add('hidden');
+                });
+            });
+
+            // Quantity updates
+            document.querySelectorAll('.quantity-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const input = this.parentElement.querySelector('.quantity-input');
+                    let quantity = parseInt(input.value);
+                    
+                    if (this.classList.contains('increase')) {
+                        quantity++;
+                    } else if (this.classList.contains('decrease') && quantity > 1) {
+                        quantity--;
+                    }
+                    
+                    input.value = quantity;
+                });
+            });
+        });
+    </script>
+</body>
+</html>

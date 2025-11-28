@@ -94,12 +94,15 @@ class AddToCartForm(forms.ModelForm):
         }
     
     def __init__(self, *args, **kwargs):
+        from django.urls import reverse       
         parent_user = kwargs.pop('parent_user', None)
         super().__init__(*args, **kwargs)
-        
+       
         if parent_user and parent_user.is_parent():
             # Limit students to parent's children
             self.fields['student'].queryset = parent_user.children.all()
+      
+            
 
 class CheckoutForm(forms.ModelForm):
     payment_method = forms.ChoiceField(

@@ -20,6 +20,30 @@ def cart_count(request):
     return {'cart_count': cart_count}
 
 
+def user_context(request):
+    """Add user information to template context safely"""
+    context = {
+        'user_is_authenticated': request.user.is_authenticated,
+        'user_role': None,
+        'is_parent': False,
+        'is_student': False,
+        'is_teacher': False,
+        'is_admin': False,
+    }
+    
+    if request.user.is_authenticated:
+        # Safely get user attributes with defaults
+        context.update({
+            'user_role': getattr(request.user, 'role', None),
+            'is_parent': getattr(request.user, 'is_parent', False),
+            'is_student': getattr(request.user, 'is_student', False),
+            'is_teacher': getattr(request.user, 'is_teacher', False),
+            'is_admin': getattr(request.user, 'is_admin', False),
+        })
+    
+    return context
+
+
 def site_settings(request):
     """Add site settings to template context"""
     from django.conf import settings
