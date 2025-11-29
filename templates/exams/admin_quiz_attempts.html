@@ -1,3 +1,8 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+
 <table id="attempts-table" class="table">
   <thead>
     <tr>
@@ -57,3 +62,4 @@ document.querySelectorAll(".approve-retake-btn").forEach(btn => {
   });
 });
 </script>
+{% endblock content %}

@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Shopping Cart - BrillsPay{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h1 class="display-5 fw-bold text-dark mb-4">Shopping Cart</h1>
+
+    {% if cart.items.count > 0 %}
+    <div class="row">
+        <!-- Cart Items -->
+        <div class="col-lg-8 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    {% for item in cart.items.all %}
+                    <div class="row align-items-center mb-4 pb-3 border-bottom">
+                        <div class="col-md-2">
+                            {% if item.product.image and item.product.image.url %}
+                                <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" 
+                                     class="img-fluid rounded" style="height: 80px; object-fit: cover;">
+                            {% else %}
+                                <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 80px; width: 80px;">
+                                    <i class="fas fa-image text-muted"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <h5 class="card-title mb-1">{{ item.product.name }}</h5>
+                            <p class="text-muted mb-1">₦{{ item.product.price }}</p>
+                            {% if item.student %}
+                            <p class="text-primary small mb-0">
+                                <i class="fas fa-user-graduate me-1"></i>
+                                For: {{ item.student.get_full_name }}
+                            </p>
+                            {% else %}
+                            <p class="text-muted small mb-0">
+                                <i class="fas fa-user me-1"></i>
+                                Not tagged to student
+                            </p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-center">
+                                <!-- Quantity Update Form -->
+                                <form method="post" action="{% url 'store:update_cart_item' item.id %}" class="d-flex align-items-center me-2" id="quantity-form-{{ item.id }}">
+                                    {% csrf_token %}
+                                    <div class="input-group input-group-sm" style="width: 120px;">
+                                        <button type="button" class="btn btn-outline-secondary quantity-btn decrease" data-item-id="{{ item.id }}">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                        <input type="number" name="quantity" value="{{ item.quantity }}" min="1" 
+                                               class="form-control text-center quantity-input" data-item-id="{{ item.id }}">
+                                        <button type="button" class="btn btn-outline-secondary quantity-btn increase" data-item-id="{{ item.id }}">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </form>
+                                
+                                <!-- Remove Form -->
+                                <form method="post" action="{% url 'store:remove_from_cart' item.id %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        <div class="col-md-2 text-end">
+                            <strong class="h5">₦{{ item.subtotal }}</strong>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Summary -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Order Summary</h5>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Subtotal</span>
+                            <span>₦{{ cart.total_amount }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Shipping</span>
+                            <span class="text-success">Free</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <strong>Total</strong>
+                            <strong class="text-primary h5">₦{{ cart.total_amount }}</strong>
+                        </div>
+                    </div>
+                    
+                    {% if children %}
+                    <div class="card bg-light mb-3">
+                        <div class="card-body">
+                            <h6 class="card-title">Tag Items to Students</h6>
+                            <p class="card-text small text-muted">Select a student for new items added to cart:</p>
+                            <select id="student-select" class="form-select form-select-sm">
+                                <option value="">-- Select Student --</option>
+                                {% for child in children %}
+                                <option value="{{ child.id }}">{{ child.get_full_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <a href="{% url 'store:checkout' %}" class="btn btn-primary btn-lg w-100 mb-2">
+                        Proceed to Checkout
+                    </a>
+                    
+                    <a href="{% url 'store:product_list' %}" class="btn btn-outline-secondary w-100">
+                        Continue Shopping
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-shopping-cart display-1 text-muted mb-3"></i>
+        <h3 class="text-muted">Your cart is empty</h3>
+        <p class="text-muted mb-4">Add some items to get started!</p>
+        <a href="{% url 'store:product_list' %}" class="btn btn-primary btn-lg">
+            Start Shopping
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Cart page loaded successfully');
+    
+    // Student selection handling
+    const studentSelect = document.getElementById('student-select');
+    if (studentSelect) {
+        studentSelect.addEventListener('change', function() {
+            const studentId = this.value;
+            if (studentId) {
+                sessionStorage.setItem('selectedStudent', studentId);
+                console.log('Student selected:', studentId);
+            } else {
+                sessionStorage.removeItem('selectedStudent');
+                console.log('Student selection cleared');
+            }
+        });
+
+        // Load previously selected student
+        const selectedStudent = sessionStorage.getItem('selectedStudent');
+        if (selectedStudent) {
+            studentSelect.value = selectedStudent;
+            console.log('Loaded previous student selection:', selectedStudent);
+        }
+    }
+
+    // Quantity button functionality
+    document.querySelectorAll('.quantity-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const itemId = this.getAttribute('data-item-id');
+            const input = document.querySelector(`.quantity-input[data-item-id="${itemId}"]`);
+            const form = document.getElementById(`quantity-form-${itemId}`);
+            
+            if (!input || !form) {
+                console.error('Could not find input or form for item:', itemId);
+                return;
+            }
+
+            let quantity = parseInt(input.value);
+            
+            if (this.classList.contains('decrease') && quantity > 1) {
+                quantity--;
+            } else if (this.classList.contains('increase')) {
+                quantity++;
+            }
+            
+            input.value = quantity;
+            console.log('Updating quantity for item', itemId, 'to', quantity);
+            
+            // Submit the form
+            form.submit();
+        });
+    });
+
+    // Input change handling
+    document.querySelectorAll('.quantity-input').forEach(input => {
+        input.addEventListener('change', function() {
+            const itemId = this.getAttribute('data-item-id');
+            const form = document.getElementById(`quantity-form-${itemId}`);
+            if (form) {
+                console.log('Quantity changed for item', itemId, 'to', this.value);
+                form.submit();
+            }
+        });
+    });
+
+    console.log('Cart JavaScript initialized successfully');
+});
+</script>
+{% endblock %}

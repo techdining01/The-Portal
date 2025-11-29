@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block title %}Order {{ order.order_number }} - BrillsPay{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 fw-bold text-dark">Order: {{ order.order_number }}</h1>
+            <p class="text-muted mb-0">Placed on {{ order.created_at|date:"F d, Y \\a\\t H:i" }}</p>
+        </div>
+        <a href="{% url 'store:admin_order_management' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Orders
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Order Items -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0">
+                    <h5 class="card-title mb-0">Order Items</h5>
+                </div>
+                <div class="card-body">
+                    {% for item in order.items.all %}
+                    <div class="row align-items-center mb-3 pb-3 border-bottom">
+                        <div class="col-md-2">
+                            <img src="{{ product.image.url }}" alt="{{ item.product.name }}" 
+                                 class="img-fluid rounded" style="height: 80px; object-fit: cover;">
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="mb-1">{{ item.product.name }}</h6>
+                            <p class="text-muted mb-1">Quantity: {{ item.quantity }}</p>
+                            <p class="text-muted mb-0">Price: ₦{{ item.price }}</p>
+                            {% if item.student %}
+                            <p class="text-primary mb-0">
+                                <i class="fas fa-user-graduate me-1"></i>
+                                For: {{ item.student.get_full_name }}
+                            </p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <strong class="h5">₦{{ item.subtotal }}</strong>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <h6>Order Status</h6>
+                            <select class="form-select" onchange="updateOrderStatus({{ order.id }}, this.value)">
+                                <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>Pending</option>
+                                <option value="paid" {% if order.status == 'paid' %}selected{% endif %}>Paid</option>
+                                <option value="shipped" {% if order.status == 'shipped' %}selected{% endif %}>Shipped</option>
+                                <option value="delivered" {% if order.status == 'delivered' %}selected{% endif %}>Delivered</option>
+                                <option value="cancelled" {% if order.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <h6>Total Amount</h6>
+                            <h3 class="text-primary">₦{{ order.total_amount }}</h3>
+                            {% if order.payment_verified %}
+                            <span class="badge bg-success">Payment Verified</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Customer Information -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0">
+                    <h5 class="card-title mb-0">Customer Information</h5>
+                </div>
+                <div class="card-body">
+                    <h6>{{ order.user.get_full_name }}</h6>
+                    <p class="text-muted mb-1">{{ order.user.email }}</p>
+                    <p class="text-muted mb-0">{{ order.user.phone_number|default:"No phone" }}</p>
+                    <hr>
+                    <h6>Address</h6>
+                    <p class="text-muted mb-0">{{ order.user.address|default:"No address provided" }}</p>
+                </div>
+            </div>
+
+            <!-- Payment Information -->
+            {% if transaction %}
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0">
+                    <h5 class="card-title mb-0">Payment Information</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-1">
+                        <strong>Reference:</strong> 
+                        <span class="font-monospace">{{ transaction.paystack_reference }}</span>
+                    </p>
+                    <p class="mb-1">
+                        <strong>Status:</strong> 
+                        <span class="badge {% if transaction.payment_status == 'success' %}bg-success{% else %}bg-danger{% endif %}">
+                            {{ transaction.payment_status|title }}
+                        </span>
+                    </p>
+                    {% if transaction.paid_at %}
+                    <p class="mb-0">
+                        <strong>Paid At:</strong> 
+                        {{ transaction.paid_at|date:"M d, Y H:i" }}
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function updateOrderStatus(orderId, newStatus) {
+    fetch(`/store/admin/orders/update-status/${orderId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `status=${newStatus}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error updating order status: ' + data.error);
+        }
+    });
+}
+</script>
+{% endblock %}

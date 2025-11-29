@@ -46,7 +46,7 @@ INSTALLED_APPS = [
     'exams',
     'pickup',
     'store',
-    'backup',
+    'backup_db',
     'salary',
     # 'ecommerce',
 
@@ -117,14 +117,21 @@ WSGI_APPLICATION = 'thebrills.wsgi.application'
 # Database
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME'),
-        'USER': os.environ.get('DB_USER'),
-        'PASSWORD':os.environ.get('DB_PASSWORD'),
-        'HOST': os.environ.get('DB_HOST', 'localhost'),
-        'PORT': os.environ.get('DB_PORT', '5432'),
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': os.environ.get('DB_NAME'),
+#         'USER': os.environ.get('DB_USER'),
+#         'PASSWORD':os.environ.get('DB_PASSWORD'),
+#         'HOST': os.environ.get('DB_HOST', 'localhost'),
+#         'PORT': os.environ.get('DB_PORT', '5432'),
+#     }
+# }
 
 
 # Password validation
@@ -197,7 +204,7 @@ FERNET_KEY = os.getenv('FERNET_KEY', b'your_generated_key_here')
 AUTH_USER_MODEL = 'users.User'
 
 # Payment settings
-PAYSTACK_TEST_PUBLIC_KEY = os.getenv("PAYSTACK_TEST_PUBLIC_KEY")
+PAYSTACK_TEST_PUBLIC_KEY = 'sk_test_7456d2b313eee51a650ed592d21f9782a4816328'  #os.getenv("PAYSTACK_TEST_PUBLIC_KEY")
 PAYSTACK_TEST_SECRET_KEY = os.getenv("PAYSTACK_TEST_SECRET_KEY")
 PAYSTACK_LIVE_PUBLIC_KEY = os.getenv("PAYSTACK_LIVE_PUBLIC_KEY")
 PAYSTACK_LIVE_SECRET_KEY = os.getenv("PAYSTACK_LIVE_SECRET_KEY")

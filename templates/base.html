@@ -590,7 +590,7 @@
     <nav class="navbar navbar-expand-lg navbar-main" id="mainNavbar">
         <div class="container">
             <!-- Brand -->
-            <a class="navbar-brand d-flex align-items-center" href="{% url 'ecommerce:product_list' %}">
+            <a class="navbar-brand d-flex align-items-center" href="{% url 'school_portal:landing_page' %}">
                 <img src="{% static 'images/school_logo.png' %}" alt="{{ SCHOOL_NAME }}" class="me-3">
                 <span>{{ SCHOOL_NAME }}</span>
             </a>
@@ -605,19 +605,19 @@
             <div class="collapse navbar-collapse" id="navbarContent">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item">
-                        <a class="nav-link active" href="{% url 'ecommerce:product_list' %}" data-bs-dismiss="navbarContent">
+                        <a class="nav-link active" href="{% url 'store:product_list' %}" data-bs-dismiss="navbarContent">
                             <i class="fas fa-home me-2"></i>Home
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'ecommerce:product_list' %}" data-bs-dismiss="navbarContent">
+                        <a class="nav-link" href="{% url 'store:product_list' %}" data-bs-dismiss="navbarContent">
                             <i class="fas fa-shopping-bag me-2"></i>Products
                         </a>
                     </li>
                     
                     <!-- Cart -->
                     <li class="nav-item">
-                        <a class="nav-link position-relative" href="{% url 'ecommerce:cart_view' %}" data-bs-dismiss="navbarContent">
+                        <a class="nav-link position-relative" href="{% url 'store:cart_view' %}" data-bs-dismiss="navbarContent">
                             <i class="fas fa-shopping-cart me-2"></i>Cart
                             {% with cart_total=request.session.cart_total|default:0 %}
                                 {% if cart_total > 0 %}
@@ -629,7 +629,7 @@
 
                     {% if user.is_authenticated %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'ecommerce:order_history' %}" data-bs-dismiss="navbarContent">
+                            <a class="nav-link" href="{% url 'store:order_history' %}" data-bs-dismiss="navbarContent">
                                 <i class="fas fa-receipt me-2"></i>Orders
                             </a>
                         </li>
@@ -647,13 +647,13 @@
                                 <i class="fas fa-cog me-2"></i>Admin
                             </a>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{% url 'ecommerce:admin_dashboard' %}" data-bs-dismiss="navbarContent">
+                                <li><a class="dropdown-item" href="{% url 'store:admin_dashboard' %}" data-bs-dismiss="navbarContent">
                                     <i class="fas fa-tachometer-alt me-2"></i>Dashboard
                                 </a></li>
-                                <li><a class="dropdown-item" href="{% url 'ecommerce:admin_products' %}" data-bs-dismiss="navbarContent">
+                                <li><a class="dropdown-item" href="{% url 'store:product_list' %}" data-bs-dismiss="navbarContent">
                                     <i class="fas fa-box me-2"></i>Products
                                 </a></li>
-                                <li><a class="dropdown-item" href="{% url 'ecommerce:admin_orders' %}" data-bs-dismiss="navbarContent">
+                                <li><a class="dropdown-item" href="{% url 'store:order_history' %}" data-bs-dismiss="navbarContent">
                                     <i class="fas fa-list-alt me-2"></i>Orders
                                 </a></li>
                                 <li><a class="dropdown-item" href="{% url 'pickup:pickup_generate' %}" data-bs-dismiss="navbarContent">
@@ -741,12 +741,12 @@
                     <h5>Quick Links</h5>
                     <ul class="list-unstyled">
                         <li class="mb-2">
-                            <a href="{% url 'ecommerce:product_list' %}">
+                            <a href="{% url 'store:product_list' %}">
                                 <i class="fas fa-chevron-right me-2 fa-xs"></i>Home
                             </a>
                         </li>
                         <li class="mb-2">
-                            <a href="{% url 'ecommerce:product_list' %}">
+                            <a href="{% url 'store:product_list' %}">
                                 <i class="fas fa-chevron-right me-2 fa-xs"></i>Products
                             </a>
                         </li>

@@ -23,7 +23,6 @@ from reportlab.lib import colors
 from reportlab.lib.units import inch
 from django.db import transaction
 from django.contrib.auth import get_user_model
-User = get_user_model()
 from .models import Quiz, Question, Choice, StudentQuizAttempt, ActionLog, Answer, Class, Subject,RetakeRequest
 from users.models import Notification
 from .utils import log_action
@@ -35,7 +34,6 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.contrib import messages
 from django.db.models import Avg
-
 from django.db.models import Sum
 from django.utils import timezone
 from reportlab.platypus import PageBreak
@@ -44,9 +42,10 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 import matplotlib
 import matplotlib.pyplot as plt
+
 matplotlib.use('Agg')  
 
-
+User = get_user_model()
 
 
 # --------------------------------------------------------------#
@@ -66,6 +65,7 @@ def is_admin_or_superadmin(user):
 
 def home(request):
     return render(request, "exams/home.html")
+
 
 @login_required
 @user_passes_test(is_admin_or_superadmin)
@@ -106,8 +106,6 @@ def superadmin_dashboard(request):
         'total_subjects': Subject.objects.count(),
     }
     return render(request, "exams/superadmin_dashboard.html", context)
-
-
 
 
 # helper: admin check

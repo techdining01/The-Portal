@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ product.name }} - BrillsPay{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                {% if product.image and product.image.url %}
+                    <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}" style="max-height: 500px; object-fit: cover;">
+                {% else %}
+                    <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 400px;">
+                        <i class="fas fa-image fa-5x text-muted"></i>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h1 class="card-title h2">{{ product.name }}</h1>
+                    <p class="card-text text-muted">{{ product.description }}</p>
+                    
+                    <div class="mb-3">
+                        <span class="h3 text-primary">₦{{ product.price }}</span>
+                        <small class="text-muted">per item</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <span class="badge {% if product.stock_quantity > 10 %}bg-success{% elif product.stock_quantity > 0 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                            {% if product.stock_quantity > 10 %}
+                                In Stock ({{ product.stock_quantity }})
+                            {% elif product.stock_quantity > 0 %}
+                                Low Stock ({{ product.stock_quantity }})
+                            {% else %}
+                                Out of Stock
+                            {% endif %}
+                        </span>
+                    </div>
+                    
+                    {% if user.is_authenticated %}
+                    <form method="post" action="{% url 'store:add_to_cart' product.id %}">
+                        {% csrf_token %}
+                        
+                        {% if user.children.all %}
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-user-graduate me-2"></i>Tag to Student (Optional)
+                            </label>
+                            <select name="student" class="form-select">
+                                <option value="">-- Select Student --</option>
+                                {% for child in user.children.all %}
+                                <option value="{{ child.id }}">{{ child.get_full_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="row g-3 align-items-center">
+                            <div class="col-auto">
+                                <label class="form-label">Quantity:</label>
+                            </div>
+                            <div class="col-auto">
+                                <div class="input-group" style="width: 140px;">
+                                    <button type="button" class="btn btn-outline-secondary quantity-btn decrease">
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                    <input type="number" name="quantity" value="1" min="1" max="{{ product.stock_quantity }}" class="form-control text-center quantity-input">
+                                    <button type="button" class="btn btn-outline-secondary quantity-btn increase">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <button type="submit" class="btn btn-primary btn-lg w-100" {% if product.stock_quantity == 0 %}disabled{% endif %}>
+                                    <i class="fas fa-cart-plus me-2"></i>
+                                    {% if product.stock_quantity == 0 %}Out of Stock{% else %}Add to Cart{% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        Please <a href="{% url 'users:login' %}" class="alert-link">login</a> to purchase this item.
+                    </div>
+                    {% endif %}
+                    
+                    <hr class="my-4">
+                    
+                    <h5 class="mb-3">Product Details</h5>
+                    <ul class="list-unstyled text-muted">
+                        <li><strong>Category:</strong> {{ product.category.name }}</li>
+                        <li><strong>SKU:</strong> PROD{{ product.id|stringformat:"06d" }}</li>
+                        <li><strong>Added:</strong> {{ product.created_at|date:"M d, Y" }}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

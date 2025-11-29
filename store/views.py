@@ -8,6 +8,7 @@ from django.contrib import messages
 from .models import Product, Cart, CartItem, Order, OrderItem, Transaction
 from .paystack import Paystack
 import json
+from users.models import User
 
 def product_list(request):
     products = Product.objects.filter(is_active=True)
@@ -16,6 +17,33 @@ def product_list(request):
 def product_detail(request, pk):
     product = get_object_or_404(Product, pk=pk, is_active=True)
     return render(request, 'store/product_detail.html', {'product': product})
+
+# @login_required
+# def add_to_cart(request, product_id):
+#     if request.method == 'POST':
+#         product = get_object_or_404(Product, id=product_id)
+#         cart, created = Cart.objects.get_or_create(user=request.user)
+        
+#         student_id = request.POST.get('student')
+#         student = None
+#         if student_id:
+#             student = get_object_or_404(request.user.children, id=student_id)
+        
+#         cart_item, created = CartItem.objects.get_or_create(
+#             cart=cart,
+#             product=product,
+#             student=student,
+#             defaults={'quantity': 1}
+#         )
+        
+#         if not created:
+#             cart_item.quantity += 1
+#             cart_item.save()
+        
+#         messages.success(request, 'Product added to cart successfully!')
+#         return redirect('store:cart_view')
+#     return redirect('store:product_list')
+
 
 @login_required
 def add_to_cart(request, product_id):
@@ -26,29 +54,39 @@ def add_to_cart(request, product_id):
         student_id = request.POST.get('student')
         student = None
         if student_id:
-            student = get_object_or_404(request.user.children, id=student_id)
+            try:
+                student = request.user.children.get(id=student_id)
+            except User.DoesNotExist:
+                messages.warning(request, 'Selected student not found.')
         
-        cart_item, created = CartItem.objects.get_or_create(
-            cart=cart,
+        # Check if item already exists in cart
+        existing_item = CartItem.objects.filter(
+            cart=cart, 
             product=product,
-            student=student,
-            defaults={'quantity': 1}
-        )
+            student=student
+        ).first()
         
-        if not created:
-            cart_item.quantity += 1
-            cart_item.save()
+        if existing_item:
+            # Update existing item quantity
+            quantity = int(request.POST.get('quantity', 1))
+            existing_item.quantity += quantity
+            existing_item.save()
+            messages.success(request, f'Updated quantity for {product.name}!')
+        else:
+            # Create new cart item
+            quantity = int(request.POST.get('quantity', 1))
+            cart_item = CartItem.objects.create(
+                cart=cart,
+                product=product,
+                quantity=quantity,
+                student=student
+            )
+            messages.success(request, f'{product.name} added to cart successfully!')
         
-        messages.success(request, 'Product added to cart successfully!')
-        return redirect('cart')
+        return redirect('store:cart_view')
     
     return redirect('product_list')
 
-@login_required
-def cart_view(request):
-    cart, created = Cart.objects.get_or_create(user=request.user)
-    children = request.user.children.all() if hasattr(request.user, 'children') else []
-    return render(request, 'store/cart.html', {'cart': cart, 'children': children})
 
 @login_required
 def update_cart_item(request, item_id):
@@ -64,14 +102,38 @@ def update_cart_item(request, item_id):
             item.delete()
             messages.success(request, 'Item removed from cart!')
     
-    return redirect('cart')
+    return redirect('store:cart_view')
+
+
+@login_required
+def cart_view(request):
+    cart, created = Cart.objects.get_or_create(user=request.user)
+    children = request.user.children.all() if hasattr(request.user, 'children') else []
+    return render(request, 'store/cart.html', {'cart': cart, 'children': children})
+
+# @login_required
+# def update_cart_item(request, item_id):
+#     if request.method == 'POST':
+#         item = get_object_or_404(CartItem, id=item_id, cart__user=request.user)
+#         quantity = int(request.POST.get('quantity', 1))
+        
+#         if quantity > 0:
+#             item.quantity = quantity
+#             item.save()
+#             messages.success(request, 'Cart updated successfully!')
+#         else:
+#             item.delete()
+#             messages.success(request, 'Item removed from cart!')
+    
+#     return redirect('store:cart_view')
 
 @login_required
 def remove_from_cart(request, item_id):
     item = get_object_or_404(CartItem, id=item_id, cart__user=request.user)
     item.delete()
     messages.success(request, 'Item removed from cart!')
-    return redirect('cart')
+    return redirect('store:cart_view')
+
 
 @login_required
 def checkout(request):
@@ -79,7 +141,7 @@ def checkout(request):
     
     if cart.items.count() == 0:
         messages.error(request, 'Your cart is empty!')
-        return redirect('cart')
+        return redirect('store:cart_view')
     
     children = request.user.children.all() if hasattr(request.user, 'children') else []
     
@@ -123,7 +185,7 @@ def checkout(request):
             return redirect(result['data']['authorization_url'])
         else:
             messages.error(request, 'Payment initialization failed. Please try again.')
-            return redirect('checkout')
+            return redirect('store:checkout')
     
     return render(request, 'store/checkout.html', {'cart': cart, 'children': children})
 
@@ -204,3 +266,8 @@ def paystack_webhook(request):
     
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+    
+
+
+
+

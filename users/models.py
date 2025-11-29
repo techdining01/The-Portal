@@ -268,3 +268,4 @@ class UserStatusLog(models.Model):
     new_status = models.CharField(max_length=20)
     changed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="status_changes")
     changed_at = models.DateTimeField(default=timezone.now)
+

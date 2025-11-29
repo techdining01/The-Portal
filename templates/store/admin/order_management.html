@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+
+{% block title %}Order Management - BrillsPay{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2 fw-bold text-dark">Order Management</h1>
+        <div class="btn-group">
+            <a href="?status=" class="btn btn-outline-primary {% if not status_filter %}active{% endif %}">All</a>
+            <a href="?status=pending" class="btn btn-outline-warning {% if status_filter == 'pending' %}active{% endif %}">Pending</a>
+            <a href="?status=paid" class="btn btn-outline-success {% if status_filter == 'paid' %}active{% endif %}">Paid</a>
+            <a href="?status=shipped" class="btn btn-outline-info {% if status_filter == 'shipped' %}active{% endif %}">Shipped</a>
+            <a href="?status=delivered" class="btn btn-outline-secondary {% if status_filter == 'delivered' %}active{% endif %}">Delivered</a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Order #</th>
+                            <th>Customer</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Payment</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td>
+                                <strong>{{ order.order_number }}</strong>
+                                <br>
+                                <small class="text-muted">{{ order.items.count }} items</small>
+                            </td>
+                            <td>
+                                {{ order.user.get_full_name }}
+                                <br>
+                                <small class="text-muted">{{ order.user.email }}</small>
+                            </td>
+                            <td>
+                                <strong>₦{{ order.total_amount }}</strong>
+                            </td>
+                            <td>
+                                <select class="form-select form-select-sm" onchange="updateOrderStatus({{ order.id }}, this.value)">
+                                    <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>Pending</option>
+                                    <option value="paid" {% if order.status == 'paid' %}selected{% endif %}>Paid</option>
+                                    <option value="shipped" {% if order.status == 'shipped' %}selected{% endif %}>Shipped</option>
+                                    <option value="delivered" {% if order.status == 'delivered' %}selected{% endif %}>Delivered</option>
+                                    <option value="cancelled" {% if order.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                                </select>
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ order.created_at|date:"M d, Y" }}</small>
+                            </td>
+                            <td>
+                                {% if order.payment_verified %}
+                                <span class="badge bg-success">Verified</span>
+                                {% else %}
+                                <span class="badge bg-warning text-dark">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'store:admin_order_detail' order.id %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4">
+                                <i class="fas fa-shopping-cart fa-2x text-muted mb-3"></i>
+                                <p class="text-muted">No orders found.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateOrderStatus(orderId, newStatus) {
+    fetch(`/store/admin/orders/update-status/${orderId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `status=${newStatus}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error updating order status: ' + data.error);
+        }
+    });
+}
+</script>
+{% endblock %}

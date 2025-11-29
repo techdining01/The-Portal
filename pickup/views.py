@@ -8,7 +8,8 @@ from django.utils import timezone
 from django.urls import reverse
 from .models import PickupAuthorization
 from django.contrib.auth import get_user_model
-from ecommerce.models import StudentFeePayment, TransactionBackup
+# from ecommerce.models import StudentFeePayment, TransactionBackup
+
 
 User = get_user_model()
 
