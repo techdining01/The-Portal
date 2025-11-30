@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+
+{% block title %}Checkout - School E-commerce{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-8">
+            <h2 class="mb-4">
+                <i class="fas fa-credit-card"></i> Checkout
+            </h2>
+            
+            <!-- Order Summary -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Order Summary</h5>
+                </div>
+                <div class="card-body">
+                    {% for item in cart_items %}
+                    <div class="row align-items-center mb-3 pb-3 border-bottom">
+                        <div class="col-2">
+                            {% if item.product.image %}
+                            <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" 
+                                 class="img-fluid rounded">
+                            {% else %}
+                            <div class="bg-light rounded text-center py-2">
+                                <i class="fas fa-image text-muted"></i>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-6">
+                            <h6 class="mb-1">{{ item.product.name }}</h6>
+                            <small class="text-muted">For: {{ item.student.get_full_name }}</small>
+                        </div>
+                        <div class="col-2 text-center">
+                            <span class="text-muted">x{{ item.quantity }}</span>
+                        </div>
+                        <div class="col-2 text-end">
+                            <strong>₦{{ item.total_price }}</strong>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    <div class="row mt-3">
+                        <div class="col-8">
+                            <strong>Total Amount:</strong>
+                        </div>
+                        <div class="col-4 text-end">
+                            <h4 class="text-primary">₦{{ cart.total_amount }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Checkout Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Payment Information</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- Payment Method -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Payment Method *</label>
+                            <div class="row">
+                                {% for value, label in form.payment_method.field.choices %}
+                                <div class="col-md-6 mb-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="payment_method" 
+                                               id="payment_{{ value }}" value="{{ value }}" 
+                                               {% if form.payment_method.value == value %}checked{% endif %}>
+                                        <label class="form-check-label" for="payment_{{ value }}">
+                                            {% if value == 'paystack' %}
+                                            <i class="fas fa-credit-card text-primary"></i>
+                                            {% elif value == 'opay' %}
+                                            <i class="fas fa-mobile-alt text-success"></i>
+                                            {% elif value == 'transfer' %}
+                                            <i class="fas fa-university text-info"></i>
+                                            {% elif value == 'cash' %}
+                                            <i class="fas fa-money-bill-wave text-success"></i>
+                                            {% endif %}
+                                            {{ label }}
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <!-- Billing Information -->
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <label class="form-label">Billing Address *</label>
+                                {{ form.billing_address }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Phone Number *</label>
+                                {{ form.billing_phone }}
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Important:</strong> Please ensure all information is correct before proceeding. 
+                            You will receive an email confirmation after successful payment.
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-lock"></i> Complete Order
+                            </button>
+                            <a href="{% url 'ecommerce:cart_view' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Cart
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Order Total -->
+        <div class="col-md-4">
+            <div class="card sticky-top" style="top: 100px;">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-receipt"></i> Order Total</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Subtotal:</span>
+                        <span>₦{{ cart.total_amount }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Items:</span>
+                        <span>{{ cart.item_count }}</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-3">
+                        <strong>Total:</strong>
+                        <strong class="text-primary">₦{{ cart.total_amount }}</strong>
+                    </div>
+                    
+                    <div class="alert alert-success small">
+                        <i class="fas fa-shield-alt"></i>
+                        <strong>Secure Payment:</strong> All transactions are encrypted and secure.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Dynamic form updates based on payment method
+    $('input[name="payment_method"]').change(function() {
+        const method = $(this).val();
+        // You can add dynamic behavior here if needed
+    });
+});
+</script>
+{% endblock %}

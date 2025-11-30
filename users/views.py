@@ -11,6 +11,7 @@ from django.core.paginator import Paginator
 from django.http import JsonResponse, HttpResponseForbidden
 from django.views.decorators.http import require_POST   
 from exams.models import ActionLog  
+from pickup.models import PickupAuthorization
 
 User = get_user_model()
 
@@ -35,39 +36,6 @@ def profile(request):
         'total_spent': total_spent,
     }
     return render(request, 'users/profile.html', context)
-
-@login_required
-def dashboard(request):
-    """User dashboard view"""
-    user = request.user
-    
-    if user.is_parent():
-        # Parent dashboard
-        children = user.children.all()
-        recent_orders = user.order_set.order_by('-created_at')[:5]
-        
-        context = {
-            'children': children,
-            'recent_orders': recent_orders,
-        }
-        return render(request, 'users/parent_dashboard.html', context)
-    
-    elif user.is_student():
-        # Student dashboard
-        orders = user.order_set.order_by('-created_at')[:10]
-        
-        context = {
-            'orders': orders,
-        }
-        return render(request, 'users/student_dashboard.html', context)
-    
-    elif user.is_admin():
-        # Redirect to admin dashboard
-        return redirect('ecommerce:admin_dashboard')
-    
-    else:
-        # Default dashboard
-        return render(request, 'users/dashboard.html')
 
 
 def signup_view(request):
@@ -180,11 +148,11 @@ def edit_user(request, user_id):
 
                 # Redirect back to dashboard
             if request.user.is_authenticated == "student":
-                return redirect("users:student_dashboard")
+                return redirect("exams:student_dashboard")
             elif request.user.is_authenticated == "teacher":
-                return redirect("users:teacher_dashboard")
+                return redirect("exams:teacher_dashboard")
             else:
-                return redirect("users:admin_dashboard")
+                return redirect("exams:admin_dashboard")
     else:
         form = form_class(instance=user)
 
@@ -289,7 +257,7 @@ def load_users(request):
         "num_pages": page.num_pages,
         "current_page": users_page.number,
     }
-    print(data)
+
     return JsonResponse(data)
 
 
@@ -371,6 +339,8 @@ def dashboard_redirect(request):
         return redirect("exams:teacher_dashboard")
     elif request.user.role == "student":
         return redirect("exams:student_dashboard")
+    elif request.user.role == "parent":
+        return redirect("pickup:parent_dashboard")
     else:
         messages.error(request, "Unknown role. Contact SuperAdmin.")
         return redirect("users:login")

@@ -33,7 +33,7 @@
 
       <!-- Download report -->
       <div class="card mb-3 p-3">
-        <a id="download-report-btn" href="{% url 'download_student_full_report' request.user.id %}" class="btn btn-success w-100">
+        <a id="download-report-btn" href="{% url 'exams:download_student_full_report' request.user.id %}" class="btn btn-success w-100">
           📥 Download Full Report (PDF)
         </a>
       </div>
@@ -100,8 +100,8 @@
     return cookieValue;
   }
   const CSRFTOKEN = getCookie('csrftoken');
-  const DATA_URL = "{% url 'student_dashboard_data' %}";
-  const NOTIF_MARK_READ_URL = "{% url 'api_notifications_mark_read' %}";
+  const DATA_URL = "{% url 'exams:student_dashboard_data' %}";
+  const NOTIF_MARK_READ_URL = "{% url 'exams:api_notifications_mark_read' %}";
   let notifPage = 1, notifPageSize = 6;
   let quizzesPage = 1, quizzesPageSize = 6;
   let attemptsPage = 1, attemptsPageSize = 6;

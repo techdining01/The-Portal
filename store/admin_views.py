@@ -206,6 +206,50 @@ def update_order_status(request, order_id):
     
     return JsonResponse({'success': False, 'error': 'Invalid status'})
 
+# @login_required
+# @user_passes_test(is_admin)
+# def sales_reports(request):
+#     """Sales reports and analytics"""
+#     # Date range filtering
+#     start_date = request.GET.get('start_date')
+#     end_date = request.GET.get('end_date')
+    
+#     orders = Order.objects.filter(payment_verified=True)
+    
+#     if start_date:
+#         orders = orders.filter(created_at__date__gte=start_date)
+#     if end_date:
+#         orders = orders.filter(created_at__date__lte=end_date)
+    
+#     # Sales data
+#     total_sales = orders.aggregate(total=Sum('total_amount'))['total'] or 0
+#     total_orders = orders.count()
+    
+#     # Sales by category
+#     category_sales = Category.objects.annotate(
+#         total_sales=Sum('product__orderitem__price', filter=Q(product__orderitem__order__in=orders))
+#     ).filter(total_sales__isnull=False).order_by('-total_sales')
+    
+#     # Monthly sales data for chart
+#     monthly_sales = Order.objects.filter(payment_verified=True).extra(
+#         {'month': "EXTRACT(month FROM created_at)"}
+#     ).values('month').annotate(
+#         total_sales=Sum('total_amount'),
+#         order_count=Count('id')
+#     ).order_by('month')
+    
+#     context = {
+#         'total_sales': total_sales,
+#         'total_orders': total_orders,
+#         'category_sales': category_sales,
+#         'monthly_sales': list(monthly_sales),
+#         'start_date': start_date,
+#         'end_date': end_date,
+#     }
+    
+#     return render(request, 'store/admin/sales_reports.html', context)
+
+
 @login_required
 @user_passes_test(is_admin)
 def sales_reports(request):
@@ -225,29 +269,46 @@ def sales_reports(request):
     total_sales = orders.aggregate(total=Sum('total_amount'))['total'] or 0
     total_orders = orders.count()
     
-    # Sales by category
+    # Fixed: Use Django ORM instead of raw SQL for category sales
+    from django.db.models import Sum, Q
     category_sales = Category.objects.annotate(
-        total_sales=Sum('product__orderitem__price', filter=Q(product__orderitem__order__in=orders))
+        total_sales=Sum(
+            'product__orderitem__price',
+            filter=Q(product__orderitem__order__payment_verified=True)
+        )
     ).filter(total_sales__isnull=False).order_by('-total_sales')
     
-    # Monthly sales data for chart
-    monthly_sales = Order.objects.filter(payment_verified=True).extra(
-        {'month': "EXTRACT(month FROM created_at)"}
+    # Fixed: Monthly sales data using Django ORM (SQLite compatible)
+    from django.db.models.functions import ExtractMonth
+    monthly_sales = Order.objects.filter(payment_verified=True).annotate(
+        month=ExtractMonth('created_at')
     ).values('month').annotate(
         total_sales=Sum('total_amount'),
         order_count=Count('id')
     ).order_by('month')
     
+    # Prepare monthly data for template
+    monthly_data = []
+    for month_data in monthly_sales:
+        monthly_data.append({
+            'month': month_data['month'],
+            'total_sales': month_data['total_sales'] or 0,
+            'order_count': month_data['order_count']
+        })
+    
     context = {
         'total_sales': total_sales,
         'total_orders': total_orders,
         'category_sales': category_sales,
-        'monthly_sales': list(monthly_sales),
+        'monthly_sales': monthly_data,  # Use the processed data
         'start_date': start_date,
         'end_date': end_date,
     }
     
     return render(request, 'store/admin/sales_reports.html', context)
+
+
+
 
 @login_required
 @user_passes_test(is_admin)

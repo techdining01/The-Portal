@@ -11,8 +11,8 @@
         <form method="get" class="d-flex gap-2">
             <input type="date" name="start_date" class="form-control" value="{{ start_date }}" placeholder="Start Date">
             <input type="date" name="end_date" class="form-control" value="{{ end_date }}" placeholder="End Date">
-            <button type="submit" class="btn btn-primary">Filter</button>
-            <a href="{% url 'store:admin_sales_reports' %}" class="btn btn-secondary">Clear</a>
+            <button type="submit" class="btn btn-primary" style="left: -10px; padding:0.55rem 2.2rem;">Filter</button>
+            <a href="{% url 'store:admin_sales_reports' %}" class="btn btn-secondary" style="left: -10px; padding:0.55rem 2.2rem;">Clear</a>
         </form>
     </div>
 
@@ -42,12 +42,12 @@
                     <i class="fas fa-chart-line fa-2x text-info mb-3"></i>
                     <h3 class="fw-bold">
                         {% if total_orders > 0 %}
-                        ₦{{ total_sales|floatformat:0|divisibleby:total_orders }}
+                            ₦{{ total_sales|floatformat:0 }}
                         {% else %}
-                        0
+                            0
                         {% endif %}
                     </h3>
-                    <p class="text-muted mb-0">Average Order Value</p>
+                    <p class="text-muted mb-0">Total Revenue</p>
                 </div>
             </div>
         </div>
@@ -71,13 +71,13 @@
                         {% endfor %}
                     </div>
                     {% else %}
-                    <p class="text-muted text-center py-3">No sales data available</p>
+                    <p class="text-muted text-center py-3">No category sales data available</p>
                     {% endif %}
                 </div>
             </div>
         </div>
 
-        <!-- Monthly Sales Chart -->
+        <!-- Monthly Sales -->
         <div class="col-lg-6 mb-4">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white border-0">
@@ -97,8 +97,23 @@
                             <tbody>
                                 {% for month_data in monthly_sales %}
                                 <tr>
-                                    <td>Month {{ month_data.month }}</td>
-                                    <td>₦{{ month_data.total_sales|default:0|floatformat:2 }}</td>
+                                    <td>
+                                        {% if month_data.month == 1 %}January
+                                        {% elif month_data.month == 2 %}February
+                                        {% elif month_data.month == 3 %}March
+                                        {% elif month_data.month == 4 %}April
+                                        {% elif month_data.month == 5 %}May
+                                        {% elif month_data.month == 6 %}June
+                                        {% elif month_data.month == 7 %}July
+                                        {% elif month_data.month == 8 %}August
+                                        {% elif month_data.month == 9 %}September
+                                        {% elif month_data.month == 10 %}October
+                                        {% elif month_data.month == 11 %}November
+                                        {% elif month_data.month == 12 %}December
+                                        {% else %}Month {{ month_data.month }}
+                                        {% endif %}
+                                    </td>
+                                    <td>₦{{ month_data.total_sales|floatformat:2 }}</td>
                                     <td>{{ month_data.order_count }}</td>
                                 </tr>
                                 {% endfor %}
@@ -113,26 +128,44 @@
         </div>
     </div>
 
+    <!-- Date Range Info -->
+    {% if start_date or end_date %}
+    <div class="card border-0 shadow-sm mt-4">
+        <div class="card-body">
+            <h6>Report Period:</h6>
+            <p class="mb-0">
+                {% if start_date and end_date %}
+                    {{ start_date }} to {{ end_date }}
+                {% elif start_date %}
+                    From {{ start_date }} onwards
+                {% elif end_date %}
+                    Up to {{ end_date }}
+                {% endif %}
+            </p>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Export Options -->
-    <div class="card border-0 shadow-sm">
+    <div class="card border-0 shadow-sm mt-4">
         <div class="card-header bg-white border-0">
             <h5 class="card-title mb-0">Export Reports</h5>
         </div>
         <div class="card-body">
             <div class="row g-3">
                 <div class="col-md-4">
-                    <button class="btn btn-outline-primary w-100">
-                        <i class="fas fa-file-excel me-2"></i>Export to Excel
+                    <a href="{% url 'store:admin_sales_reports' %}?export=csv&start_date={{ start_date }}&end_date={{ end_date }}" class="btn btn-outline-primary w-100">
+                        <i class="fas fa-file-excel me-2"></i>Export to CSV
+                    </a>
+                </div>
+                <div class="col-md-4">
+                    <button class="btn btn-outline-success w-100" onclick="window.print()">
+                        <i class="fas fa-file-pdf me-2"></i>Print Report
                     </button>
                 </div>
                 <div class="col-md-4">
-                    <button class="btn btn-outline-success w-100">
-                        <i class="fas fa-file-pdf me-2"></i>Export to PDF
-                    </button>
-                </div>
-                <div class="col-md-4">
-                    <button class="btn btn-outline-info w-100">
-                        <i class="fas fa-print me-2"></i>Print Report
+                    <button class="btn btn-outline-info w-100" onclick="window.print()">
+                        <i class="fas fa-print me-2"></i>Print
                     </button>
                 </div>
             </div>

@@ -64,7 +64,10 @@ def is_admin_or_superadmin(user):
 
 
 def home(request):
+    if request.user.is_authenticated:
+        return redirect('users:dashboard')
     return render(request, "exams/home.html")
+
 
 
 @login_required

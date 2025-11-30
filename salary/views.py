@@ -4,7 +4,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from .models import TeacherSalary, SalaryPayment
-from store.paystack import Paystack
+from store.utils.paystack import Paystack
 import json
 
 def is_admin(user):

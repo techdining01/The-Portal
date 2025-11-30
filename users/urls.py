@@ -9,7 +9,7 @@ urlpatterns = [
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
     path("teacher-admin-profile/<int:user_id>/", views.teacheradminprofile, name="teacheradminprofile"),
-    path("profile/", views.view_profile, name="view_profile"),
+    # path("profile/", views.view_profile, name="view_profile"),
     # path("edit-user/", views.edit_user, name="edit_profile"),
     path("dashboard/", views.dashboard_redirect, name="dashboard"),
     path("broadcast/send/", views.send_broadcast, name="send_broadcast"),
@@ -30,6 +30,5 @@ urlpatterns = [
 
     # Profile and dashboard
     path('profile/', views.profile, name='profile'),
-    path('dashboard/', views.dashboard, name='dashboard'),
     
     ]

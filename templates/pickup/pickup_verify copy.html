@@ -1,0 +1,235 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Verify Pickup Code - {{ code }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-qrcode me-2"></i>Verify Pickup Code
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- QR Code Display -->
+                    <div class="text-center mb-4">
+                        <div id="qrcode" class="mb-3"></div>
+                        <h2 class="text-primary">{{ pickup.code }}</h2>
+                        <p class="text-muted">Pickup Authorization Code</p>
+                    </div>
+
+                    <!-- Pickup Information -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0">Parent Information</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p class="mb-1"><strong>Name:</strong> {{ pickup.parent.get_full_name }}</p>
+                                    <p class="mb-1"><strong>Username:</strong> {{ pickup.parent.username }}</p>
+                                    <p class="mb-0"><strong>Email:</strong> {{ pickup.parent.email }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0">Student Information</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p class="mb-1"><strong>Name:</strong> {{ pickup.student.get_full_name }}</p>
+                                    <p class="mb-1"><strong>Reg Number:</strong> {{ pickup.student.registration_number }}</p>
+                                    <p class="mb-0"><strong>Class:</strong> {{ pickup.student.grade_level }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bearer Information -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-warning">
+                            <h6 class="mb-0">Bearer Information</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p class="mb-1"><strong>Name:</strong> {{ pickup.bearer_name }}</p>
+                                    <p class="mb-1"><strong>Phone:</strong> {{ pickup.bearer_phone }}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    {% if pickup.signature_image %}
+                                    <p><strong>Signature:</strong></p>
+                                    <img src="{{ pickup.signature_image.url }}" alt="Signature" 
+                                         class="img-fluid rounded border" style="max-height: 100px;">
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Status Information -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">Status Information</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p class="mb-1"><strong>Created:</strong> {{ pickup.created_at|date:"M d, Y H:i" }}</p>
+                                    <p class="mb-1"><strong>Expires:</strong> {{ pickup.expires_at|date:"M d, Y H:i" }}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    {% if pickup.verified_at %}
+                                    <p class="mb-1"><strong>Status:</strong> <span class="badge bg-success">VERIFIED</span></p>
+                                    <p class="mb-1"><strong>Verified By:</strong> {{ pickup.verified_by.get_full_name }}</p>
+                                    <p class="mb-0"><strong>Verified At:</strong> {{ pickup.verified_at|date:"M d, Y H:i" }}</p>
+                                    {% else %}
+                                    <p class="mb-1"><strong>Status:</strong> <span class="badge bg-warning">PENDING</span></p>
+                                    <p class="mb-0 text-danger"><strong>Expires in:</strong> <span id="expiryCountdown"></span></p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Verification Actions (Admin Only) -->
+                    {% if user.is_authenticated and user.can_approve and not pickup.verified_at %}
+                    <div class="card border-success">
+                        <div class="card-header bg-success text-white">
+                            <h6 class="mb-0">Verification Actions</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <strong>Important:</strong> Verify the bearer's identity before releasing the student.
+                            </div>
+                            
+                            <form id="verifyForm">
+                                {% csrf_token %}
+                                <div class="mb-3">
+                                    <label for="adminNotes" class="form-label">Verification Notes (Optional)</label>
+                                    <textarea class="form-control" id="adminNotes" name="notes" 
+                                              rows="3" placeholder="Add any verification notes..."></textarea>
+                                </div>
+                                
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-success btn-lg" id="verifyBtn">
+                                        <i class="fas fa-check-circle me-2"></i>Verify & Release Student
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger" id="rejectBtn">
+                                        <i class="fas fa-times-circle me-2"></i>Reject Pickup
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    {% elif pickup.verified_at %}
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <strong>Student Released:</strong> This pickup was verified and the student was released to the bearer on {{ pickup.verified_at|date:"M d, Y H:i" }}.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Generate QR Code
+    const qr = qrcode(0, 'M');
+    qr.addData('{{ pickup.code }}');
+    qr.make();
+    document.getElementById('qrcode').innerHTML = qr.createImgTag(4);
+    
+    // Countdown timer
+    {% if not pickup.verified_at %}
+    const expiryDate = new Date('{{ pickup.expires_at|date:"c" }}');
+    function updateCountdown() {
+        const now = new Date();
+        const diff = expiryDate - now;
+        
+        if (diff <= 0) {
+            document.getElementById('expiryCountdown').textContent = 'EXPIRED';
+            document.getElementById('expiryCountdown').className = 'text-danger';
+        } else {
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            document.getElementById('expiryCountdown').textContent = `${hours}h ${minutes}m`;
+        }
+    }
+    updateCountdown();
+    setInterval(updateCountdown, 60000);
+    {% endif %}
+    
+    // Verify Pickup
+    {% if user.is_authenticated and user.can_approve and not pickup.verified_at %}
+    const verifyForm = document.getElementById('verifyForm');
+    const verifyBtn = document.getElementById('verifyBtn');
+    
+    verifyForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const originalText = verifyBtn.innerHTML;
+        verifyBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Verifying...';
+        verifyBtn.disabled = true;
+        
+        fetch(window.location.href, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.ok) {
+                showAlert('Student released successfully!', 'success');
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+            } else {
+                showAlert(data.error || 'Error verifying pickup', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('Network error. Please try again.', 'danger');
+        })
+        .finally(() => {
+            verifyBtn.innerHTML = originalText;
+            verifyBtn.disabled = false;
+        });
+    });
+    
+    // Reject Pickup
+    document.getElementById('rejectBtn').addEventListener('click', function() {
+        if (confirm('Are you sure you want to reject this pickup request?')) {
+            alert('Pickup rejected. The parent will be notified.');
+            // Add rejection logic here
+        }
+    });
+    {% endif %}
+    
+    function showAlert(message, type) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show mt-3`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        const cardBody = document.querySelector('.card-body');
+        cardBody.insertBefore(alertDiv, cardBody.firstChild);
+    }
+});
+</script>
+{% endblock %}

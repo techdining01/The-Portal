@@ -29,6 +29,11 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+# 
+DEBUG_TOOLBAR_CONFIG = {
+    'SHOW_TOOLBAR_CALLBACK': lambda request: False
+}
+
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -105,8 +110,8 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'cores.context_processors.school_settings', 
                 'django.template.context_processors.static',
+                'store.context_processors.cart_context',
                 # 'ecommerce.context_processors.paystack_keys',
-                # 'ecommerce.context_processors.cart_count', 
             ],
         },
     },
@@ -204,7 +209,7 @@ FERNET_KEY = os.getenv('FERNET_KEY', b'your_generated_key_here')
 AUTH_USER_MODEL = 'users.User'
 
 # Payment settings
-PAYSTACK_TEST_PUBLIC_KEY = 'sk_test_7456d2b313eee51a650ed592d21f9782a4816328'  #os.getenv("PAYSTACK_TEST_PUBLIC_KEY")
+PAYSTACK_TEST_PUBLIC_KEY = os.getenv("PAYSTACK_TEST_PUBLIC_KEY")
 PAYSTACK_TEST_SECRET_KEY = os.getenv("PAYSTACK_TEST_SECRET_KEY")
 PAYSTACK_LIVE_PUBLIC_KEY = os.getenv("PAYSTACK_LIVE_PUBLIC_KEY")
 PAYSTACK_LIVE_SECRET_KEY = os.getenv("PAYSTACK_LIVE_SECRET_KEY")
@@ -213,6 +218,14 @@ PAYSTACK_PUBLIC_KEY = PAYSTACK_LIVE_PUBLIC_KEY if PAYSTACK_MODE == "live" else P
 PAYSTACK_SECRET_KEY = PAYSTACK_LIVE_SECRET_KEY if PAYSTACK_MODE == "live" else PAYSTACK_TEST_SECRET_KEY
 PAYSTACK_BASE_URL = "https://api.paystack.co"
 DEFAULT_FROM_EMAIL = "no-reply@brillspay.school"
+
+# Payment URLs
+PAYMENT_SUCCESS_URL ='http://localhost:8000/store/payment/verify/'
+PAYMENT_CANCEL_URL ='http://localhost:8000/store/payment/cancel/'
+
+# Payment Settings
+PAYMENT_SUCCESS_URL = os.getenv('PAYMENT_SUCCESS_URL', 'http://localhost:8000/store/payment/success/')
+PAYMENT_CANCEL_URL = os.getenv('PAYMENT_CANCEL_URL', 'http://localhost:8000/store/payment/cancel/')
 
 # Payment Gateways
 OPAY_PUBLIC_KEY = os.getenv('OPAY_PUBLIC_KEY', default='')

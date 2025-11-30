@@ -13,7 +13,8 @@ class Command(BaseCommand):
             'seed_users',
             'seed_store', 
             'seed_orders',
-            'seed_salary_data'
+            'seed_salary_data',
+            'seed_classes_subjects',
         ]
         
         for command in commands:

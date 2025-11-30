@@ -71,7 +71,7 @@ class Command(BaseCommand):
             if order.payment_verified:
                 transaction = Transaction.objects.create(
                     order=order,
-                    paystack_reference=f"PSK_{order.order_number}_{i}",
+                    payment_reference=f"PSK_{order.order_number}_{i}",
                     amount=total_amount,
                     payment_status='success',
                     paid_at=order.created_at + timedelta(hours=1),

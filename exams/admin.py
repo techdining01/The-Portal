@@ -51,9 +51,9 @@ class ClassAdmin(admin.ModelAdmin):
 
 @admin.register(Subject)
 class SubjectAdmin(admin.ModelAdmin):
-    list_display = ['name', 'code', 'category', 'is_active', 'classes_count']
+    list_display = ['name', 'category', 'is_active', 'classes_count']
     list_filter = ['category', 'is_active']
-    search_fields = ['name', 'code', 'description']
+    search_fields = ['name', 'description']
     list_editable = ['is_active']
     
     def classes_count(self, obj):

@@ -1,0 +1,435 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Parent Dashboard - {{ SCHOOL_NAME }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h1 class="h2 mb-1">Parent Dashboard</h1>
+                    <p class="text-muted mb-0">Welcome, {{ request.user.get_full_name|default:request.user.username }}</p>
+                </div>
+                <div class="d-none d-md-block">
+                    <span class="badge bg-primary fs-6">Parent</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats - Mobile Optimized -->
+    <div class="row g-3 mb-5">
+        <div class="col-6 col-sm-3">
+            <div class="card bg-primary text-white h-100">
+                <div class="card-body p-3 text-center">
+                    <div class="mb-2">
+                        <i class="fas fa-users fa-lg"></i>
+                    </div>
+                    <h4 class="mb-0">{{ students.count }}</h4>
+                    <small class="opacity-75">Students</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-sm-3">
+            <div class="card bg-success text-white h-100">
+                <div class="card-body p-3 text-center">
+                    <div class="mb-2">
+                        <i class="fas fa-qrcode fa-lg"></i>
+                    </div>
+                    <h4 class="mb-0">{{ active_pickups.count }}</h4>
+                    <small class="opacity-75">Active</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-sm-3">
+            <div class="card bg-info text-white h-100">
+                <div class="card-body p-3 text-center">
+                    <div class="mb-2">
+                        <i class="fas fa-check-circle fa-lg"></i>
+                    </div>
+                    <h4 class="mb-0">{{ verified_pickups.count }}</h4>
+                    <small class="opacity-75">Verified</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-sm-3">
+            <div class="card bg-warning text-white h-100">
+                <div class="card-body p-3 text-center">
+                    <div class="mb-2">
+                        <i class="fas fa-clock fa-lg"></i>
+                    </div>
+                    <h4 class="mb-0">{{ pending_pickups.count }}</h4>
+                    <small class="opacity-75">Pending</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Generate Pickup Code - Mobile First -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-plus-circle me-2"></i>Create Pickup Code
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="pickupForm" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <!-- Student Selection -->
+                        <div class="mb-3">
+                            <label for="studentSelect" class="form-label fw-semibold">
+                                <i class="fas fa-user-graduate me-1"></i>Select Student *
+                            </label>
+                            <select class="form-select" id="studentSelect" name="student_reg" required>
+                                <option value="">Choose your student...</option>
+                                {% for student in students %}
+                                <option value="{{ student.registration_number }}">
+                                    {{ student.get_full_name|default:student.username }} - {{ student.registration_number }}
+                                </option>
+                                {% empty %}
+                                <option value="" disabled>No students found</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Bearer Information -->
+                        <div class="mb-3">
+                            <label for="bearerName" class="form-label fw-semibold">
+                                <i class="fas fa-user me-1"></i>Bearer's Full Name *
+                            </label>
+                            <input type="text" class="form-control" id="bearerName" name="bearer_name" 
+                                   placeholder="Enter the person's full name who will pick up" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="bearerPhone" class="form-label fw-semibold">
+                                <i class="fas fa-phone me-1"></i>Bearer's Phone Number *
+                            </label>
+                            <input type="tel" class="form-control" id="bearerPhone" name="bearer_phone" 
+                                   placeholder="Enter phone number for verification" required>
+                            <div class="form-text">This number will be used to verify the bearer's identity</div>
+                        </div>
+
+                        <!-- Signature Upload -->
+                        <div class="mb-4">
+                            <label for="signatureUpload" class="form-label fw-semibold">
+                                <i class="fas fa-signature me-1"></i>Signature (Optional)
+                            </label>
+                            <input type="file" class="form-control" id="signatureUpload" name="signature" 
+                                   accept="image/*">
+                            <div class="form-text small">Upload your signature for additional security</div>
+                        </div>
+
+                        <!-- Terms Agreement -->
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="termsAgreement" required>
+                                <label class="form-check-label small" for="termsAgreement">
+                                    I authorize <span id="bearerNamePreview" class="fw-semibold">this person</span> 
+                                    to pick up my child from school. I understand this code expires in 2 days.
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Generate Button -->
+                        <button type="submit" class="btn btn-primary w-100 py-3 fw-semibold" id="generateBtn">
+                            <i class="fas fa-qrcode me-2"></i>Generate Pickup Code
+                        </button>
+                    </form>
+
+                    <!-- Loading State -->
+                    <div class="text-center mt-3" id="loadingState" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Generating code...</span>
+                        </div>
+                        <p class="mt-2 text-muted small">Creating secure pickup code...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Pickups - Mobile First -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header bg-success text-white py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-list me-2"></i>Active Pickup Codes
+                        </h5>
+                        <span class="badge bg-light text-dark">{{ active_pickups.count }}</span>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if active_pickups %}
+                    <div class="list-group list-group-flush">
+                        {% for pickup in active_pickups %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <h6 class="mb-1 text-primary">{{ pickup.code }}</h6>
+                                    <small class="text-muted">Created: {{ pickup.created_at|date:"M d, g:i A" }}</small>
+                                </div>
+                                <div class="text-end">
+                                    {% if pickup.verified_at %}
+                                    <span class="badge bg-success">Verified</span>
+                                    {% else %}
+                                    <span class="badge bg-warning">Pending</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="row small g-2 mb-2">
+                                <div class="col-6">
+                                    <strong>Student:</strong><br>
+                                    {{ pickup.student.get_full_name|default:pickup.student.username }}
+                                </div>
+                                <div class="col-6">
+                                    <strong>Bearer:</strong><br>
+                                    {{ pickup.bearer_name }}
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    Expires: {{ pickup.expires_at|date:"M d, g:i A" }}
+                                </small>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary view-pickup-btn" 
+                                            data-code="{{ pickup.code }}">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <a href="{% url 'pickup:pickup_verify' pickup.code %}" 
+                                       class="btn btn-outline-info" target="_blank">
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                    {% if not pickup.verified_at %}
+                                    <button class="btn btn-outline-danger cancel-pickup-btn" 
+                                            data-code="{{ pickup.code }}">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-qrcode fa-3x text-muted mb-3"></i>
+                        <h6 class="text-muted">No Active Pickup Codes</h6>
+                        <p class="text-muted small mb-0">Generate your first pickup code above</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card mt-4">
+                <div class="card-header bg-light py-3">
+                    <h6 class="mb-0">
+                        <i class="fas fa-bolt me-2"></i>Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <a href="{% url 'store:product_list' %}" class="btn btn-outline-primary w-100 btn-sm">
+                                <i class="fas fa-store me-1"></i>Store
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a href="{% url 'store:order_list' %}" class="btn btn-outline-success w-100 btn-sm">
+                                <i class="fas fa-receipt me-1"></i>Orders
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Generated Code Modal -->
+<div class="modal fade" id="pickupCodeModal" tabindex="-1" aria-labelledby="pickupCodeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="pickupCodeModalLabel">
+                    <i class="fas fa-check-circle me-2"></i>Pickup Code Ready!
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <!-- QR Code Placeholder -->
+                <div class="bg-light rounded p-4 mb-3 mx-auto" style="max-width: 200px;">
+                    <div id="qrcode" class="mb-2"></div>
+                    <h2 class="text-primary mb-1" id="generatedCode"></h2>
+                    <small class="text-muted">PICKUP CODE</small>
+                </div>
+
+                <div class="alert alert-info text-start small">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Share this code with the bearer</strong><br>
+                    They must present it at the school gate for verification.
+                </div>
+
+                <div class="text-start small mb-3">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <strong>Bearer:</strong><br>
+                            <span id="modalBearerName" class="text-muted"></span>
+                        </div>
+                        <div class="col-6">
+                            <strong>Student:</strong><br>
+                            <span id="modalStudentName" class="text-muted"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <a href="#" class="btn btn-primary" id="verifyLink" target="_blank">
+                        <i class="fas fa-external-link-alt me-2"></i>Open Verification Page
+                    </a>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const pickupForm = document.getElementById('pickupForm');
+    const generateBtn = document.getElementById('generateBtn');
+    const loadingState = document.getElementById('loadingState');
+    const bearerNameInput = document.getElementById('bearerName');
+    const bearerNamePreview = document.getElementById('bearerNamePreview');
+    const pickupCodeModal = new bootstrap.Modal(document.getElementById('pickupCodeModal'));
+
+    // Update bearer name preview
+    bearerNameInput.addEventListener('input', function() {
+        bearerNamePreview.textContent = this.value || 'this person';
+    });
+
+    // Generate Pickup Code
+    pickupForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        
+        // Show loading state
+        generateBtn.disabled = true;
+        generateBtn.style.display = 'none';
+        loadingState.style.display = 'block';
+        
+        fetch('{% url "pickup:create_pickup" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.ok) {
+                // Generate QR Code
+                const qr = qrcode(0, 'M');
+                qr.addData(data.code);
+                qr.make();
+                document.getElementById('qrcode').innerHTML = qr.createImgTag(4);
+                
+                // Populate modal
+                document.getElementById('generatedCode').textContent = data.code;
+                document.getElementById('modalBearerName').textContent = formData.get('bearer_name');
+                document.getElementById('modalStudentName').textContent = 
+                    document.getElementById('studentSelect').selectedOptions[0].text;
+                document.getElementById('verifyLink').href = data.verify_url;
+                
+                // Show success modal
+                pickupCodeModal.show();
+                pickupForm.reset();
+            } else {
+                showAlert(data.error || 'Error generating pickup code', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('Network error. Please try again.', 'danger');
+        })
+        .finally(() => {
+            generateBtn.disabled = false;
+            generateBtn.style.display = 'block';
+            loadingState.style.display = 'none';
+        });
+    });
+
+    // View Pickup Details
+    document.querySelectorAll('.view-pickup-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const code = this.dataset.code;
+            window.open(`/pickup/verify/${code}/`, '_blank');
+        });
+    });
+
+    // Cancel Pickup
+    document.querySelectorAll('.cancel-pickup-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const code = this.dataset.code;
+            if (confirm('Are you sure you want to cancel this pickup code?')) {
+                // Add cancellation logic here
+                showAlert('Pickup code cancelled successfully', 'success');
+                // Reload page after short delay
+                setTimeout(() => location.reload(), 1500);
+            }
+        });
+    });
+
+    function showAlert(message, type) {
+        // Remove existing alerts
+        document.querySelectorAll('.alert-dismissible').forEach(alert => {
+            if (alert.parentElement) {
+                alert.remove();
+            }
+        });
+
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show mt-3`;
+        alertDiv.innerHTML = `
+            <i class="fas fa-${getAlertIcon(type)} me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        const container = document.querySelector('.container');
+        container.insertBefore(alertDiv, container.firstChild);
+        
+        setTimeout(() => {
+            if (alertDiv.parentElement) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+
+    function getAlertIcon(type) {
+        const icons = {
+            'success': 'check-circle',
+            'danger': 'exclamation-triangle',
+            'warning': 'exclamation-circle',
+            'info': 'info-circle'
+        };
+        return icons[type] || 'info-circle';
+    }
+});
+</script>
+{% endblock %}

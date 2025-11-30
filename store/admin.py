@@ -26,7 +26,7 @@ class ProductAdmin(admin.ModelAdmin):
 class CartItemInline(admin.TabularInline):
     model = CartItem
     extra = 0
-    readonly_fields = ['subtotal']
+    readonly_fields = ['total_price']
 
 @admin.register(Cart)
 class CartAdmin(admin.ModelAdmin):
@@ -69,9 +69,9 @@ class OrderAdmin(admin.ModelAdmin):
 
 @admin.register(Transaction)
 class TransactionAdmin(admin.ModelAdmin):
-    list_display = ['paystack_reference', 'order_link', 'amount', 'payment_status', 'paid_at', 'created_at']
+    list_display = ['payment_reference', 'order_link', 'amount', 'payment_status', 'paid_at', 'created_at']
     list_filter = ['payment_status', 'created_at']
-    search_fields = ['paystack_reference', 'order__order_number']
+    search_fields = ['payment_reference', 'order__order_number']
     readonly_fields = ['created_at', 'updated_at', 'gateway_response']
     
     def order_link(self, obj):

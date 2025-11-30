@@ -1,0 +1,334 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Shopping Cart - {{ SCHOOL_NAME }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'store:product_list' %}">Store</a></li>
+                    <li class="breadcrumb-item active">Cart</li>
+                </ol>
+            </nav>
+            
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 mb-1">Shopping Cart</h1>
+                    <p class="text-muted mb-0">{{ cart_items_count }} item{{ cart_items_count|pluralize }}</p>
+                </div>
+                {% if cart_items_count > 0 %}
+                <button class="btn btn-outline-danger btn-sm" id="clearCartBtn">
+                    <i class="fas fa-trash me-1"></i>Clear Cart
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if cart_items %}
+    <div class="row">
+        <!-- Cart Items -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-light py-3">
+                    <h5 class="mb-0">Cart Items</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% for item in cart_items %}
+                    <div class="cart-item border-bottom p-3" data-product-id="{{ item.product.id }}">
+                        <div class="row align-items-center">
+                            <!-- Product Image -->
+                            <div class="col-3 col-sm-2">
+                                {% if item.product.image %}
+                                <img src="{{ item.product.image.url }}" 
+                                     alt="{{ item.product.name }}" 
+                                     class="img-fluid rounded"
+                                     style="width: 70px; height: 70px; object-fit: cover;">
+                                {% else %}
+                                <div class="bg-light rounded d-flex align-items-center justify-content-center"
+                                     style="width: 70px; height: 70px;">
+                                    <i class="fas fa-image text-muted"></i>
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Product Details -->
+                            <div class="col-5 col-sm-6">
+                                <h6 class="mb-1">{{ item.product.name }}</h6>
+                                <p class="text-muted small mb-1">₦{{ item.product.price }}</p>
+                                <p class="text-success small mb-0">
+                                    <i class="fas fa-check-circle me-1"></i>In Stock
+                                </p>
+                            </div>
+
+                            <!-- Quantity Controls -->
+                            <div class="col-4 col-sm-4">
+                                <div class="d-flex align-items-center justify-content-end">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button type="button" class="btn btn-outline-secondary quantity-btn" 
+                                                data-action="decrease" data-product-id="{{ item.product.id }}">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                        <span class="btn btn-outline-primary px-3 quantity-display" 
+                                              data-product-id="{{ item.product.id }}">
+                                            {{ item.quantity }}
+                                        </span>
+                                        <button type="button" class="btn btn-outline-secondary quantity-btn" 
+                                                data-action="increase" data-product-id="{{ item.product.id }}">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-danger btn-sm ms-2 remove-btn"
+                                            data-product-id="{{ item.product.id }}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                                <div class="text-end mt-2">
+                                    <strong class="text-dark item-total" data-product-id="{{ item.product.id }}">
+                                        ₦{{ item.total_price }}
+                                    </strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Summary -->
+        <div class="col-lg-4 mt-4 mt-lg-0">
+            <div class="card sticky-top" style="top: 100px;">
+                <div class="card-header bg-primary text-white py-3">
+                    <h5 class="mb-0">Order Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Subtotal:</span>
+                        <span id="cart-subtotal">₦{{ cart_total }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Tax:</span>
+                        <span>₦0.00</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Shipping:</span>
+                        <span>₦0.00</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-4">
+                        <strong>Total:</strong>
+                        <strong id="cart-grand-total">₦{{ cart_total }}</strong>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'store:checkout' %}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-lock me-2"></i>Proceed to Checkout
+                        </a>
+                        <a href="{% url 'store:product_list' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-shopping-bag me-2"></i>Continue Shopping
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- Empty Cart -->
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            <div class="card">
+                <div class="card-body py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-shopping-cart fa-4x text-muted"></i>
+                    </div>
+                    <h3 class="text-muted mb-3">Your cart is empty</h3>
+                    <p class="text-muted mb-4">Looks like you haven't added any items to your cart yet.</p>
+                    <a href="{% url 'store:product_list' %}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-shopping-bag me-2"></i>Start Shopping
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    // Quantity update functionality
+    document.querySelectorAll('.quantity-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const productId = this.dataset.productId;
+            const action = this.dataset.action;
+            updateCartQuantity(productId, action);
+        });
+    });
+
+    // Remove item functionality
+    document.querySelectorAll('.remove-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const productId = this.dataset.productId;
+            removeFromCart(productId);
+        });
+    });
+
+    // Clear cart functionality
+    document.getElementById('clearCartBtn')?.addEventListener('click', function() {
+        if (confirm('Are you sure you want to clear your cart?')) {
+            clearCart();
+        }
+    });
+
+    function updateCartQuantity(productId, action) {
+        const formData = new FormData();
+        formData.append('product_id', productId);
+        formData.append('action', action);
+        formData.append('csrfmiddlewaretoken', csrfToken);
+
+        fetch('{% url "store:update_cart" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateCartDisplay(data);
+            } else {
+                showAlert(data.error || 'Error updating cart', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('Network error. Please try again.', 'danger');
+        });
+    }
+
+    function removeFromCart(productId) {
+        if (!confirm('Are you sure you want to remove this item from your cart?')) {
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('product_id', productId);
+        formData.append('action', 'remove');
+        formData.append('csrfmiddlewaretoken', csrfToken);
+
+        fetch('{% url "store:update_cart" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateCartDisplay(data);
+                document.querySelector(`.cart-item[data-product-id="${productId}"]`)?.remove();
+                
+                if (data.cart_items_count === 0) {
+                    location.reload();
+                }
+            } else {
+                showAlert(data.error || 'Error removing item', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('Network error. Please try again.', 'danger');
+        });
+    }
+
+    function clearCart() {
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', csrfToken);
+
+        fetch('{% url "store:clear_cart" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('Cart cleared successfully', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showAlert(data.error || 'Error clearing cart', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('Network error. Please try again.', 'danger');
+        });
+    }
+
+    function updateCartDisplay(data) {
+        // Update quantity display
+        const quantityDisplay = document.querySelector(`.quantity-display[data-product-id="${data.product_id}"]`);
+        if (quantityDisplay && data.quantity !== undefined) {
+            quantityDisplay.textContent = data.quantity;
+        }
+
+        // Update item total
+        const itemTotal = document.querySelector(`.item-total[data-product-id="${data.product_id}"]`);
+        if (itemTotal && data.item_total !== undefined) {
+            itemTotal.textContent = `₦${data.item_total}`;
+        }
+
+        // Update cart totals
+        if (data.cart_total !== undefined) {
+            document.getElementById('cart-subtotal').textContent = `₦${data.cart_total}`;
+            document.getElementById('cart-grand-total').textContent = `₦${data.cart_total}`;
+        }
+
+        // Update cart badge
+        updateCartBadge(data.cart_items_count);
+    }
+
+    function updateCartBadge(count) {
+        const cartBadge = document.querySelector('.cart-badge');
+        if (cartBadge) {
+            if (count > 0) {
+                cartBadge.textContent = count;
+                cartBadge.style.display = 'flex';
+            } else {
+                cartBadge.style.display = 'none';
+            }
+        }
+    }
+
+    function showAlert(message, type) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show mt-3`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        const container = document.querySelector('.container');
+        container.insertBefore(alertDiv, container.firstChild);
+        
+        setTimeout(() => {
+            if (alertDiv.parentElement) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+});
+</script>
+{% endblock %}

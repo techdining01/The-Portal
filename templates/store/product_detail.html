@@ -1,166 +1,158 @@
+<!-- templates/store/cart.html -->
 {% extends 'base.html' %}
-{% load static %}
 
-{% block title %}{{ product.name }} - BrillsPay{% endblock %}
+{% block title %}Shopping Cart - BrillsPay{% endblock %}
 
 {% block content %}
 <div class="container py-4">
+    <h1 class="display-5 fw-bold text-dark mb-4">Shopping Cart</h1>
+
+    {% if cart.items.count > 0 %}
     <div class="row">
-        <div class="col-md-6 mb-4">
-            <div class="card">
-                {% if product.image and product.image.url %}
-                    <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}" style="max-height: 500px; object-fit: cover;">
-                {% else %}
-                    <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 400px;">
-                        <i class="fas fa-image fa-5x text-muted"></i>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-        
-        <div class="col-md-6">
+        <!-- Cart Items -->
+        <div class="col-lg-8 mb-4">
             <div class="card">
                 <div class="card-body">
-                    <h1 class="card-title h2">{{ product.name }}</h1>
-                    <p class="card-text text-muted">{{ product.description }}</p>
-                    
-                    <div class="mb-3">
-                        <span class="h3 text-primary">₦{{ product.price }}</span>
-                        <small class="text-muted">per item</small>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <span class="badge {% if product.stock_quantity > 10 %}bg-success{% elif product.stock_quantity > 0 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
-                            {% if product.stock_quantity > 10 %}
-                                In Stock ({{ product.stock_quantity }})
-                            {% elif product.stock_quantity > 0 %}
-                                Low Stock ({{ product.stock_quantity }})
+                    {% for item in cart.items.all %}
+                    <div class="row align-items-center mb-4 pb-3 border-bottom">
+                        <div class="col-md-2">
+                            {% if item.product.image and item.product.image.url %}
+                                <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" 
+                                     class="img-fluid rounded" style="height: 80px; object-fit: cover;">
                             {% else %}
-                                Out of Stock
+                                <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 80px; width: 80px;">
+                                    <i class="fas fa-image text-muted fa-lg"></i>
+                                </div>
                             {% endif %}
-                        </span>
+                        </div>
+                        <div class="col-md-4">
+                            <h5 class="card-title mb-1">{{ item.product.name }}</h5>
+                            <p class="text-muted mb-1">₦{{ item.product.price }}</p>
+                            {% if item.student %}
+                            <p class="text-primary small mb-0">
+                                <i class="fas fa-user-graduate me-1"></i>
+                                For: {{ item.student.get_full_name }}
+                            </p>
+                            {% else %}
+                            <p class="text-muted small mb-0">
+                                <i class="fas fa-user me-1"></i>
+                                Not tagged to student
+                            </p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-center">
+                                <!-- Simple Quantity Form -->
+                                <form method="post" action="{% url 'update_cart_item' item.id %}" class="d-flex align-items-center me-2">
+                                    {% csrf_token %}
+                                    <div class="input-group input-group-sm" style="width: 120px;">
+                                        <button type="submit" name="action" value="decrease" class="btn btn-outline-secondary" {% if item.quantity <= 1 %}disabled{% endif %}>
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                        <input type="number" name="quantity" value="{{ item.quantity }}" min="1" 
+                                               class="form-control text-center" onchange="this.form.submit()">
+                                        <button type="submit" name="action" value="increase" class="btn btn-outline-secondary">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </form>
+                                
+                                <!-- Remove Form -->
+                                <form method="post" action="{% url 'remove_from_cart' item.id %}" class="ms-2">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        <div class="col-md-2 text-end">
+                            <strong class="h5">₦{{ item.subtotal }}</strong>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Summary -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Order Summary</h5>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Subtotal</span>
+                            <span>₦{{ cart.total_amount }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Shipping</span>
+                            <span class="text-success">Free</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <strong>Total</strong>
+                            <strong class="text-primary h5">₦{{ cart.total_amount }}</strong>
+                        </div>
                     </div>
                     
-                    {% if user.is_authenticated %}
-                    <form method="post" action="{% url 'add_to_cart' product.id %}" id="add-to-cart-form">
-                        {% csrf_token %}
-                        
-                        {% if user.children.all %}
-                        <div class="mb-3">
-                            <label class="form-label">
-                                <i class="fas fa-user-graduate me-2"></i>Tag to Student (Optional)
-                            </label>
-                            <select name="student" id="student-select-product" class="form-select">
+                    {% if children %}
+                    <div class="card bg-light mb-3">
+                        <div class="card-body">
+                            <h6 class="card-title">Tag Items to Students</h6>
+                            <p class="card-text small text-muted">Select a student for new items added to cart:</p>
+                            <select id="student-select" class="form-select form-select-sm" onchange="saveStudentSelection(this.value)">
                                 <option value="">-- Select Student --</option>
-                                {% for child in user.children.all %}
+                                {% for child in children %}
                                 <option value="{{ child.id }}">{{ child.get_full_name }}</option>
                                 {% endfor %}
                             </select>
                         </div>
-                        {% endif %}
-                        
-                        <div class="row g-3 align-items-center">
-                            <div class="col-auto">
-                                <label class="form-label">Quantity:</label>
-                            </div>
-                            <div class="col-auto">
-                                <div class="input-group" style="width: 140px;">
-                                    <button type="button" class="btn btn-outline-secondary quantity-btn decrease">
-                                        <i class="fas fa-minus"></i>
-                                    </button>
-                                    <input type="number" name="quantity" value="1" min="1" max="{{ product.stock_quantity }}" class="form-control text-center quantity-input" id="product-quantity">
-                                    <button type="button" class="btn btn-outline-secondary quantity-btn increase">
-                                        <i class="fas fa-plus"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="col">
-                                <button type="submit" class="btn btn-primary btn-lg w-100" {% if product.stock_quantity == 0 %}disabled{% endif %}>
-                                    <i class="fas fa-cart-plus me-2"></i>
-                                    {% if product.stock_quantity == 0 %}Out of Stock{% else %}Add to Cart{% endif %}
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-                    {% else %}
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-circle me-2"></i>
-                        Please <a href="{% url 'login' %}" class="alert-link">login</a> to purchase this item.
                     </div>
                     {% endif %}
+
+                    <a href="{% url 'checkout' %}" class="btn btn-primary btn-lg w-100 mb-2">
+                        Proceed to Checkout
+                    </a>
                     
-                    <hr class="my-4">
-                    
-                    <h5 class="mb-3">Product Details</h5>
-                    <ul class="list-unstyled text-muted">
-                        <li><strong>Category:</strong> {{ product.category.name }}</li>
-                        <li><strong>SKU:</strong> PROD{{ product.id|stringformat:"06d" }}</li>
-                        <li><strong>Added:</strong> {{ product.created_at|date:"M d, Y" }}</li>
-                    </ul>
+                    <a href="{% url 'product_list' %}" class="btn btn-outline-secondary w-100">
+                        Continue Shopping
+                    </a>
                 </div>
             </div>
         </div>
     </div>
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-shopping-cart display-1 text-muted mb-3"></i>
+        <h3 class="text-muted">Your cart is empty</h3>
+        <p class="text-muted mb-4">Add some items to get started!</p>
+        <a href="{% url 'product_list' %}" class="btn btn-primary btn-lg">
+            Start Shopping
+        </a>
+    </div>
+    {% endif %}
 </div>
-{% endblock %}
 
-{% block extra_js %}
 <script>
+// Simple student selection function
+function saveStudentSelection(studentId) {
+    if (studentId) {
+        localStorage.setItem('selectedStudent', studentId);
+    } else {
+        localStorage.removeItem('selectedStudent');
+    }
+}
+
+// Load saved student selection on page load
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Product detail page loaded');
-    
-    // Load saved student selection
-    const studentSelect = document.getElementById('student-select-product');
+    const studentSelect = document.getElementById('student-select');
     if (studentSelect) {
-        const savedStudent = sessionStorage.getItem('selectedStudent');
+        const savedStudent = localStorage.getItem('selectedStudent');
         if (savedStudent) {
             studentSelect.value = savedStudent;
-            console.log('Loaded saved student:', savedStudent);
         }
-        
-        // Save student selection when changed
-        studentSelect.addEventListener('change', function() {
-            if (this.value) {
-                sessionStorage.setItem('selectedStudent', this.value);
-                console.log('Saved student selection:', this.value);
-            }
-        });
-    }
-
-    // Quantity controls
-    const quantityInput = document.getElementById('product-quantity');
-    const decreaseBtn = document.querySelector('.quantity-btn.decrease');
-    const increaseBtn = document.querySelector('.quantity-btn.increase');
-
-    if (decreaseBtn && increaseBtn && quantityInput) {
-        decreaseBtn.addEventListener('click', function() {
-            let quantity = parseInt(quantityInput.value);
-            if (quantity > 1) {
-                quantityInput.value = quantity - 1;
-                console.log('Decreased quantity to:', quantityInput.value);
-            }
-        });
-
-        increaseBtn.addEventListener('click', function() {
-            let quantity = parseInt(quantityInput.value);
-            const maxQuantity = parseInt(quantityInput.getAttribute('max')) || 999;
-            if (quantity < maxQuantity) {
-                quantityInput.value = quantity + 1;
-                console.log('Increased quantity to:', quantityInput.value);
-            }
-        });
-    }
-
-    // Form submission logging
-    const form = document.getElementById('add-to-cart-form');
-    if (form) {
-        form.addEventListener('submit', function(e) {
-            console.log('Adding to cart:', {
-                productId: {{ product.id }},
-                quantity: quantityInput ? quantityInput.value : 1,
-                student: studentSelect ? studentSelect.value : 'none'
-            });
-        });
     }
 });
 </script>

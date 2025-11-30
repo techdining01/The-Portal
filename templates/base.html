@@ -285,7 +285,7 @@
         .btn {
             font-weight: 600;
             border-radius: 10px;
-            padding: 0.75rem 1.5rem;
+            padding: 0.75rem 1.55rem;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             border: none;
             position: relative;
@@ -403,11 +403,123 @@
             box-shadow: var(--shadow-lg);
         }
 
-        .feature-card {
-            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+   
+        .product-card {
+            min-height: 450px;
+        }
+        .btn-fixed-size {
+            min-width: 120px;
+            height: 38px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+        }
+        .price-section {
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
+        /* Admin Dashboard Mobile Fixes */
+        @media (max-width: 768px) {
+            .admin-stats .card {
+                margin-bottom: 1rem;
+            }
+            
+            .admin-table {
+                font-size: 0.875rem;
+            }
+            
+            .admin-table .btn-sm {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.775rem;
+            }
+            
+            /* Ensure tables are scrollable on mobile */
+            .table-responsive {
+                border: 1px solid var(--border);
+                border-radius: 8px;
+            }
+        }
+
+        /* Dashboard card enhancements */
+        .dashboard-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid var(--primary);
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* Stats cards */
+        .stat-card {
+            text-align: center;
+            padding: 1.5rem;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+                    /* Enhanced Mobile Responsiveness */
+        @media (max-width: 576px) {
+            .container {
+                padding-left: 15px;
+                padding-right: 15px;
+            }
+            
+            .btn-lg {
+                padding: 0.75rem 1.5rem;
+                font-size: 1rem;
+            }
+            
+            .card-body {
+                padding: 1rem;
+            }
+            
+            /* Improve form elements on mobile */
+            .form-control, .form-select {
+                font-size: 16px; /* Prevents zoom on iOS */
+            }
+        }
+
+        /* Touch-friendly buttons for mobile */
+        @media (hover: none) and (pointer: coarse) {
+            .btn, .nav-link, .dropdown-item {
+                min-height: 44px;
+                display: flex;
+                align-items: center;
+            }
+            
+            .btn-group .btn {
+                min-height: 38px;
+            }
+        }
+
+        /* Print styles */
+        @media print {
+            .navbar, footer, .btn, .no-print {
+                display: none !important;
+            }
+            
+            .main-content {
+                padding-top: 0;
+            }
+        }
+        
         /* Enhanced Footer */
         footer {
             background: var(--gradient-dark);
@@ -604,21 +716,18 @@
             <!-- Navbar Content -->
             <div class="collapse navbar-collapse" id="navbarContent">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="{% url 'store:product_list' %}" data-bs-dismiss="navbarContent">
-                            <i class="fas fa-home me-2"></i>Home
+                   
+                    {% if user.is_authenticated %}
+                      <li class="nav-item">
+                        <a class="nav-link" href="{% url 'exams:home' %}" data-bs-dismiss="navbarContent">
+                            <i class="fas fa-book me-2"></i>CBT
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'store:product_list' %}" data-bs-dismiss="navbarContent">
-                            <i class="fas fa-shopping-bag me-2"></i>Products
-                        </a>
-                    </li>
-                    
-                    <!-- Cart -->
+                       <!-- Cart -->
                     <li class="nav-item">
                         <a class="nav-link position-relative" href="{% url 'store:cart_view' %}" data-bs-dismiss="navbarContent">
                             <i class="fas fa-shopping-cart me-2"></i>Cart
+                       
                             {% with cart_total=request.session.cart_total|default:0 %}
                                 {% if cart_total > 0 %}
                                     <span class="cart-badge">{{ cart_total }}</span>
@@ -626,43 +735,63 @@
                             {% endwith %}
                         </a>
                     </li>
+                    <li>
+                         <a class="nav-link position-relative" href="{% url 'school_portal:about' %}" data-bs-dismiss="navbarContent">
+                            <i class="fas fa-school me-2"></i>About School</a>
+                    </li>                 
+                    
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'store:order_list' %}" data-bs-dismiss="navbarContent">
+                            <i class="fas fa-receipt me-2"></i>Orders
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'pickup:parent_dashboard' %}" data-bs-dismiss="navbarContent">
+                            <i class="fas fa-qrcode me-2"></i>Pickup Codes
+                        </a>
+                    </li>
 
-                    {% if user.is_authenticated %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'store:order_history' %}" data-bs-dismiss="navbarContent">
-                                <i class="fas fa-receipt me-2"></i>Orders
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'pickup:pickup_generate' %}" data-bs-dismiss="navbarContent">
-                                <i class="fas fa-qrcode me-2"></i>Pickup Codes
-                            </a>
-                        </li>
+                    <!-- Admin Dropdown -->
+                    {% if user.role in 'admin superadmin' %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" 
+                            aria-expanded="false" data-bs-auto-close="outside">
+                            <i class="fas fa-cog me-2"></i>Admin
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'store:admin_dashboard' %}" data-bs-dismiss="navbarContent">
+                                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'store:product_list' %}" data-bs-dismiss="navbarContent">
+                                <i class="fas fa-box me-2"></i>Products
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'store:order_list' %}" data-bs-dismiss="navbarContent">
+                                <i class="fas fa-list-alt me-2"></i>Orders
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'pickup:pickup_generate' %}" data-bs-dismiss="navbarContent">
+                                <i class="fas fa-check-circle me-2"></i>Verify Codes
+                            </a></li>
+                        </ul>
+                    </li>
+                    
+                    {% endif %}{% else %}
+                     <li class="nav-item">
+                        <a class="nav-link" href="{% url 'store:product_list' %}" data-bs-dismiss="navbarContent">
+                            <i class="fas fa-shopping-cart me-2"></i>BrillsPay
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'exams:home' %}" data-bs-dismiss="navbarContent">
+                            <i class="fas fa-book me-2"></i>CBT
+                        </a>
+                    </li>
+                    
+                   <li>
+                        <a class="nav-link position-relative" href="{% url 'school_portal:about' %}" data-bs-dismiss="navbarContent">
+                        <i class="fas fa-school me-2"></i>About School</a>
+                    </li>
 
-                        <!-- Admin Dropdown -->
-                        {% if user.role in 'admin superadmin' %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" 
-                               aria-expanded="false" data-bs-auto-close="outside">
-                                <i class="fas fa-cog me-2"></i>Admin
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{% url 'store:admin_dashboard' %}" data-bs-dismiss="navbarContent">
-                                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard
-                                </a></li>
-                                <li><a class="dropdown-item" href="{% url 'store:product_list' %}" data-bs-dismiss="navbarContent">
-                                    <i class="fas fa-box me-2"></i>Products
-                                </a></li>
-                                <li><a class="dropdown-item" href="{% url 'store:order_history' %}" data-bs-dismiss="navbarContent">
-                                    <i class="fas fa-list-alt me-2"></i>Orders
-                                </a></li>
-                                <li><a class="dropdown-item" href="{% url 'pickup:pickup_generate' %}" data-bs-dismiss="navbarContent">
-                                    <i class="fas fa-check-circle me-2"></i>Verify Codes
-                                </a></li>
-                            </ul>
-                        </li>
-                        {% endif %}
-                    {% endif %}
+                {% endif %}
                 </ul>
 
                 <!-- User Section -->
@@ -680,7 +809,7 @@
                                 </div>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="#" data-bs-dismiss="navbarContent">
+                                <li><a class="dropdown-item" href="{%url 'users:profile' %}" data-bs-dismiss="navbarContent">
                                     <i class="fas fa-user me-2"></i>Profile
                                 </a></li>
                                 <li><hr class="dropdown-divider"></li>
@@ -751,7 +880,7 @@
                             </a>
                         </li>
                         <li class="mb-2">
-                            <a href="{% url 'pickup:pickup_generate' %}">
+                            <a href="{% url 'pickup:parent_dashboard' %}">
                                 <i class="fas fa-chevron-right me-2 fa-xs"></i>Pickup Codes
                             </a>
                         </li>
@@ -813,6 +942,11 @@
                 <small class="d-block mt-2">www.thebrillsschool.edu.ng</small>
             </div>
         </div>
+        {% if debug %}
+    <div class="fixed-bottom bg-dark text-white p-2 small">
+        Queries: {{ request.connection.queries|length }}
+    </div>
+    {% endif %}
     </footer>
 
     <!-- JavaScript Libraries -->
@@ -832,6 +966,60 @@
             const navbarBackdrop = document.getElementById('navbarBackdrop');
             const navLinks = document.querySelectorAll('.nav-link, .dropdown-item');
             const navbarToggler = document.querySelector('.navbar-toggler');
+            const heroTitle = document.querySelector('.gsap-hero-title');
+            const heroSub = document.querySelector('.gsap-hero-sub');
+
+             // Initialize AOS
+                AOS.init({
+                duration: 800,
+                once: false,
+                mirror: true,
+                easing: "ease-out-quart"
+                });
+
+            // GSAP Animations
+            gsap.registerPlugin(ScrollTrigger);
+
+            // Navbar entrance animation
+            gsap.from('#mainNavbar', {
+                y: -100,
+                opacity: 0,
+                duration: 0.8,
+                ease: 'power3.out'
+            });
+
+            // Global fade-in animations
+            gsap.utils.toArray('.fade-in-up').forEach(element => {
+                gsap.from(element, {
+                    y: 50,
+                    opacity: 0,
+                    duration: 0.8,
+                    ease: 'power3.out',
+                    scrollTrigger: {
+                        trigger: element,
+                        start: 'top 85%',
+                        end: 'bottom 20%',
+                        toggleActions: 'play none none none'
+                    }
+                });
+            });
+
+            if (heroTitle || heroSub) {
+                gsap.from(".gsap-hero-title", { 
+                y: 30, 
+                opacity: 0, 
+                duration: 0.8, 
+                ease: "power3.out", 
+                stagger: 0.08 
+                });
+                gsap.from(".gsap-hero-sub", { 
+                y: 20, 
+                opacity: 0, 
+                duration: 0.9, 
+                delay: 0.12, 
+                ease: "power3.out" 
+                });
+            }
 
             // Sticky navbar scroll effect
             window.addEventListener('scroll', function() {
@@ -882,41 +1070,6 @@
                     }
                     navbarBackdrop.classList.remove('active');
                 }
-            });
-
-            // Initialize AOS
-            AOS.init({
-                duration: 800,
-                once: true,
-                mirror: false,
-                easing: 'ease-out-cubic'
-            });
-
-            // GSAP Animations
-            gsap.registerPlugin(ScrollTrigger);
-
-            // Navbar entrance animation
-            gsap.from('#mainNavbar', {
-                y: -100,
-                opacity: 0,
-                duration: 0.8,
-                ease: 'power3.out'
-            });
-
-            // Global fade-in animations
-            gsap.utils.toArray('.fade-in-up').forEach(element => {
-                gsap.from(element, {
-                    y: 50,
-                    opacity: 0,
-                    duration: 0.8,
-                    ease: 'power3.out',
-                    scrollTrigger: {
-                        trigger: element,
-                        start: 'top 85%',
-                        end: 'bottom 20%',
-                        toggleActions: 'play none none none'
-                    }
-                });
             });
 
             // Card hover animations
@@ -970,6 +1123,7 @@
             });
         });
     </script>
+    
 
     {% block extra_scripts %}{% endblock %}
 </body>

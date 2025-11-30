@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block title %}Checkout - BrillsPay{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h1 class="display-5 fw-bold text-dark mb-4">Checkout</h1>
+
+    <div class="row">
+        <!-- Order Items -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Order Items</h5>
+                    {% for item in cart.items.all %}
+                    <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
+                        <div class="d-flex align-items-center">
+                            <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" 
+                                 class="rounded me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                            <div>
+                                <h6 class="mb-1">{{ item.product.name }}</h6>
+                                <small class="text-muted">Qty: {{ item.quantity }}</small>
+                                {% if item.student %}
+                                <br>
+                                <small class="text-primary">
+                                    <i class="fas fa-user-graduate me-1"></i>{{ item.student.get_full_name }}
+                                </small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <span class="fw-bold">₦{{ item.subtotal }}</span>
+                    </div>
+                    {% endfor %}
+                    
+                    <div class="border-top pt-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <strong class="h5">Total Amount:</strong>
+                            <strong class="h4 text-primary">₦{{ cart.total_amount }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Information -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Payment Information</h5>
+                    
+                    <div class="alert alert-info mb-4">
+                        <div class="d-flex">
+                            <i class="fas fa-info-circle me-3 mt-1"></i>
+                            <div>
+                                <h6 class="alert-heading">Secure Payment</h6>
+                                <p class="mb-0">You will be redirected to Paystack for secure payment processing.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form method="post" action="/store/payment/initialize/">
+                        {% csrf_token %}
+                        
+                        <!-- User Information -->
+                        <div class="mb-4">
+                            <h6 class="mb-3">Billing Information</h6>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" value="{{ user.email }}" class="form-control" readonly>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Full Name</label>
+                                    <input type="text" value="{{ user.get_full_name }}" class="form-control" readonly>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Payment Method -->
+                        <div class="mb-4">
+                            <h6 class="mb-3">Payment Method</h6>
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fab fa-cc-mastercard fa-2x text-warning me-3"></i>
+                                        <i class="fab fa-cc-visa fa-2x text-primary me-3"></i>
+                                        <i class="fab fa-cc-verve fa-2x text-success me-3"></i>
+                                        <strong>Paystack Secure Payment</strong>
+                                    </div>
+                                    <p class="text-muted mb-0 small">
+                                        Pay with your card, bank account, or mobile money
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-lg w-100 py-3">
+                            <i class="fas fa-lock me-2"></i>
+                            Pay ₦{{ cart.total_amount }} Securely
+                        </button>
+                    </form>
+
+                    <div class="text-center mt-3">
+                        <a href="{% url 'store:cart_view' %}" class="text-primary text-decoration-none">
+                            <i class="fas fa-arrow-left me-2"></i>Return to Cart
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
