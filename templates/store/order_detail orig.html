@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}Order {{ order.order_number }} - BrillsPay{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="card">
+        <!-- Order Header -->
+        <div class="card-header bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="card-title h4 mb-1">Order {{ order.order_number }}</h2>
+                    <p class="text-muted mb-0">Placed on {{ order.created_at|date:"F d, Y \\a\\t H:i" }}</p>
+                </div>
+                <div>
+                    <span class="badge {% if order.status == 'paid' %}bg-success{% elif order.status == 'pending' %}bg-warning text-dark{% elif order.status == 'shipped' %}bg-info{% elif order.status == 'delivered' %}bg-primary{% else %}bg-danger{% endif %} fs-6">
+                        {{ order.status|title }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Items -->
+        <div class="card-body">
+            <h5 class="mb-4">Order Items</h5>
+            <div class="row">
+                {% for item in order.items.all %}
+                <div class="col-12 mb-3">
+                    <div class="card border">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-md-2">
+                                    <img src="{{ product.image.url }}" alt="{{ item.product.name }}" 
+                                         class="img-fluid rounded" style="height: 80px; object-fit: cover;">
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="card-title">{{ item.product.name }}</h6>
+                                    <p class="text-muted mb-1">Quantity: {{ item.quantity }}</p>
+                                    {% if item.student %}
+                                    <p class="text-primary mb-0">
+                                        <i class="fas fa-user-graduate me-1"></i>For: {{ item.student.get_full_name }}
+                                    </p>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <p class="fw-bold mb-1">₦{{ item.price }}</p>
+                                    <p class="text-muted">₦{{ item.subtotal }} total</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Order Summary -->
+        <div class="card-footer bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-1">Total Amount</h6>
+                    <p class="text-muted mb-0 small">Including all charges</p>
+                </div>
+                <div class="text-end">
+                    <p class="h4 text-primary mb-0">₦{{ order.total_amount }}</p>
+                    {% if order.payment_verified %}
+                    <p class="text-success mb-0 small">
+                        <i class="fas fa-check-circle me-1"></i>Payment Verified
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Information -->
+        {% if transaction %}
+        <div class="card-body border-top">
+            <h5 class="mb-3">Payment Information</h5>
+            <div class="row">
+                <div class="col-md-6 mb-2">
+                    <small class="text-muted">Payment Reference:</small>
+                    <p class="fw-bold font-monospace mb-0">{{ transaction.paystack_reference }}</p>
+                </div>
+                <div class="col-md-6 mb-2">
+                    <small class="text-muted">Payment Status:</small>
+                    <p class="fw-bold {% if transaction.payment_status == 'success' %}text-success{% else %}text-danger{% endif %} mb-0">
+                        {{ transaction.payment_status|title }}
+                    </p>
+                </div>
+                {% if transaction.paid_at %}
+                <div class="col-md-6 mb-2">
+                    <small class="text-muted">Paid At:</small>
+                    <p class="mb-0">{{ transaction.paid_at|date:"F d, Y \\a\\t H:i" }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="text-center mt-4">
+        <a href="{% url 'store:order_history' %}" class="btn btn-primary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Orders
+        </a>
+    </div>
+</div>
+{% endblock %}

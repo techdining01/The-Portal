@@ -1,7 +1,7 @@
-# store/admin.py (Enhanced)
 from django.contrib import admin
 from django.utils.html import format_html
 from .models import Category, Product, Cart, CartItem, Order, OrderItem, Transaction
+from .models import PaymentRecord
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
@@ -14,10 +14,10 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ['name', 'category', 'price', 'stock_quantity', 'is_active', 'created_at']
+    list_display = ['name', 'category', 'price', 'stock', 'is_active', 'created_at']
     list_filter = ['category', 'is_active', 'created_at']
     search_fields = ['name', 'description']
-    list_editable = ['price', 'stock_quantity', 'is_active']
+    list_editable = ['price', 'stock', 'is_active']
     readonly_fields = ['created_at', 'updated_at']
     
     def save_model(self, request, obj, form, change):
@@ -67,16 +67,81 @@ class OrderAdmin(admin.ModelAdmin):
         self.message_user(request, f'{updated} orders marked as delivered.')
     mark_as_delivered.short_description = "Mark selected orders as delivered"
 
-@admin.register(Transaction)
-class TransactionAdmin(admin.ModelAdmin):
-    list_display = ['payment_reference', 'order_link', 'amount', 'payment_status', 'paid_at', 'created_at']
-    list_filter = ['payment_status', 'created_at']
-    search_fields = ['payment_reference', 'order__order_number']
-    readonly_fields = ['created_at', 'updated_at', 'gateway_response']
+# @admin.register(Transaction)
+# class TransactionAdmin(admin.ModelAdmin):
+#     list_display = ['payment_reference', 'order_link', 'amount', 'payment_status', 'paid_at', 'created_at']
+#     list_filter = ['payment_status', 'created_at']
+#     search_fields = ['payment_reference', 'order__order_number']
+#     readonly_fields = ['created_at', 'updated_at', 'gateway_response']
     
-    def order_link(self, obj):
-        return format_html('<a href="/admin/store/order/{}/change/">{}</a>', 
-                         obj.order.id, obj.order.order_number)
-    order_link.short_description = 'Order'
+#     def order_link(self, obj):
+#         return format_html('<a href="/admin/store/order/{}/change/">{}</a>', 
+#                          obj.order.id, obj.order.order_number)
+#     order_link.short_description = 'Order'
 
 
+
+@admin.register(PaymentRecord)
+class PaymentRecordAdmin(admin.ModelAdmin):
+    list_display = ('reference', 'order', 'user', 'amount', 'payment_status', 
+                    'payment_method', 'paid_at', 'stock_updated', 'initiated_at')
+    list_filter = ('payment_status', 'payment_method', 'gateway', 'stock_updated', 'initiated_at')
+    search_fields = ('reference', 'gateway_reference', 'user__username', 'user__email', 'order__id')
+    readonly_fields = ('initiated_at', 'paid_at', 'gateway_response', 'refunded_at')
+    
+    fieldsets = (
+        ('Payment Info', {
+            'fields': ('order', 'user', 'reference', 'gateway_reference', 'gateway')
+        }),
+        ('Amount & Status', {
+            'fields': ('amount', 'amount_paid', 'payment_status', 'payment_method')
+        }),
+        ('Timing', {
+            'fields': ('initiated_at', 'paid_at')
+        }),
+        ('Refund Info', {
+            'fields': ('refund_amount', 'refund_reason', 'refunded_at')
+        }),
+        ('Stock Management', {
+            'fields': ('stock_updated',)
+        }),
+        ('Gateway Data', {
+            'fields': ('gateway_response', 'gateway_message'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    actions = ['mark_stock_updated', 'export_payments_csv']
+    
+    def mark_stock_updated(self, request, queryset):
+        """Mark selected payments as stock updated"""
+        updated = queryset.update(stock_updated=True)
+        self.message_user(request, f'{updated} payments marked as stock updated')
+    mark_stock_updated.short_description = "Mark as stock updated"
+    
+    def export_payments_csv(self, request, queryset):
+        """Export payments to CSV"""
+        import csv
+        from django.http import HttpResponse
+        
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="payments.csv"'
+        
+        writer = csv.writer(response)
+        writer.writerow(['Reference', 'Order', 'User', 'Amount', 'Status', 
+                         'Method', 'Paid At', 'Stock Updated'])
+        
+        for payment in queryset:
+            writer.writerow([
+                payment.reference,
+                payment.order.id,
+                payment.user.email,
+                payment.amount,
+                payment.get_payment_status_display(),
+                payment.get_payment_method_display(),
+                payment.paid_at.strftime('%Y-%m-%d %H:%M') if payment.paid_at else '',
+                'Yes' if payment.stock_updated else 'No'
+            ])
+        
+        return response
+    export_payments_csv.short_description = "Export selected payments to CSV"

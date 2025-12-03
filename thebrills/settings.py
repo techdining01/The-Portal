@@ -188,6 +188,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 SCHOOL_NAME = os.getenv("SCHOOL_NAME", "The Brills School")
 SCHOOL_ADDRESS = os.getenv("SCHOOL_ADDRESS", "No 1, Adaba Awotan-Akufo Road. Ibadan. Oyo State")
 SCHOOL_SLOGAN = os.getenv("SCHOOL_SLOGAN", "Knowledge is Light")
+SCHOOL_ECOMMERCE = os.getenv("SCHOOL_ECOMMERCE", "")
 PORTAL_DOMAIN = os.getenv("PORTAL_DOMAIN", "https://www.thebrillsschool.edu.ng")
 SITE_NAME = os.getenv("PORTAL_DOMAIN", "https://www.thebrillsschool.edu.ng")
 CURRENCY = os.getenv('NGN')
@@ -206,16 +207,13 @@ BACKUP_DIR = BASE_DIR / 'backups'
 FERNET_KEY = os.getenv('FERNET_KEY', b'your_generated_key_here')
 
 # Custom user model
-AUTH_USER_MODEL = 'users.User'
+AUTH_USER_MODEL = 'users.UserProfile'
 
 # Payment settings
 PAYSTACK_TEST_PUBLIC_KEY = os.getenv("PAYSTACK_TEST_PUBLIC_KEY")
 PAYSTACK_TEST_SECRET_KEY = os.getenv("PAYSTACK_TEST_SECRET_KEY")
-PAYSTACK_LIVE_PUBLIC_KEY = os.getenv("PAYSTACK_LIVE_PUBLIC_KEY")
-PAYSTACK_LIVE_SECRET_KEY = os.getenv("PAYSTACK_LIVE_SECRET_KEY")
-PAYSTACK_MODE = os.getenv("PAYSTACK_MODE", "test").lower()
-PAYSTACK_PUBLIC_KEY = PAYSTACK_LIVE_PUBLIC_KEY if PAYSTACK_MODE == "live" else PAYSTACK_TEST_PUBLIC_KEY
-PAYSTACK_SECRET_KEY = PAYSTACK_LIVE_SECRET_KEY if PAYSTACK_MODE == "live" else PAYSTACK_TEST_SECRET_KEY
+PAYSTACK_PUBLIC_KEY = os.getenv("PAYSTACK_PUBLIC_KEY")
+PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY")
 PAYSTACK_BASE_URL = "https://api.paystack.co"
 DEFAULT_FROM_EMAIL = "no-reply@brillspay.school"
 
@@ -409,3 +407,4 @@ if not DEBUG:
     SECURE_HSTS_PRELOAD = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+

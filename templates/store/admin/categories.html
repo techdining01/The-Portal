@@ -1,0 +1,288 @@
+<!-- store/templates/store/admin/categories.html -->
+{% extends 'base.html' %}
+
+{% block title %}Category Management - BrillsPay{% endblock %}
+
+{% block extra_css %}
+<style>
+.categories-header {
+    background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+    color: white;
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+    border-radius: 0 0 20px 20px;
+}
+
+.category-card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+    margin-bottom: 1.5rem;
+}
+
+.category-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.category-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    background: rgba(67, 97, 238, 0.1);
+    color: #4361ee;
+    margin-right: 1rem;
+}
+
+.category-info h5 {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.category-info small {
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+.product-count {
+    font-weight: 600;
+    color: #4361ee;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #6c757d;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.modal-content {
+    border-radius: 12px;
+    border: none;
+}
+
+.modal-header {
+    border-radius: 12px 12px 0 0;
+    background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+    color: white;
+}
+
+.modal-footer {
+    border-top: 1px solid #dee2e6;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="categories-header">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="h3 mb-2"><i class="bi bi-tags me-2"></i>Category Management</h1>
+                <p class="mb-0 opacity-75">Manage product categories for BrillsPay</p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+                    <i class="bi bi-plus-circle me-2"></i>Add Category
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Categories Grid -->
+    <div class="row">
+        {% for category in categories %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card category-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-start">
+                        <div class="category-icon">
+                            <i class="bi bi-tag"></i>
+                        </div>
+                        <div class="category-info flex-grow-1">
+                            <h5>{{ category.name }}</h5>
+                            <small>{{ category.description|truncatechars:50|default:"No description" }}</small>
+                            <div class="mt-2">
+                                <span class="product-count">{{ category.product_set.count }} products</span>
+                                <small class="text-muted ms-2">
+                                    <i class="bi bi-clock me-1"></i>{{ category.created_at|date:"M d, Y" }}
+                                </small>
+                            </div>
+                        </div>
+                        <div class="dropdown">
+                            <button class="btn btn-link text-muted" type="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item" href="#" data-bs-toggle="modal" 
+                                       data-bs-target="#editCategoryModal" 
+                                       data-category-id="{{ category.id }}"
+                                       data-category-name="{{ category.name }}"
+                                       data-category-description="{{ category.description }}">
+                                        <i class="bi bi-pencil me-2"></i>Edit
+                                    </a>
+                                </li>
+                                <li>
+                                    <form method="post" action="{% url 'store:category_management' %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="delete">
+                                        <input type="hidden" name="category_id" value="{{ category.id }}">
+                                        <button type="submit" class="dropdown-item text-danger" 
+                                                onclick="return confirm('Are you sure? This will not delete products in this category.')">
+                                            <i class="bi bi-trash me-2"></i>Delete
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="empty-state">
+                <i class="bi bi-tags"></i>
+                <h4>No categories found</h4>
+                <p>Start by adding your first category</p>
+                <button class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+                    <i class="bi bi-plus-circle me-2"></i>Add Category
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Add Category Modal -->
+<div class="modal fade" id="addCategoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Category</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'store:category_management' %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="add">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Category Name *</label>
+                        <input type="text" class="form-control" name="name" required 
+                               placeholder="Enter category name">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="description" rows="3" 
+                                  placeholder="Enter category description (optional)"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Category</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Category Modal -->
+<div class="modal fade" id="editCategoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Category</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'store:category_management' %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="edit">
+                <input type="hidden" name="category_id" id="editCategoryId">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Category Name *</label>
+                        <input type="text" class="form-control" name="name" id="editCategoryName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="description" id="editCategoryDescription" 
+                                  rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Category</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Edit category modal handler
+    const editModal = document.getElementById('editCategoryModal');
+    if (editModal) {
+        editModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const categoryId = button.getAttribute('data-category-id');
+            const categoryName = button.getAttribute('data-category-name');
+            const categoryDescription = button.getAttribute('data-category-description');
+            
+            document.getElementById('editCategoryId').value = categoryId;
+            document.getElementById('editCategoryName').value = categoryName;
+            document.getElementById('editCategoryDescription').value = categoryDescription;
+        });
+    }
+    
+    // Show success messages
+    {% if messages %}
+        {% for message in messages %}
+            showToast('{{ message }}', '{{ message.tags }}');
+        {% endfor %}
+    {% endif %}
+});
+
+function showToast(message, type = 'success') {
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `toast align-items-center text-bg-${type} border-0 position-fixed bottom-0 end-0 m-3`;
+    toast.setAttribute('role', 'alert');
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Initialize and show toast
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+    
+    // Remove toast after hiding
+    toast.addEventListener('hidden.bs.toast', function() {
+        document.body.removeChild(toast);
+    });
+}
+</script>
+{% endblock %}

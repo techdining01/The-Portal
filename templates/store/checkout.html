@@ -3,296 +3,644 @@
 
 {% block title %}Checkout - {{ SCHOOL_NAME }}{% endblock %}
 
+{% block extra_head %}
+<!-- Paystack -->
+<script src="https://js..co/v1/inline.js"></script>
+<style>
+    .student-select-card {
+        cursor: pointer;
+        transition: all 0.3s;
+        border: 2px solid transparent;
+    }
+    
+    .student-select-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    }
+    
+    .student-select-card.selected {
+        border-color: #2563eb;
+        background-color: rgba(37, 99, 235, 0.05);
+    }
+    
+    .student-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid #e2e8f0;
+    }
+    
+    /* Loading overlay */
+    #checkoutLoader {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255,255,255,0.9);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 99999;
+    }
+    
+    /* Cart item styling */
+    .cart-item-image {
+        width: 50px;
+        height: 50px;
+        border-radius: 8px;
+        object-fit: cover;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .item-quantity {
+        width: 30px;
+        height: 30px;
+        background: #2563eb;
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container">
-    <!-- Header -->
-    <div class="row mb-4">
+<!-- Checkout Loader -->
+<div id="checkoutLoader" style="display: none;">
+    <div class="text-center">
+        <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;"></div>
+        <h5>Processing Payment...</h5>
+        <p class="text-muted">Please wait while we redirect you to Paystack</p>
+    </div>
+</div>
+
+<div class="container py-4">
+    <div class="row">
         <div class="col-12">
-            <nav aria-label="breadcrumb" class="mb-3">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{% url 'store:product_list' %}">Store</a></li>
-                    <li class="breadcrumb-item"><a href="{% url 'store:cart_view' %}">Cart</a></li>
-                    <li class="breadcrumb-item active">Checkout</li>
-                </ol>
-            </nav>
-            
-            <h1 class="h2 mb-2">Checkout</h1>
-            <p class="text-muted">Complete your purchase securely</p>
+            <h1 class="h3 mb-1">Checkout</h1>
+            <p class="text-muted">Complete your purchase</p>
         </div>
     </div>
-
-    <div class="row g-4">
-        <!-- Order Summary - Mobile First (Top) -->
-        <div class="col-lg-5 order-lg-2">
-            <div class="card mb-4">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">Order Summary</h5>
-                </div>
-                <div class="card-body">
-                    {% for item in cart_items %}
-                    <div class="d-flex justify-content-between align-items-start border-bottom pb-3 mb-3">
-                        <div class="d-flex align-items-center">
-                            {% if item.product.image %}
-                            <img src="{{ item.product.image.url }}" 
-                                 alt="{{ item.product.name }}" 
-                                 class="rounded me-3"
-                                 style="width: 50px; height: 50px; object-fit: cover;">
-                            {% else %}
-                            <div class="bg-light rounded d-flex align-items-center justify-content-center me-3"
-                                 style="width: 50px; height: 50px;">
-                                <i class="fas fa-image text-muted fa-sm"></i>
-                            </div>
-                            {% endif %}
-                            <div>
-                                <h6 class="mb-1 small">{{ item.product.name }}</h6>
-                                <small class="text-muted">Qty: {{ item.quantity }}</small>
-                            </div>
-                        </div>
-                        <div class="text-end">
-                            <strong class="text-dark small">₦{{ item.total_price }}</strong>
-                        </div>
-                    </div>
-                    {% endfor %}
-
-                    <!-- Order Totals -->
-                    <div class="mt-4">
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Subtotal:</span>
-                            <span>₦{{ total_amount }}</span>
-                        </div>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Tax:</span>
-                            <span>₦0.00</span>
-                        </div>
-                        <div class="d-flex justify-content-between mb-3">
-                            <span>Shipping:</span>
-                            <span>₦0.00</span>
-                        </div>
-                        <hr>
-                        <div class="d-flex justify-content-between mb-0">
-                            <strong>Total:</strong>
-                            <strong class="text-primary h5">₦{{ total_amount }}</strong>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Security Badges -->
-            <div class="card">
-                <div class="card-body text-center">
-                    <div class="row g-3">
-                        <div class="col-4">
-                            <i class="fas fa-lock text-success fa-2x mb-2"></i>
-                            <p class="small mb-0">Secure Payment</p>
-                        </div>
-                        <div class="col-4">
-                            <i class="fas fa-shield-alt text-primary fa-2x mb-2"></i>
-                            <p class="small mb-0">Data Protected</p>
-                        </div>
-                        <div class="col-4">
-                            <i class="fas fa-check-circle text-success fa-2x mb-2"></i>
-                            <p class="small mb-0">Instant Delivery</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Checkout Form - Mobile First (Bottom) -->
-        <div class="col-lg-7 order-lg-1">
-            <div class="card">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">Payment Information</h5>
-                </div>
-                <div class="card-body">
-                    <!-- Student Selection -->
-                    <div class="mb-4">
-                        <label for="studentSelect" class="form-label fw-semibold">Select Student</label>
-                        <select class="form-select form-select-lg" id="studentSelect" required>
-                            <option value="">Choose a student...</option>
-                            <!-- Students will be populated via JavaScript -->
-                        </select>
-                    </div>
-
-                    <!-- Contact Information -->
-                    <div class="mb-4">
-                        <h6 class="mb-3">Contact Information</h6>
-                        <div class="row g-3">
+    
+    <form id="checkoutForm" method="POST">
+        {% csrf_token %}
+        <div class="row">
+            <!-- Left Column: Order & Student Selection -->
+            <div class="col-lg-8">
+                <!-- Student Selection -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title mb-3">
+                            <i class="fas fa-user-graduate me-2 text-primary"></i>
+                            Select Student/Ward
+                        </h5>
+                        <p class="text-muted mb-4">Who are you buying for?</p>
+                        
+                        <div class="row g-3" id="studentsContainer">
+                            {% for student in students %}
                             <div class="col-md-6">
-                                <label class="form-label">Full Name</label>
-                                <input type="text" class="form-control" value="{{ request.user.get_full_name }}" readonly>
+                                <div class="card student-select-card p-3" 
+                                     data-student-id="{{ student.id }}"
+                                     onclick="selectStudent(this, {{ student.id }}, '{{ student.get_full_name|default:student.username }}')">
+                                    <div class="d-flex align-items-center">
+                                        {% if student.profile_picture %}
+                                        <img src="{{ student.profile_picture.url }}" 
+                                             alt="{{ student.get_full_name }}" 
+                                             class="student-avatar me-3">
+                                        {% else %}
+                                        <div class="student-avatar bg-primary text-white d-flex align-items-center justify-content-center me-3">
+                                            {{ student.first_name|first|upper }}{{ student.last_name|first|upper }}
+                                        </div>
+                                        {% endif %}
+                                        <div>
+                                            <h6 class="mb-1">{{ student.get_full_name|default:student.username }}</h6>
+                                            <small class="text-muted d-block">
+                                                <i class="fas fa-id-card me-1"></i>
+                                                {{ student.registration_number|default:"No Reg Number" }}
+                                            </small>
+                                            <small class="text-muted">
+                                                <i class="fas fa-graduation-cap me-1"></i>
+                                                {{ student.grade_level|default:"Not Assigned" }}
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
+                            {% empty %}
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    No students/wards found. Products will be purchased for you.
+                                </div>
+                            </div>
+                            {% endfor %}
+                            
+                            <!-- Option for self -->
                             <div class="col-md-6">
-                                <label class="form-label">Email</label>
-                                <input type="email" class="form-control" value="{{ request.user.email }}" readonly>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Payment Method -->
-                    <div class="mb-4">
-                        <h6 class="mb-3">Payment Method</h6>
-                        <div class="alert alert-info">
-                            <div class="d-flex align-items-center">
-                                <i class="fas fa-credit-card me-3 fa-lg"></i>
-                                <div>
-                                    <strong>Paystack Payment</strong>
-                                    <p class="mb-0 small">Secure payment powered by Paystack</p>
+                                <div class="card student-select-card p-3 selected"
+                                     data-student-id="0"
+                                     onclick="selectStudent(this, 0, '{{ user.get_full_name|default:user.username }}')">
+                                    <div class="d-flex align-items-center">
+                                        <div class="student-avatar bg-success text-white d-flex align-items-center justify-content-center me-3">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-1">For Myself</h6>
+                                            <small class="text-muted d-block">
+                                                <i class="fas fa-user me-1"></i>
+                                                {{ user.get_full_name|default:user.username }}
+                                            </small>
+                                            <small class="text-muted">
+                                                <i class="fas fa-envelope me-1"></i>
+                                                {{ user.email }}
+                                            </small>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Terms Agreement -->
-                    <div class="mb-4">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="termsAgreement" required>
-                            <label class="form-check-label small" for="termsAgreement">
-                                I agree to the <a href="#" target="_blank">Terms of Service</a> and 
-                                <a href="#" target="_blank">Privacy Policy</a>. I understand that this is a secure transaction.
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Payment Button -->
-                    <div class="d-grid gap-3">
-                        <button type="button" class="btn btn-primary btn-lg" id="payNowBtn">
-                            <i class="fas fa-lock me-2"></i>Pay Now - ₦{{ total_amount }}
-                        </button>
                         
-                        <a href="{% url 'store:cart_view' %}" class="btn btn-outline-primary">
-                            <i class="fas fa-arrow-left me-2"></i>Back to Cart
-                        </a>
+                        <input type="hidden" name="student_id" id="selectedStudentId" value="0">
                     </div>
+                </div>
 
-                    <!-- Payment Processing -->
-                    <div class="text-center mt-4" id="paymentProcessing" style="display: none;">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Processing...</span>
+                <!-- Order Items -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title mb-3">
+                            <i class="fas fa-shopping-bag me-2 text-primary"></i>
+                            Order Summary ({{ cart_items|length }} item{{ cart_items|pluralize }})
+                        </h5>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Product</th>
+                                        <th class="text-center">Unit Price</th>
+                                        <th class="text-center">Quantity</th>
+                                        <th class="text-end">Item Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in cart_items %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <img src="{{ item.product.image.url|default:'/static/images/default_product.png' }}" 
+                                                     alt="{{ item.product.name }}"
+                                                     class="cart-item-image me-3"
+                                                     onerror="this.src='{% static 'images/default_product.png' %}'">
+                                                <div>
+                                                    <h6 class="mb-1">{{ item.product.name }}</h6>
+                                                    <small class="text-muted d-block">{{ item.product.category.name }}</small>
+                                                    {% if item.student %}
+                                                    <small class="text-primary">
+                                                        <i class="fas fa-user-graduate me-1"></i>
+                                                        For: {{ item.student.get_full_name|default:item.student.username }}
+                                                    </small>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-center align-middle">
+                                            <span class="fw-bold">₦{{ item.product.price|floatformat:2 }}</span>
+                                        </td>
+                                        <td class="text-center align-middle">
+                                            <div class="d-flex align-items-center justify-content-center gap-2">
+                                                <span class="item-quantity">{{ item.quantity }}</span>
+                                                <small class="text-muted">× {{ item.product.price|floatformat:2 }}</small>
+                                            </div>
+                                        </td>
+                                        <td class="text-end align-middle">
+                                            <span class="fw-bold fs-5">₦{{ item.total_price|floatformat:2 }}</span>
+                                            <div class="text-muted small">
+                                                {{ item.quantity }} × ₦{{ item.product.price|floatformat:2 }}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="3" class="text-end fw-bold">Subtotal:</td>
+                                        <td class="text-end fw-bold">₦{{ cart_total|floatformat:2 }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="3" class="text-end">Shipping:</td>
+                                        <td class="text-end text-success">FREE</td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="3" class="text-end">Tax:</td>
+                                        <td class="text-end">₦0.00</td>
+                                    </tr>
+                                    <tr class="table-active">
+                                        <td colspan="3" class="text-end fs-5">Total Amount:</td>
+                                        <td class="text-end">
+                                            <span class="fs-4 fw-bold text-primary">₦{{ cart_total|floatformat:2 }}</span>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
                         </div>
-                        <p class="mt-2 text-muted">Processing your payment...</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Support Info -->
-            <div class="card mt-4">
-                <div class="card-body text-center">
-                    <p class="small text-muted mb-2">
-                        <i class="fas fa-headset me-2"></i>Need help? 
-                        <a href="mailto:{{ SUPPORT_EMAIL }}">Contact Support</a>
-                    </p>
+            <!-- Right Column: Checkout Form -->
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm sticky-top" style="top: 100px;">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">
+                            <i class="fas fa-credit-card me-2 text-primary"></i>
+                            Payment Details
+                        </h5>
+                        
+                        <!-- Customer Info -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Full Name *</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   name="customer_name"
+                                   value="{{ user.get_full_name|default:user.username }}"
+                                   required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Email Address *</label>
+                            <input type="email" 
+                                   class="form-control" 
+                                   name="customer_email"
+                                   value="{{ user.email }}"
+                                   required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Phone Number *</label>
+                            <input type="tel" 
+                                   class="form-control" 
+                                   name="customer_phone"
+                                   placeholder="+2348012345678"
+                                   value="{{ user.phone|default:'' }}"
+                                   required>
+                            <small class="text-muted">Format: +2348012345678 or 08012345678</small>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Shipping/Delivery Address *</label>
+                            <textarea class="form-control" 
+                                      name="shipping_address"
+                                      rows="3"
+                                      placeholder="Enter delivery address (for non-school items)"
+                                      required></textarea>
+                            <small class="text-muted">For school uniform/items, address will be ignored</small>
+                        </div>
+                        
+                        <!-- Payment Method -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Payment Method</label>
+                            <div class="alert alert-info">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-credit-card fa-2x me-3 text-primary"></i>
+                                    <div>
+                                        <h6 class="mb-1">Paystack Payment</h6>
+                                        <small class="text-muted">Secure payment via card, bank transfer, USSD</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Order Total Summary -->
+                        <div class="border-top pt-3">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Items ({{ cart_items|length }})</span>
+                                <span>₦{{ cart_total|floatformat:2 }}</span>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Shipping</span>
+                                <span class="text-success">FREE</span>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between mb-3">
+                                <span>Tax</span>
+                                <span>₦0.00</span>
+                            </div>
+                            
+                            <hr>
+                            
+                            <div class="d-flex justify-content-between mb-4">
+                                <span class="fw-bold fs-5">Total</span>
+                                <span class="h4 text-primary fw-bold">₦{{ cart_total|floatformat:2 }}</span>
+                            </div>
+                            
+                            <!-- Terms -->
+                            <div class="form-check mb-4">
+                                <input class="form-check-input" type="checkbox" id="termsCheck" required>
+                                <label class="form-check-label" for="termsCheck">
+                                    I agree to the <a href="#" class="text-decoration-none">Terms & Conditions</a> and confirm that all information is correct.
+                                </label>
+                            </div>
+                            
+                            <!-- Payment Button -->
+                            <button type="submit" 
+                                    class="btn btn-primary btn-lg w-100 py-3"
+                                    id="payButton">
+                                <i class="fas fa-lock me-2"></i>Pay ₦{{ cart_total|floatformat:2 }}
+                            </button>
+                            
+                            <div class="text-center mt-3">
+                                <small class="text-muted d-block">
+                                    <i class="fas fa-shield-alt me-1"></i>Secure SSL encrypted payment
+                                </small>
+                                <small class="text-muted">
+                                    Powered by <strong>Paystack</strong>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    </form>
 </div>
 {% endblock %}
 
 {% block extra_scripts %}
-<script src="https://js.paystack.co/v1/inline.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const payNowBtn = document.getElementById('payNowBtn');
-    const paymentProcessing = document.getElementById('paymentProcessing');
-    const termsAgreement = document.getElementById('termsAgreement');
-    
-    // Load students (you might want to fetch this via AJAX)
-    function loadStudents() {
-        // This would typically be an AJAX call to get the user's students
-        const studentSelect = document.getElementById('studentSelect');
-        // For now, we'll add a placeholder
-        if (studentSelect.children.length === 1) {
-            const option = document.createElement('option');
-            option.value = "default";
-            option.textContent = "Default Student";
-            studentSelect.appendChild(option);
-        }
-    }
-    
-    loadStudents();
-    
-    payNowBtn.addEventListener('click', function() {
-        // Validate form
-        const studentSelect = document.getElementById('studentSelect');
-        
-        if (!studentSelect.value) {
-            showAlert('Please select a student', 'warning');
-            studentSelect.focus();
-            return;
-        }
-        
-        if (!termsAgreement.checked) {
-            showAlert('Please agree to the terms and conditions', 'warning');
-            termsAgreement.focus();
-            return;
-        }
-        
-        // Show processing
-        payNowBtn.disabled = true;
-        payNowBtn.style.display = 'none';
-        paymentProcessing.style.display = 'block';
-        
-        // Initialize payment
-        initializePayment();
+// Global variables
+let selectedStudentId = 0;
+let selectedStudentName = '{{ user.get_full_name|default:user.username }}';
+
+// Student selection
+function selectStudent(cardElement, studentId, studentName) {
+    // Remove selected class from all cards
+    document.querySelectorAll('.student-select-card').forEach(card => {
+        card.classList.remove('selected');
     });
     
-    function initializePayment() {
-        fetch('{% url "store:initialize_payment" %}', {
+    // Add selected class to clicked card
+    cardElement.classList.add('selected');
+    
+    // Update hidden input
+    selectedStudentId = studentId;
+    selectedStudentName = studentName;
+    document.getElementById('selectedStudentId').value = studentId;
+}
+
+// Form submission
+document.getElementById('checkoutForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    console.log('Starting checkout process...');
+    
+    // Validate terms
+    if (!document.getElementById('termsCheck').checked) {
+        showToast('Please accept the terms and conditions', 'error');
+        return;
+    }
+    
+    // Get form data
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData.entries());
+    
+    // Basic validation
+    if (!data.customer_name || !data.customer_email || !data.customer_phone || !data.shipping_address) {
+        showToast('Please fill all required fields', 'error');
+        return;
+    }
+    
+    // Validate email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(data.customer_email)) {
+        showToast('Please enter a valid email address', 'error');
+        return;
+    }
+    
+    // Validate phone (basic Nigerian validation)
+    const phoneRegex = /^(\+?234|0)[789]\d{9}$/;
+    const cleanPhone = data.customer_phone.replace(/\s+/g, '');
+    if (!phoneRegex.test(cleanPhone)) {
+        showToast('Please enter a valid Nigerian phone number (e.g., 08012345678 or +2348012345678)', 'error');
+        return;
+    }
+    
+    // Show loading
+    const payButton = document.getElementById('payButton');
+    const originalText = payButton.innerHTML;
+    payButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+    payButton.disabled = true;
+    
+    // Show checkout loader
+    document.getElementById('checkoutLoader').style.display = 'flex';
+    
+    try {
+        // Step 1: Create order
+        console.log('Creating order...');
+        
+        const orderData = {
+            ...data,
+            student_id: selectedStudentId,
+            cart_total: {{ cart_total }}
+        };
+        
+        console.log('Order data:', orderData);
+        
+        const orderResponse = await fetch('/store/order/create/', {
             method: 'POST',
             headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': '{{ csrf_token }}'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Redirect to Paystack
-                window.location.href = data.authorization_url;
-            } else {
-                showAlert(data.error || 'Payment initialization failed', 'danger');
-                resetPaymentButton();
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showAlert('Network error. Please try again.', 'danger');
-            resetPaymentButton();
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(orderData)
         });
-    }
-    
-    function resetPaymentButton() {
-        payNowBtn.disabled = false;
-        payNowBtn.style.display = 'block';
-        paymentProcessing.style.display = 'none';
-    }
-    
-    function showAlert(message, type) {
-        // Remove existing alerts
-        document.querySelectorAll('.alert-dismissible').forEach(alert => {
-            if (alert.parentElement) {
-                alert.remove();
+        
+        console.log('Order response status:', orderResponse.status);
+        
+        if (!orderResponse.ok) {
+            throw new Error(`Order creation failed: ${orderResponse.status}`);
+        }
+        
+        const orderResult = await orderResponse.json();
+        console.log('Order result:', orderResult);
+        
+        if (!orderResult.success) {
+            throw new Error(orderResult.message || 'Failed to create order');
+        }
+        
+        // Step 2: Initialize Paystack payment
+        console.log('Initializing Paystack payment...');
+        console.log('Paystack key:', '{{ paystack_public_key }}');
+        console.log('Reference:', orderResult.reference);
+        console.log('Amount:', {{ cart_total }} * 100);
+        console.log('Email:', orderResult.customer_email);
+        
+        // Check if Paystack is loaded
+        if (typeof PaystackPop === 'undefined') {
+            throw new Error('Paystack script not loaded. Please check your internet connection.');
+        }
+        
+        const handler = PaystackPop.setup({
+            key: '{{ paystack_public_key }}',
+            email: orderResult.customer_email,
+            amount: {{ cart_total }} * 100, // Convert to kobo
+            ref: orderResult.reference,
+            metadata: {
+                custom_fields: [
+                    {
+                        display_name: "Customer Name",
+                        variable_name: "customer_name",
+                        value: orderResult.customer_name
+                    },
+                    {
+                        display_name: "Order Number",
+                        variable_name: "order_number", 
+                        value: orderResult.order_number
+                    },
+                    {
+                        display_name: "Student/Ward",
+                        variable_name: "student_name",
+                        value: selectedStudentName || 'Self'
+                    }
+                ]
+            },
+            callback: function(response) {
+                console.log('Paystack callback response:', response);
+                
+                // Hide checkout loader
+                document.getElementById('checkoutLoader').style.display = 'none';
+                
+                // Redirect to verification page
+                if (response.reference) {
+                    window.location.href = `/store/payment/verify/${response.reference}/`;
+                } else {
+                    window.location.href = `/store/payment/verify/${orderResult.reference}/`;
+                }
+            },
+            onClose: function() {
+                console.log('Payment window closed by user');
+                
+                // Hide checkout loader
+                document.getElementById('checkoutLoader').style.display = 'none';
+                
+                // Reset button
+                payButton.innerHTML = originalText;
+                payButton.disabled = false;
+                
+                showToast('Payment cancelled. You can try again.', 'warning');
             }
         });
-
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type} alert-dismissible fade show mt-3`;
-        alertDiv.innerHTML = `
-            <i class="fas fa-${type === 'warning' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
         
-        const cardBody = document.querySelector('.card-body');
-        cardBody.insertBefore(alertDiv, cardBody.firstChild);
+        // Open payment modal
+        handler.openIframe();
         
-        setTimeout(() => {
-            if (alertDiv.parentElement) {
-                alertDiv.remove();
-            }
-        }, 5000);
+    } catch (error) {
+        console.error('Checkout error:', error);
+        
+        // Hide checkout loader
+        document.getElementById('checkoutLoader').style.display = 'none';
+        
+        // Reset button
+        payButton.innerHTML = originalText;
+        payButton.disabled = false;
+        
+        // Show appropriate error message
+        if (error.message.includes('network') || error.message.includes('Network')) {
+            showToast('Network error. Please check your internet connection and try again.', 'error');
+        } else if (error.message.includes('Paystack')) {
+            showToast('Payment service temporarily unavailable. Please try again in a few minutes.', 'error');
+        } else {
+            showToast(error.message || 'An error occurred. Please try again.', 'error');
+        }
     }
 });
+
+// Helper function to get CSRF token
+function getCSRFToken() {
+    // Try multiple sources
+    let token = '';
+    
+    // 1. From hidden input
+    const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (csrfInput) {
+        token = csrfInput.value;
+        console.log('CSRF token from input:', token ? 'Found' : 'Not found');
+    }
+    
+    // 2. From cookie
+    if (!token) {
+        const name = 'csrftoken';
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                cookie = cookie.trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    token = decodeURIComponent(cookie.substring(name.length + 1));
+                    console.log('CSRF token from cookie:', token ? 'Found' : 'Not found');
+                    break;
+                }
+            }
+        }
+    }
+    
+    if (!token) {
+        console.error('CSRF token not found!');
+        showToast('Security token missing. Please refresh the page.', 'error');
+    }
+    
+    return token;
+}
+
+// Show toast notification
+function showToast(message, type = 'success') {
+    // Use existing toast function or create simple alert
+    if (typeof window.showToast === 'function') {
+        window.showToast(message, type);
+    } else {
+        // Simple alert fallback
+        if (type === 'error') {
+            alert('Error: ' + message);
+        } else if (type === 'warning') {
+            alert('Warning: ' + message);
+        } else {
+            alert(message);
+        }
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Checkout page loaded');
+    console.log('Cart total: ₦{{ cart_total|floatformat:2 }}');
+    console.log('Paystack key available:', '{{ paystack_public_key }}' ? 'Yes' : 'No');
+    
+    // Select default (self)
+    const defaultCard = document.querySelector('[data-student-id="0"]');
+    if (defaultCard) {
+        selectStudent(defaultCard, 0, '{{ user.get_full_name|default:user.username }}');
+    }
+    
+    // Auto-fill address if available
+    {% if user.parent_profile and user.parent_profile.address %}
+    const addressField = document.querySelector('textarea[name="shipping_address"]');
+    if (addressField && !addressField.value.trim()) {
+        addressField.value = '{{ user.parent_profile.address|escapejs }}';
+    }
+    {% endif %}
+    
+    // Auto-fill phone if available
+    {% if user.phone %}
+    const phoneField = document.querySelector('input[name="customer_phone"]');
+    if (phoneField && !phoneField.value.trim()) {
+        phoneField.value = '{{ user.phone|escapejs }}';
+    }
+    {% endif %}
+});
 </script>
+
 {% endblock %}

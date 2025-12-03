@@ -1,119 +1,1516 @@
-{% extends "base.html" %}
+<!-- store/templates/store/admin/user_list.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}User Management - School Admin{% endblock %}
+
+{% block extra_head %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
+
+<style>
+    :root {
+        --primary-color: #4361ee;
+        --primary-dark: #3a0ca3;
+        --success-color: #28a745;
+        --warning-color: #f8961e;
+        --danger-color: #dc3545;
+        --info-color: #17a2b8;
+        --light-color: #f8f9fa;
+        --dark-color: #343a40;
+    }
+
+    /* Header Styles */
+    .user-management-header {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        color: white;
+        padding: 1.5rem 0;
+        margin-bottom: 1.5rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .user-management-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23ffffff' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
+        opacity: 0.1;
+    }
+
+    /* Stats Cards */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
+
+    .stat-icon.students { background: rgba(76, 201, 240, 0.1); color: #4cc9f0; }
+    .stat-icon.parents { background: rgba(67, 97, 238, 0.1); color: #4361ee; }
+    .stat-icon.teachers { background: rgba(87, 117, 144, 0.1); color: #577590; }
+    .stat-icon.active { background: rgba(40, 167, 69, 0.1); color: #28a745; }
+
+    .stat-content {
+        flex: 1;
+    }
+
+    .stat-number {
+        font-size: 1.75rem;
+        font-weight: 700;
+        line-height: 1;
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Filter Card */
+    .filter-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        margin-bottom: 1.5rem;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .search-box {
+        position: relative;
+    }
+
+    .search-box .form-control {
+        padding-left: 3rem;
+        border-radius: 10px;
+        border: 1px solid #dee2e6;
+        height: 48px;
+    }
+
+    .search-box .search-icon {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
+        pointer-events: none;
+    }
+
+    /* Role Badges */
+    .role-badge {
+        padding: 0.375rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .role-badge.student {
+        background: rgba(76, 201, 240, 0.1);
+        color: #4cc9f0;
+        border: 1px solid rgba(76, 201, 240, 0.3);
+    }
+
+    .role-badge.parent {
+        background: rgba(67, 97, 238, 0.1);
+        color: #4361ee;
+        border: 1px solid rgba(67, 97, 238, 0.3);
+    }
+
+    .role-badge.teacher {
+        background: rgba(87, 117, 144, 0.1);
+        color: #577590;
+        border: 1px solid rgba(87, 117, 144, 0.3);
+    }
+
+    .role-badge.admin {
+        background: rgba(248, 150, 30, 0.1);
+        color: #f8961e;
+        border: 1px solid rgba(248, 150, 30, 0.3);
+    }
+
+    .role-badge.superadmin {
+        background: rgba(249, 65, 68, 0.1);
+        color: #f94144;
+        border: 1px solid rgba(249, 65, 68, 0.3);
+    }
+
+    /* Status Badges */
+    .status-badge {
+        padding: 0.375rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .status-badge.active {
+        background: rgba(40, 167, 69, 0.1);
+        color: #28a745;
+        border: 1px solid rgba(40, 167, 69, 0.3);
+    }
+
+    .status-badge.inactive {
+        background: rgba(108, 117, 125, 0.1);
+        color: #6c757d;
+        border: 1px solid rgba(108, 117, 125, 0.3);
+    }
+
+    .status-badge.suspended {
+        background: rgba(220, 53, 69, 0.1);
+        color: #dc3545;
+        border: 1px solid rgba(220, 53, 69, 0.3);
+    }
+
+    /* User Table */
+    .users-table-container {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .users-table {
+        margin: 0;
+    }
+
+    .users-table thead th {
+        background: #f8f9fa;
+        border: none;
+        padding: 1.25rem 1.5rem;
+        font-weight: 600;
+        color: #495057;
+        white-space: nowrap;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .users-table tbody td {
+        padding: 1rem 1.5rem;
+        vertical-align: middle;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .users-table tbody tr {
+        transition: all 0.2s ease;
+    }
+
+    .users-table tbody tr:hover {
+        background: rgba(67, 97, 238, 0.02);
+    }
+
+    /* User Avatar */
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid #fff;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .avatar-initials {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        color: white;
+        font-size: 0.875rem;
+        border: 2px solid #fff;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .avatar-initials.student { background: #4cc9f0; }
+    .avatar-initials.parent { background: #4361ee; }
+    .avatar-initials.teacher { background: #577590; }
+    .avatar-initials.admin { background: #f8961e; }
+    .avatar-initials.superadmin { background: #f94144; }
+
+    /* Action Buttons */
+    .action-buttons {
+        display: flex;
+        gap: 0.375rem;
+        flex-wrap: nowrap;
+    }
+
+    .btn-action {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #dee2e6;
+        background: white;
+        color: #6c757d;
+        transition: all 0.2s ease;
+        font-size: 0.875rem;
+    }
+
+    .btn-action:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-action.view:hover { background: #4361ee; color: white; border-color: #4361ee; }
+    .btn-action.edit:hover { background: #28a745; color: white; border-color: #28a745; }
+    .btn-action.delete:hover { background: #dc3545; color: white; border-color: #dc3545; }
+    .btn-action.reset:hover { background: #f8961e; color: white; border-color: #f8961e; }
+
+    /* Bulk Actions */
+    .bulk-actions {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        border: 1px solid #dee2e6;
+    }
+
+    .bulk-select-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .bulk-actions-buttons {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    /* Pagination */
+    .pagination-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        margin-top: 1.5rem;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .pagination-info {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+
+    /* Mobile Optimizations */
+    @media (max-width: 768px) {
+        .user-management-header {
+            padding: 1rem 0;
+        }
+
+        .user-management-header h1 {
+            font-size: 1.5rem;
+        }
+
+        .stats-grid {
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+        }
+
+        .stat-card {
+            padding: 1rem;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+        }
+
+        .filter-card {
+            padding: 1rem;
+        }
+
+        .filter-card .row > div {
+            margin-bottom: 1rem;
+        }
+
+        .users-table {
+            font-size: 0.875rem;
+        }
+
+        .users-table thead th,
+        .users-table tbody td {
+            padding: 0.75rem;
+        }
+
+        .bulk-actions {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.75rem;
+        }
+
+        .bulk-select-info,
+        .bulk-actions-buttons {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .action-buttons {
+            justify-content: center;
+        }
+
+        /* Hide some columns on mobile */
+        .users-table th:nth-child(4),
+        .users-table th:nth-child(6),
+        .users-table td:nth-child(4),
+        .users-table td:nth-child(6) {
+            display: none;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .users-table {
+            display: block;
+            overflow-x: auto;
+        }
+
+        .btn-action {
+            width: 32px;
+            height: 32px;
+            font-size: 0.75rem;
+        }
+
+        .pagination-card {
+            padding: 1rem;
+        }
+
+        .export-buttons .btn {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+        }
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+    }
+
+    .empty-state-icon {
+        font-size: 3rem;
+        color: #dee2e6;
+        margin-bottom: 1rem;
+    }
+
+    /* Loading State */
+    .table-loading {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        border-radius: 12px;
+    }
+
+    /* Select2 Customization */
+    .select2-container--bootstrap-5 .select2-selection {
+        border-radius: 10px;
+        border: 1px solid #dee2e6;
+        height: 48px;
+        display: flex;
+        align-items: center;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .animate-fade-in {
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    /* Custom Checkbox */
+    .custom-checkbox .form-check-input {
+        width: 1.2em;
+        height: 1.2em;
+        border: 2px solid #dee2e6;
+    }
+
+    .custom-checkbox .form-check-input:checked {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+
+    /* Quick Actions */
+    .quick-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .btn-quick-action {
+        border-radius: 10px;
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        border: 1px solid #dee2e6;
+    }
+
+    /* View Toggle */
+    .view-toggle {
+        display: inline-flex;
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 0.25rem;
+        margin-left: auto;
+    }
+
+    .view-toggle-btn {
+        padding: 0.5rem 1rem;
+        border: none;
+        background: transparent;
+        border-radius: 8px;
+        color: #6c757d;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+    }
+
+    .view-toggle-btn.active {
+        background: white;
+        color: var(--primary-color);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-  <div class="d-flex justify-content-between align-items-center mt-3">
-      <h2 class='fw-bold mb-3'> Manage Users</h2>
-          <nav class="d-flex gap-3">
-            <a class="btn btn-dark" style="width: 50px; height: 30px;font-size: 10px;" href="{% url 'users:dashboard' %}">Back</a>
-          </nav>
+<!-- Header -->
+<div class="user-management-header">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="h3 mb-2 animate-fade-in">
+                    <i class="fas fa-users me-2"></i>User Management
+                </h1>
+                <p class="mb-0 opacity-75 animate-fade-in" style="animation-delay: 0.1s;">
+                    Manage all users including students, parents, teachers, and administrators
+                </p>
+            </div>
+            <div class="col-lg-4 mt-3 mt-lg-0">
+                <div class="d-flex flex-column flex-lg-row gap-2 justify-content-lg-end">
+                    <button class="btn btn-light d-flex align-items-center justify-content-center" onclick="showAddUserModal()">
+                        <i class="fas fa-user-plus me-2"></i>Add User
+                    </button>
+                    <div class="dropdown">
+                        <button class="btn btn-light d-flex align-items-center justify-content-center" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-download me-2"></i>Export
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="#" onclick="exportUsers('csv')"><i class="fas fa-file-csv me-2"></i>CSV</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="exportUsers('excel')"><i class="fas fa-file-excel me-2"></i>Excel</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="exportUsers('pdf')"><i class="fas fa-file-pdf me-2"></i>PDF</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
         </div>
-      <br>
-
-  <!-- Search -->
-  <div class="mb-3">
-    <input type="text" id="searchInput" class="form-control" placeholder="Search by users or firstname or lastname or class">
-  </div>
-
-  <!-- Table -->
-  <table class="table table-striped" id="usersTable">
-    <thead>
-      <tr>
-        <th>Username</th>
-        <th>Full Name</th>
-        <th>Class</th>
-        <th>Email</th>
-        <th>Role</th>
-        <th>Date Joined</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody id="usersBody"></tbody>
-  </table>
-
-  <!-- Pagination -->
-  <nav>
-    <ul class="pagination" id="pagination"></ul>
-  </nav>
+    </div>
 </div>
 
-<script>
-function loadUsers(page=1, search="") {
-  fetch(`{% url 'users:load_users' %}?page=${page}&search=${search}`)
-    .then(res => res.json())
-    .then(data => {
-      let tbody = "";
-      data.users.forEach(u => {
-        tbody += `
-          <tr>
-            <td>${u.username}</td>
-            <td>${u.first_name} ${u.last_name}</td>
-            <td>${u.student_class}</td>
-            <td>${u.email}</td>
-            <td>${u.role}</td>
-            <td>${u.date_joined}</td>
-            <td>
-              <a href="/users/edit/${u.id}/" class="btn btn-sm btn-primary">Edit</a>
-              <button class="btn btn-sm btn-danger" onclick="deleteUser(${u.id})">Delete</button>
-            </td>
-          </tr>
-        `;
-      });
-      document.getElementById("usersBody").innerHTML = tbody;
+<div class="container">
+    <!-- User Statistics -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon students">
+                <i class="fas fa-user-graduate"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-number">{{ total_students }}</div>
+                <div class="stat-label">Students</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon parents">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-number">{{ total_parents }}</div>
+                <div class="stat-label">Parents</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon teachers">
+                <i class="fas fa-chalkboard-teacher"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-number">{{ total_teachers }}</div>
+                <div class="stat-label">Teachers</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon active">
+                <i class="fas fa-user-check"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-number">{{ total_active_users }}</div>
+                <div class="stat-label">Active Users</div>
+            </div>
+        </div>
+    </div>
 
-      // Pagination
-      let pagHtml = "";
-      if (data.has_previous) {
-        pagHtml += `<li class="page-item"><a class="page-link" href="#" onclick="loadUsers(${data.current_page-1}, '${search}')">Previous</a></li>`;
-      }
-      for (let i = 1; i <= data.num_pages; i++) {
-        pagHtml += `<li class="page-item ${i===data.current_page?'active':''}">
-          <a class="page-link" href="#" onclick="loadUsers(${i}, '${search}')">${i}</a></li>`;
-      }
-      if (data.has_next) {
-        pagHtml += `<li class="page-item"><a class="page-link" href="#" onclick="loadUsers(${data.current_page+1}, '${search}')">Next</a></li>`;
-      }
-      document.getElementById("pagination").innerHTML = pagHtml;
+    <!-- Filter Card -->
+    <div class="filter-card animate-fade-in" style="animation-delay: 0.2s;">
+        <form method="get" id="filterForm">
+            <div class="row g-3">
+                <div class="col-md-3 col-sm-6">
+                    <label class="form-label fw-semibold">Role</label>
+                    <select class="form-select" name="role" id="roleFilter">
+                        <option value="">All Roles</option>
+                        <option value="student" {% if request.GET.role == 'student' %}selected{% endif %}>Students</option>
+                        <option value="parent" {% if request.GET.role == 'parent' %}selected{% endif %}>Parents</option>
+                        <option value="teacher" {% if request.GET.role == 'teacher' %}selected{% endif %}>Teachers</option>
+                        <option value="admin" {% if request.GET.role == 'admin' %}selected{% endif %}>Administrators</option>
+                    </select>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <label class="form-label fw-semibold">Status</label>
+                    <select class="form-select" name="status" id="statusFilter">
+                        <option value="">All Status</option>
+                        <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+                        <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                        <option value="suspended" {% if request.GET.status == 'suspended' %}selected{% endif %}>Suspended</option>
+                    </select>
+                </div>
+                <div class="col-md-4 col-sm-12">
+                    <label class="form-label fw-semibold">Search</label>
+                    <div class="search-box">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" 
+                               class="form-control" 
+                               name="search" 
+                               id="searchInput" 
+                               placeholder="Search by name, email, or phone..."
+                               value="{{ request.GET.search|default:'' }}">
+                    </div>
+                </div>
+                <div class="col-md-2 col-sm-12 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-2"></i>Filter
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="quick-actions">
+            <button class="btn btn-outline-primary btn-quick-action" onclick="bulkAction('activate')">
+                <i class="fas fa-check me-1"></i>Activate
+            </button>
+            <button class="btn btn-outline-secondary btn-quick-action" onclick="bulkAction('deactivate')">
+                <i class="fas fa-times me-1"></i>Deactivate
+            </button>
+            <button class="btn btn-outline-danger btn-quick-action" onclick="bulkAction('delete')">
+                <i class="fas fa-trash me-1"></i>Delete
+            </button>
+        </div>
+        <div class="view-toggle">
+            <button class="view-toggle-btn active" onclick="toggleView('table')">
+                <i class="fas fa-table"></i>
+            </button>
+            <button class="view-toggle-btn" onclick="toggleView('grid')">
+                <i class="fas fa-th-large"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Bulk Actions (Hidden by default) -->
+    <div class="bulk-actions" id="bulkActions" style="display: none;">
+        <div class="bulk-select-info">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                <label class="form-check-label" for="selectAll">
+                    <span id="selectedCount">0 users selected</span>
+                </label>
+            </div>
+        </div>
+        <div class="bulk-actions-buttons">
+            <button class="btn btn-sm btn-outline-primary" onclick="bulkAction('activate')">
+                <i class="fas fa-check me-1"></i>Activate Selected
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="bulkAction('deactivate')">
+                <i class="fas fa-times me-1"></i>Deactivate Selected
+            </button>
+            <button class="btn btn-sm btn-outline-danger" onclick="bulkAction('delete')">
+                <i class="fas fa-trash me-1"></i>Delete Selected
+            </button>
+            <button class="btn btn-sm btn-outline-info" onclick="bulkAction('export')">
+                <i class="fas fa-download me-1"></i>Export Selected
+            </button>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="users-table-container animate-fade-in" style="animation-delay: 0.3s;">
+        <div class="position-relative">
+            <div class="table-loading" id="tableLoading" style="display: none;">
+                <div class="spinner-border text-primary"></div>
+                <span class="ms-2">Loading...</span>
+            </div>
+            
+            {% if users %}
+            <div class="table-responsive">
+                <table class="table users-table">
+                    <thead>
+                        <tr>
+                            <th width="50">
+                                <input type="checkbox" class="form-check-input" id="selectAllHeader" onchange="toggleSelectAll()">
+                            </th>
+                            <th>User</th>
+                            <th>Role</th>
+                            <th>Email</th>
+                            <th>Status</th>
+                            <th>Joined</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        {% for user in users %}
+                        <tr data-user-id="{{ user.id }}" data-role="{{ user.userprofile.role }}" data-status="{% if user.is_active %}active{% else %}inactive{% endif %}">
+                            <td>
+                                <input type="checkbox" class="form-check-input user-checkbox" value="{{ user.id }}" onchange="updateBulkActions()">
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    {% if user.userprofile.profile_picture %}
+                                    <img src="{{ user.userprofile.profile_picture.url }}" 
+                                         alt="{{ user.get_full_name|default:user.username }}" 
+                                         class="user-avatar me-3">
+                                    {% else %}
+                                    <div class="avatar-initials {{ user.userprofile.role|default:'student' }} me-3">
+                                        {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
+                                    </div>
+                                    {% endif %}
+                                    <div>
+                                        <h6 class="mb-1">{{ user.get_full_name|default:user.username }}</h6>
+                                        <small class="text-muted">@{{ user.username }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="role-badge {{ user.userprofile.role|default:'student' }}">
+                                    <i class="fas fa-user me-1"></i>
+                                    {{ user.userprofile.get_role_display|default:"Student" }}
+                                </span>
+                            </td>
+                            <td>
+                                <div>
+                                    <small class="d-block">
+                                        <i class="fas fa-envelope me-1 text-muted"></i>
+                                        {{ user.email|truncatechars:25 }}
+                                    </small>
+                                    {% if user.userprofile.phone_number %}
+                                    <small class="d-block mt-1">
+                                        <i class="fas fa-phone me-1 text-muted"></i>
+                                        {{ user.userprofile.phone_number }}
+                                    </small>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                {% if user.is_active %}
+                                <span class="status-badge active">
+                                    <i class="fas fa-check-circle me-1"></i>Active
+                                </span>
+                                {% else %}
+                                <span class="status-badge inactive">
+                                    <i class="fas fa-times-circle me-1"></i>Inactive
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ user.date_joined|date:"M d, Y" }}</small>
+                            </td>
+                            <td class="text-end">
+                                <div class="action-buttons">
+                                    <button class="btn-action view" onclick="viewUser({{ user.id }})" title="View Profile">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn-action edit" onclick="editUser({{ user.id }})" title="Edit User">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn-action reset" onclick="resetPassword({{ user.id }})" title="Reset Password">
+                                        <i class="fas fa-key"></i>
+                                    </button>
+                                    {% if user.id != request.user.id %}
+                                    <button class="btn-action delete" onclick="deleteUser({{ user.id }})" title="Delete User">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <h5 class="text-muted">No users found</h5>
+                <p class="text-muted mb-4">Try adjusting your filters or add new users</p>
+                <button class="btn btn-primary" onclick="showAddUserModal()">
+                    <i class="fas fa-user-plus me-2"></i>Add New User
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if users.has_other_pages %}
+    <div class="pagination-card">
+        <div class="row align-items-center">
+            <div class="col-md-6 mb-3 mb-md-0">
+                <div class="pagination-info">
+                    Showing {{ users.start_index }} to {{ users.end_index }} of {{ users.paginator.count }} users
+                </div>
+            </div>
+            <div class="col-md-6">
+                <nav aria-label="User pagination">
+                    <ul class="pagination justify-content-center justify-content-md-end mb-0">
+                        {% if users.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ users.previous_page_number }}{% if request.GET.role %}&role={{ request.GET.role }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" aria-label="Previous">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link"><i class="fas fa-chevron-left"></i></span>
+                        </li>
+                        {% endif %}
+
+                        {% for i in users.paginator.page_range|slice:":5" %}
+                            {% if users.number == i %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ i }}</span>
+                            </li>
+                            {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ i }}{% if request.GET.role %}&role={{ request.GET.role }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{{ i }}</a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if users.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ users.next_page_number }}{% if request.GET.role %}&role={{ request.GET.role }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" aria-label="Next">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link"><i class="fas fa-chevron-right"></i></span>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Add User Modal -->
+<div class="modal fade" id="addUserModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addUserForm" method="post" action="{% url 'users:user_create' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">First Name *</label>
+                            <input type="text" class="form-control" name="first_name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Last Name *</label>
+                            <input type="text" class="form-control" name="last_name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Username *</label>
+                            <input type="text" class="form-control" name="username" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Email *</label>
+                            <input type="email" class="form-control" name="email" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Phone Number</label>
+                            <input type="tel" class="form-control" name="phone">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Role *</label>
+                            <select class="form-select select2-role" name="role" required>
+                                <option value="">Select Role</option>
+                                <option value="student">Student</option>
+                                <option value="parent">Parent</option>
+                                <option value="teacher">Teacher</option>
+                                <option value="admin">Administrator</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3 student-fields" style="display: none;">
+                            <label class="form-label">Parent</label>
+                            <select class="form-select select2-parent" name="parent">
+                                <option value="">Select Parent</option>
+                                {% for parent in parent_users %}
+                                <option value="{{ parent.id }}">{{ parent.get_full_name }} ({{ parent.email }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3 student-fields" style="display: none;">
+                            <label class="form-label">Class/Grade</label>
+                            <input type="text" class="form-control" name="grade_level" placeholder="e.g., Grade 5">
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Password</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" name="password" id="passwordInput">
+                                <button type="button" class="btn btn-outline-secondary" onclick="generatePassword()">
+                                    <i class="fas fa-key"></i> Generate
+                                </button>
+                            </div>
+                            <small class="text-muted">Leave blank to generate random password</small>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="send_welcome" checked id="sendWelcome">
+                                <label class="form-check-label" for="sendWelcome">
+                                    Send welcome email with login credentials
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-user-plus me-2"></i>Add User
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- View User Modal -->
+<div class="modal fade" id="viewUserModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">User Profile</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <div id="viewUserAvatar" class="mx-auto mb-3"></div>
+                    <h5 id="viewUserName" class="mb-1"></h5>
+                    <span id="viewUserRole" class="badge"></span>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <small class="text-muted d-block">Email</small>
+                        <strong id="viewUserEmail"></strong>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted d-block">Phone</small>
+                        <strong id="viewUserPhone"></strong>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <small class="text-muted d-block">Status</small>
+                        <span id="viewUserStatus"></span>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted d-block">Joined</small>
+                        <strong id="viewUserJoined"></strong>
+                    </div>
+                </div>
+                
+                <div id="studentInfo" style="display: none;">
+                    <hr>
+                    <h6>Student Information</h6>
+                    <div class="row">
+                        <div class="col-6">
+                            <small class="text-muted d-block">Class/Grade</small>
+                            <strong id="viewUserGrade"></strong>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted d-block">Registration No.</small>
+                            <strong id="viewUserRegNo"></strong>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <small class="text-muted d-block">Parent</small>
+                        <strong id="viewUserParent"></strong>
+                    </div>
+                </div>
+                
+                <div id="parentInfo" style="display: none;">
+                    <hr>
+                    <h6>Parent Information</h6>
+                    <div class="row">
+                        <div class="col-6">
+                            <small class="text-muted d-block">Occupation</small>
+                            <strong id="viewUserOccupation"></strong>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted d-block">Emergency Contact</small>
+                            <strong id="viewUserEmergency"></strong>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <small class="text-muted d-block">Address</small>
+                        <p id="viewUserAddress" class="mb-0"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="editUserFromView()">
+                    <i class="fas fa-edit me-2"></i>Edit User
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Delete User
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this user?</p>
+                <div class="alert alert-danger">
+                    <strong>Warning:</strong> This action cannot be undone. All user data including orders and payments will be permanently deleted.
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="confirmDelete">
+                    <label class="form-check-label" for="confirmDelete">
+                        I understand this action is irreversible
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn" disabled onclick="confirmDeleteUser()">
+                    <i class="fas fa-trash me-2"></i>Delete User
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+// Global variables
+let currentUserId = null;
+let selectedUsers = new Set();
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Select2
+    $('.select2-role').select2({
+        theme: 'bootstrap-5',
+        placeholder: 'Select Role',
+        allowClear: true,
+        dropdownParent: $('#addUserModal')
+    });
+    
+    $('.select2-parent').select2({
+        theme: 'bootstrap-5',
+        placeholder: 'Select Parent',
+        allowClear: true,
+        dropdownParent: $('#addUserModal')
+    });
+    
+    // Role-based field visibility
+    $('.select2-role').on('change', function() {
+        const role = $(this).val();
+        const studentFields = $('.student-fields');
+        
+        if (role === 'student') {
+            studentFields.show();
+        } else {
+            studentFields.hide();
+        }
+    });
+    
+    // Delete confirmation checkbox
+    document.getElementById('confirmDelete').addEventListener('change', function() {
+        document.getElementById('confirmDeleteBtn').disabled = !this.checked;
+    });
+    
+    // Initialize table checkboxes
+    updateBulkActions();
+});
+
+// Show add user modal
+function showAddUserModal() {
+    const modal = new bootstrap.Modal(document.getElementById('addUserModal'));
+    modal.show();
+}
+
+// Generate random password
+function generatePassword() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+    let password = '';
+    for (let i = 0; i < 12; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    document.getElementById('passwordInput').value = password;
+}
+
+// View user details
+function viewUser(userId) {
+    showLoading();
+    
+    // Fetch user data via AJAX
+    fetch(`/admin/users/${userId}/json/`)
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            
+            // Populate modal
+            document.getElementById('viewUserName').textContent = data.full_name || data.username;
+            document.getElementById('viewUserEmail').textContent = data.email || 'N/A';
+            document.getElementById('viewUserPhone').textContent = data.phone || 'N/A';
+            document.getElementById('viewUserJoined').textContent = data.date_joined || 'N/A';
+            
+            // Set role badge
+            const roleBadge = document.getElementById('viewUserRole');
+            roleBadge.className = `role-badge ${data.role}`;
+            roleBadge.innerHTML = `<i class="fas fa-user me-1"></i>${data.role_display}`;
+            
+            // Set status
+            const statusSpan = document.getElementById('viewUserStatus');
+            statusSpan.innerHTML = data.is_active ? 
+                '<span class="status-badge active"><i class="fas fa-check-circle me-1"></i>Active</span>' :
+                '<span class="status-badge inactive"><i class="fas fa-times-circle me-1"></i>Inactive</span>';
+            
+            // Set avatar
+            const avatarDiv = document.getElementById('viewUserAvatar');
+            if (data.profile_picture) {
+                avatarDiv.innerHTML = `<img src="${data.profile_picture}" class="user-avatar" style="width: 80px; height: 80px;">`;
+            } else {
+                const initials = data.full_name ? 
+                    data.full_name.split(' ').map(n => n[0]).join('') : 
+                    data.username.substring(0, 2).toUpperCase();
+                avatarDiv.innerHTML = `<div class="avatar-initials ${data.role}" style="width: 80px; height: 80px; font-size: 1.5rem;">
+                    ${initials}
+                </div>`;
+            }
+            
+            // Role-specific info
+            const studentInfo = document.getElementById('studentInfo');
+            const parentInfo = document.getElementById('parentInfo');
+            
+            if (data.role === 'student') {
+                studentInfo.style.display = 'block';
+                parentInfo.style.display = 'none';
+                document.getElementById('viewUserGrade').textContent = data.grade_level || 'N/A';
+                document.getElementById('viewUserRegNo').textContent = data.registration_number || 'N/A';
+                document.getElementById('viewUserParent').textContent = data.parent_name || 'Not linked';
+            } else if (data.role === 'parent') {
+                studentInfo.style.display = 'none';
+                parentInfo.style.display = 'block';
+                document.getElementById('viewUserOccupation').textContent = data.occupation || 'N/A';
+                document.getElementById('viewUserEmergency').textContent = data.emergency_contact || 'N/A';
+                document.getElementById('viewUserAddress').textContent = data.address || 'N/A';
+            } else {
+                studentInfo.style.display = 'none';
+                parentInfo.style.display = 'none';
+            }
+            
+            currentUserId = userId;
+            const modal = new bootstrap.Modal(document.getElementById('viewUserModal'));
+            modal.show();
+        })
+        .catch(error => {
+            hideLoading();
+            showToast('Error loading user data', 'error');
+            console.error('Error:', error);
+        });
+}
+
+// Edit user from view modal
+function editUserFromView() {
+    const modal = bootstrap.Modal.getInstance(document.getElementById('viewUserModal'));
+    modal.hide();
+    editUser(currentUserId);
+}
+
+// Edit user
+function editUser(userId) {
+    window.location.href = `/admin/users/${userId}/edit/`;
+}
+
+// Reset password
+function resetPassword(userId) {
+    if (!confirm('Send password reset email to this user?')) return;
+    
+    showLoading();
+    
+    fetch(`/admin/users/${userId}/reset-password/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCsrfToken(),
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({})
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        if (data.success) {
+            showToast('Password reset email sent successfully', 'success');
+        } else {
+            showToast(data.error || 'Error sending reset email', 'error');
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        showToast('Error sending reset email', 'error');
+        console.error('Error:', error);
     });
 }
 
+// Delete user
 function deleteUser(userId) {
-  if (!confirm("Are you sure you want to delete this user?")) return;
-  fetch(`{% url 'users:delete_user' 0 %}`.replace("0", userId), {
-    method: "POST",
-    headers: {"X-CSRFToken": getCookie("csrftoken")}
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (data.success) {
-      loadUsers();
+    if (userId === {{ request.user.id }}) {
+        showToast('You cannot delete your own account', 'error');
+        return;
+    }
+    
+    currentUserId = userId;
+    document.getElementById('confirmDelete').checked = false;
+    document.getElementById('confirmDeleteBtn').disabled = true;
+    
+    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    modal.show();
+}
+
+// Confirm delete user
+function confirmDeleteUser() {
+    showLoading();
+    
+    fetch(`/admin/users/${currentUserId}/delete/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCsrfToken(),
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        
+        const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+        modal.hide();
+        
+        if (data.success) {
+            showToast('User deleted successfully', 'success');
+            // Remove the row from table
+            const row = document.querySelector(`tr[data-user-id="${currentUserId}"]`);
+            if (row) {
+                row.remove();
+            }
+            // Update statistics if needed
+            location.reload();
+        } else {
+            showToast(data.error || 'Error deleting user', 'error');
+        }
+        
+        currentUserId = null;
+    })
+    .catch(error => {
+        hideLoading();
+        showToast('Error deleting user', 'error');
+        console.error('Error:', error);
+    });
+}
+
+// Toggle select all rows
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.user-checkbox');
+    
+    checkboxes.forEach(cb => {
+        cb.checked = selectAll.checked;
+        if (selectAll.checked) {
+            selectedUsers.add(cb.value);
+        } else {
+            selectedUsers.delete(cb.value);
+        }
+    });
+    
+    updateBulkActions();
+}
+
+// Update bulk actions visibility
+function updateBulkActions() {
+    const checkboxes = document.querySelectorAll('.user-checkbox');
+    selectedUsers.clear();
+    
+    checkboxes.forEach(cb => {
+        if (cb.checked) {
+            selectedUsers.add(cb.value);
+        }
+    });
+    
+    const bulkActions = document.getElementById('bulkActions');
+    const selectedCount = document.getElementById('selectedCount');
+    const selectAll = document.getElementById('selectAll');
+    
+    if (selectedUsers.size > 0) {
+        bulkActions.style.display = 'flex';
+        selectedCount.textContent = `${selectedUsers.size} user${selectedUsers.size > 1 ? 's' : ''} selected`;
+        
+        // Update select all checkbox
+        const allChecked = checkboxes.length === selectedUsers.size;
+        selectAll.checked = allChecked;
     } else {
-      alert(data.message);
+        bulkActions.style.display = 'none';
+        selectAll.checked = false;
     }
-  });
 }
 
-// CSRF helper
-function getCookie(name) {
-  let cookieValue = null;
-  if (document.cookie && document.cookie !== "") {
-    const cookies = document.cookie.split(";");
-    for (let i=0; i<cookies.length; i++) {
-      const cookie = cookies[i].trim();
-      if (cookie.substring(0, name.length+1) === (name + "=")) {
-        cookieValue = decodeURIComponent(cookie.substring(name.length+1));
-        break;
-      }
+// Bulk actions
+function bulkAction(action) {
+    if (selectedUsers.size === 0) {
+        showToast('Please select users first', 'warning');
+        return;
     }
-  }
-  return cookieValue;
+    
+    let message = '';
+    let confirmMessage = '';
+    
+    switch(action) {
+        case 'activate':
+            confirmMessage = `Activate ${selectedUsers.size} user(s)?`;
+            message = 'activate';
+            break;
+        case 'deactivate':
+            confirmMessage = `Deactivate ${selectedUsers.size} user(s)?`;
+            message = 'deactivate';
+            break;
+        case 'delete':
+            confirmMessage = `Delete ${selectedUsers.size} user(s)? This action cannot be undone.`;
+            message = 'delete';
+            break;
+        case 'export':
+            exportSelectedUsers();
+            return;
+    }
+    
+    if (!confirm(confirmMessage)) return;
+    
+    showLoading();
+    
+    fetch('/admin/users/bulk-action/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCsrfToken(),
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            action: action,
+            user_ids: Array.from(selectedUsers)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        
+        if (data.success) {
+            showToast(`Users ${message}d successfully`, 'success');
+            // Refresh the page to update data
+            location.reload();
+        } else {
+            showToast(data.error || `Error ${message}ing users`, 'error');
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        showToast(`Error ${message}ing users`, 'error');
+        console.error('Error:', error);
+    });
 }
 
-// Search
-document.getElementById("searchInput").addEventListener("keyup", function() {
-  loadUsers(1, this.value);
-});
+// Export selected users
+function exportSelectedUsers() {
+    if (selectedUsers.size === 0) {
+        showToast('Please select users first', 'warning');
+        return;
+    }
+    
+    const ids = Array.from(selectedUsers).join(',');
+    window.open(`/admin/users/export/?ids=${ids}&format=csv`, '_blank');
+}
 
-// Load first
-loadUsers();
+// Export all users
+function exportUsers(format) {
+    const params = new URLSearchParams(window.location.search);
+    params.set('format', format);
+    params.set('export', 'true');
+    
+    window.open(`/admin/users/export/?${params.toString()}`, '_blank');
+}
+
+// Toggle view between table and grid
+function toggleView(viewType) {
+    const tableBtn = document.querySelector('.view-toggle-btn:nth-child(1)');
+    const gridBtn = document.querySelector('.view-toggle-btn:nth-child(2)');
+    
+    if (viewType === 'table') {
+        tableBtn.classList.add('active');
+        gridBtn.classList.remove('active');
+        // Show table view
+    } else {
+        tableBtn.classList.remove('active');
+        gridBtn.classList.add('active');
+        // Show grid/card view (implement if needed)
+    }
+}
+
+// Loading functions
+function showLoading() {
+    document.getElementById('tableLoading').style.display = 'flex';
+}
+
+function hideLoading() {
+    document.getElementById('tableLoading').style.display = 'none';
+}
+
+// Get CSRF token
+function getCsrfToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]').value;
+}
+
+// Toast notification
+function showToast(message, type = 'success') {
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `toast align-items-center text-white bg-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'warning'} border-0`;
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
+    toast.setAttribute('aria-atomic', 'true');
+    
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    
+    // Add to container
+    const container = document.querySelector('.toast-container') || createToastContainer();
+    container.appendChild(toast);
+    
+    // Initialize and show
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+    
+    // Remove after hide
+    toast.addEventListener('hidden.bs.toast', function () {
+        toast.remove();
+    });
+}
+
+function createToastContainer() {
+    const container = document.createElement('div');
+    container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+    document.body.appendChild(container);
+    return container;
+}
+
+// Real-time search (debounced)
+let searchTimeout;
+function searchUsers() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        document.getElementById('filterForm').submit();
+    }, 500);
+}
 </script>
 {% endblock %}

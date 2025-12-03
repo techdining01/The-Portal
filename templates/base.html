@@ -686,16 +686,19 @@
 
 <body>
     <!-- Loading Spinner -->
-    <div class="loading-spinner" id="loadingSpinner">
-        <div class="text-center">
-            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-            <p class="mt-3 text-muted">Loading...</p>
+    <div class="loading">
+        <div class="text-center"></div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="mb-3">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
         </div>
     </div>
 
-    <!-- Mobile Navbar Backdrop -->
+    
+        <!-- Mobile Navbar Backdrop -->
     <div class="navbar-backdrop" id="navbarBackdrop"></div>
 
     <!-- Sticky Navigation -->
@@ -717,37 +720,32 @@
             <div class="collapse navbar-collapse" id="navbarContent">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                    
-                    {% if user.is_authenticated %}
+                {% if user.is_authenticated %}
                       <li class="nav-item">
-                        <a class="nav-link" href="{% url 'exams:home' %}" data-bs-dismiss="navbarContent">
-                            <i class="fas fa-book me-2"></i>CBT
+                        <a class="nav-link" href="{% url 'users:dashboard' %}" data-bs-dismiss="navbarContent">
+                            CBT
                         </a>
                     </li>
                        <!-- Cart -->
                     <li class="nav-item">
                         <a class="nav-link position-relative" href="{% url 'store:cart_view' %}" data-bs-dismiss="navbarContent">
-                            <i class="fas fa-shopping-cart me-2"></i>Cart
-                       
-                            {% with cart_total=request.session.cart_total|default:0 %}
-                                {% if cart_total > 0 %}
-                                    <span class="cart-badge">{{ cart_total }}</span>
-                                {% endif %}
-                            {% endwith %}
-                        </a>
+                            Cart                        
+                            <span class="cart-badge cartCounter"></span>
+                       </a>
                     </li>
                     <li>
                          <a class="nav-link position-relative" href="{% url 'school_portal:about' %}" data-bs-dismiss="navbarContent">
-                            <i class="fas fa-school me-2"></i>About School</a>
+                            About</a>
                     </li>                 
                     
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'store:order_list' %}" data-bs-dismiss="navbarContent">
-                            <i class="fas fa-receipt me-2"></i>Orders
+                           Orders
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'pickup:parent_dashboard' %}" data-bs-dismiss="navbarContent">
-                            <i class="fas fa-qrcode me-2"></i>Pickup Codes
+                            Pickup
                         </a>
                     </li>
 
@@ -756,39 +754,58 @@
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" 
                             aria-expanded="false" data-bs-auto-close="outside">
-                            <i class="fas fa-cog me-2"></i>Admin
+                           Admin
                         </a>
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="{% url 'store:admin_dashboard' %}" data-bs-dismiss="navbarContent">
-                                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                               Dashboard
                             </a></li>
-                            <li><a class="dropdown-item" href="{% url 'store:product_list' %}" data-bs-dismiss="navbarContent">
-                                <i class="fas fa-box me-2"></i>Products
+
+                            <li><a class="dropdown-item" href="{% url 'store:admin_products' %}">
+                              Products
                             </a></li>
-                            <li><a class="dropdown-item" href="{% url 'store:order_list' %}" data-bs-dismiss="navbarContent">
-                                <i class="fas fa-list-alt me-2"></i>Orders
+
+                            <li><a class="dropdown-item" href="{% url 'store:order_management' %}">
+                              Orders
                             </a></li>
+
+                            <li><a class="dropdown-item" href="{% url 'store:category_management' %}">
+                                Categories
+                            </a></li>
+
+                            <li><hr class="dropdown-divider"></li>
+
+                            <li><a class="dropdown-item" href="{% url 'store:sales_analytics' %}">
+                                Analytics
+                            </a></li>
+
+                            <li><a href="{% url 'store:user_list' %}" class="dropdown-item">
+                                Users
+                            </a></li>
+
                             <li><a class="dropdown-item" href="{% url 'pickup:pickup_generate' %}" data-bs-dismiss="navbarContent">
-                                <i class="fas fa-check-circle me-2"></i>Verify Codes
+                                Verify Codes
                             </a></li>
+                            
                         </ul>
                     </li>
-                    
-                    {% endif %}{% else %}
+                                        
+                    {% endif %}
+                {% else %}
                      <li class="nav-item">
                         <a class="nav-link" href="{% url 'store:product_list' %}" data-bs-dismiss="navbarContent">
-                            <i class="fas fa-shopping-cart me-2"></i>BrillsPay
+                            BrillsPay
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'exams:home' %}" data-bs-dismiss="navbarContent">
-                            <i class="fas fa-book me-2"></i>CBT
+                            CBT
                         </a>
                     </li>
                     
                    <li>
                         <a class="nav-link position-relative" href="{% url 'school_portal:about' %}" data-bs-dismiss="navbarContent">
-                        <i class="fas fa-school me-2"></i>About School</a>
+                        About</a>
                     </li>
 
                 {% endif %}
@@ -809,18 +826,24 @@
                                 </div>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="{%url 'users:profile' %}" data-bs-dismiss="navbarContent">
-                                    <i class="fas fa-user me-2"></i>Profile
+                                <li><a class="dropdown-item" href="{% url 'users:profile' %}" data-bs-dismiss="navbarContent">
+                                    Profile
                                 </a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item text-danger" href="{% url 'users:logout' %}" data-bs-dismiss="navbarContent">
-                                    <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                    Logout
                                 </a></li>
                             </ul>
                         </div>
+                        <div class="card"> 
+                            <img src="{{request.user.profile_picture.url}}" 
+                                class="card-img" 
+                                alt="{{ user.name }}"
+                                style="object-fit: cover/center; border-radius:50px; height:50px; width:50px">
+                        </div>
                     {% else %}
                         <a class="btn btn-primary" href="{% url 'users:login' %}" data-bs-dismiss="navbarContent">
-                            <i class="fas fa-sign-in-alt me-2"></i>Login
+                            Login
                         </a>
                     {% endif %}
                 </div>
@@ -954,6 +977,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     <script>
         // Initialize current year
@@ -1100,14 +1124,248 @@
             }, 5000);
         });
 
-        // Loading functions
-        function showLoading() {
-            document.getElementById('loadingSpinner').classList.add('active');
+
+            
+            <!-- Global JavaScript -->
+            
+                // CSRF Token for AJAX
+                function getCSRFToken() {
+                    return document.querySelector('[name=csrfmiddlewaretoken]').value;
+                }
+
+                // Show/Hide loading
+                function showLoading() {
+                    document.getElementById('globalLoader').style.display = 'flex';
+                }
+                
+                function hideLoading() {
+                    document.getElementById('globalLoader').style.display = 'none';
+                }
+
+                // Toast notification
+                function showToast(message, type = 'success') {
+                    const toastContainer = document.getElementById('toastContainer') || createToastContainer();
+                    
+                    const toastId = 'toast-' + Date.now();
+                    const toastHtml = `
+                        <div id="${toastId}" class="toast align-items-center text-bg-${type} border-0" role="alert">
+                            <div class="d-flex">
+                                <div class="toast-body">
+                                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
+                                    ${message}
+                                </div>
+                                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+                    const toast = new bootstrap.Toast(document.getElementById(toastId), {
+                        delay: 3000
+                    });
+                    toast.show();
+                    
+                    // Remove after hide
+                    document.getElementById(toastId).addEventListener('hidden.bs.toast', function() {
+                        this.remove();
+                    });
+                }
+
+                function createToastContainer() {
+                    const container = document.createElement('div');
+                    container.id = 'toastContainer';
+                    container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+                    container.style.zIndex = '99999';
+                    document.body.appendChild(container);
+                    return container;
+                }
+
+                // Update cart counter
+                function updateCartCounter() {
+                    fetch('/store/cart/count/')
+                        .then(response => response.json())
+                        .then(data => {
+                            document.getElementById('cartCounter').textContent = data.count;
+                            
+                            // Show/hide badge
+                            const badge = document.getElementById('cartCounter');
+                            if (data.count > 0) {
+                                badge.style.display = 'block';
+                            } else {
+                                badge.style.display = 'none';
+                            }
+                        })
+                        .catch(error => console.error('Error updating cart counter:', error));
+                }
+
+                // Initialize on page load
+                document.addEventListener('DOMContentLoaded', function() {
+                    // Update cart counter if user is logged in
+                    {% if user.is_authenticated %}
+                    updateCartCounter();
+                    {% endif %}
+                    
+                    // Add loading to all form submissions
+                    document.querySelectorAll('form').forEach(form => {
+                        form.addEventListener('submit', function() {
+                            if (!this.classList.contains('no-loading')) {
+                                showLoading();
+                            }
+                        });
+                    });
+                    
+                    // Add loading to all buttons with data-loading attribute
+                    document.querySelectorAll('[data-loading]').forEach(button => {
+                        button.addEventListener('click', function() {
+                            showLoading();
+                        });
+                    });
+                });
+
+                // Add this to your base.html or product_list.html
+        function addToCart(productId) {
+            console.log('Adding product ID:', productId);
+            
+            // Get CSRF token
+            const csrftoken = getCSRFToken();
+            if (!csrftoken) {
+                console.error('CSRF token not found');
+                showToast('Security token missing. Please refresh page.', 'error');
+                return;
+            }
+            
+            // Find the button
+            const btn = document.querySelector(`[data-product-id="${productId}"]`);
+            if (!btn) {
+                console.error('Button not found for product:', productId);
+                return;
+            }
+            
+            // Save original state
+            const originalHTML = btn.innerHTML;
+            const originalText = btn.textContent;
+            
+            // Show loading state
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Adding...';
+            btn.disabled = true;
+            
+            // Send AJAX request
+            fetch(`/store/cart/add/${productId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrftoken,
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Response data:', data);
+                
+                if (data.success) {
+                    // Update cart counter
+                    updateCartCounter();
+                    
+                    // Show success message
+                    showToast(data.message, 'success');
+                    
+                    // Update button to show success briefly
+                    btn.innerHTML = '<i class="fas fa-check me-1"></i> Added!';
+                    btn.classList.remove('btn-primary');
+                    btn.classList.add('btn-success');
+                    
+                    // Revert button after 2 seconds
+                    setTimeout(() => {
+                        btn.innerHTML = originalHTML;
+                        btn.classList.remove('btn-success');
+                        btn.classList.add('btn-primary');
+                        btn.disabled = false;
+                    }, 2000);
+                    
+                } else {
+                    // Show error message
+                    showToast(data.message, 'error');
+                    
+                    // Revert button immediately
+                    btn.innerHTML = originalHTML;
+                    btn.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Network error. Please check connection and try again.', 'error');
+                
+                // Revert button
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            });
         }
 
-        function hideLoading() {
-            document.getElementById('loadingSpinner').classList.remove('active');
+        // Enhanced CSRF token function
+        function getCSRFToken() {
+            // Try multiple ways to get CSRF token
+            let csrfToken = '';
+            
+            // Method 1: From hidden input
+            const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+            if (csrfInput) {
+                csrfToken = csrfInput.value;
+            }
+            
+            // Method 2: From cookie
+            if (!csrfToken) {
+                const name = 'csrftoken';
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                csrfToken = cookieValue;
+            }
+            
+            console.log('CSRF Token found:', csrfToken ? 'Yes' : 'No');
+            return csrfToken;
         }
+
+        // Update cart counter function
+        function updateCartCounter() {
+            fetch('/store/cart/count/')
+                .then(response => response.json())
+                .then(data => {
+                    const cartCounter = document.getElementById('cartCounter');
+                    if (cartCounter) {
+                        cartCounter.textContent = data.count;
+                        if (data.count > 0) {
+                            cartCounter.style.display = 'inline-block';
+                        } else {
+                            cartCounter.style.display = 'none';
+                        }
+                    }
+                })
+                .catch(error => console.error('Error updating cart counter:', error));
+        }
+        
+    
+           // Loading functions
+            function showLoading() {
+                document.getElementById('loadingSpinner').classList.add('active');
+            }
+
+            function hideLoading() {
+                  document.getElementById('loadingSpinner').classList.remove('active');
+               }
 
         // Add smooth scrolling to all links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
@@ -1122,8 +1380,142 @@
                 }
             });
         });
-    </script>
+   
+        // Add this to your base.html or product_list.html
+function addToCart(productId) {
+    console.log('Adding product ID:', productId);
     
+    // Get CSRF token
+    const csrftoken = getCSRFToken();
+    if (!csrftoken) {
+        console.error('CSRF token not found');
+        showToast('Security token missing. Please refresh page.', 'error');
+        return;
+    }
+    
+    // Find the button
+    const btn = document.querySelector(`[data-product-id="${productId}"]`);
+    if (!btn) {
+        console.error('Button not found for product:', productId);
+        return;
+    }
+    
+    // Save original state
+    const originalHTML = btn.innerHTML;
+    const originalText = btn.textContent;
+    
+    // Show loading state
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Adding...';
+    btn.disabled = true;
+    
+    // Send AJAX request
+    fetch(`/store/cart/add/${productId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken,
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Response data:', data);
+        
+        if (data.success) {
+            // Update cart counter
+            updateCartCounter();
+            
+            // Show success message
+            showToast(data.message, 'success');
+            
+            // Update button to show success briefly
+            btn.innerHTML = '<i class="fas fa-check me-1"></i> Added!';
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-success');
+            
+            // Revert button after 2 seconds
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-primary');
+                btn.disabled = false;
+            }, 2000);
+            
+        } else {
+            // Show error message
+            showToast(data.message, 'error');
+            
+            // Revert button immediately
+            btn.innerHTML = originalHTML;
+            btn.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Network error. Please check connection and try again.', 'error');
+        
+        // Revert button
+        btn.innerHTML = originalHTML;
+        btn.disabled = false;
+    });
+}
+
+// Enhanced CSRF token function
+function getCSRFToken() {
+    // Try multiple ways to get CSRF token
+    let csrfToken = '';
+    
+    // Method 1: From hidden input
+    const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (csrfInput) {
+        csrfToken = csrfInput.value;
+    }
+    
+    // Method 2: From cookie
+    if (!csrfToken) {
+        const name = 'csrftoken';
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        csrfToken = cookieValue;
+    }
+    
+    console.log('CSRF Token found:', csrfToken ? 'Yes' : 'No');
+    return csrfToken;
+}
+
+// Update cart counter function
+function updateCartCounter() {
+    fetch('/store/cart/count/')
+        .then(response => response.json())
+        .then(data => {
+            const cartCounter = document.getElementById('cartCounter');
+            if (cartCounter) {
+                cartCounter.textContent = data.count;
+                if (data.count > 0) {
+                    cartCounter.style.display = 'inline-block';
+                } else {
+                    cartCounter.style.display = 'none';
+                }
+            }
+        })
+        .catch(error => console.error('Error updating cart counter:', error));
+}
+    </script>
 
     {% block extra_scripts %}{% endblock %}
 </body>

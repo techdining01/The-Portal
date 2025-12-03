@@ -1,11 +1,10 @@
-# store/forms.py
 from django import forms
 from store.models import Product, Category
 
 class ProductForm(forms.ModelForm):
     class Meta:
         model = Product
-        fields = ['name', 'description', 'price', 'category', 'image', 'stock_quantity', 'is_active']
+        fields = ['name', 'description', 'price', 'category', 'image', 'stock', 'is_active']
         widgets = {
             'description': forms.Textarea(attrs={'rows': 4}),
             'price': forms.NumberInput(attrs={'step': '0.01'}),

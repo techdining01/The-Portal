@@ -1,159 +1,1264 @@
-<!-- templates/store/cart.html -->
+<!-- store/templates/store/product_detail.html -->
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Shopping Cart - BrillsPay{% endblock %}
+{% block title %}{{ product.name }} - BrillPay{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Product Image Gallery */
+    .product-image-main {
+        height: 400px;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .product-image-main img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        transition: transform 0.5s ease;
+    }
+
+    .product-image-main:hover img {
+        transform: scale(1.05);
+    }
+
+    .product-thumbnails {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+        overflow-x: auto;
+        padding-bottom: 10px;
+    }
+
+    .product-thumbnail {
+        width: 80px;
+        height: 80px;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 2px solid transparent;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        flex-shrink: 0;
+    }
+
+    .product-thumbnail.active {
+        border-color: #2563eb;
+    }
+
+    .product-thumbnail:hover {
+        transform: translateY(-2px);
+        border-color: #2563eb;
+    }
+
+    .product-thumbnail img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    /* Product Info */
+    .product-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-bottom: 10px;
+    }
+
+    .product-price {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #2563eb;
+        margin-bottom: 5px;
+    }
+
+    .product-original-price {
+        font-size: 1.2rem;
+        color: #94a3b8;
+        text-decoration: line-through;
+        margin-left: 10px;
+    }
+
+    .stock-status {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+
+    .stock-in {
+        background: rgba(16, 185, 129, 0.1);
+        color: #065f46;
+    }
+
+    .stock-low {
+        background: rgba(245, 158, 11, 0.1);
+        color: #92400e;
+    }
+
+    .stock-out {
+        background: rgba(239, 68, 68, 0.1);
+        color: #991b1b;
+    }
+
+    /* Quantity Selector */
+    .quantity-selector {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 20px 0;
+    }
+
+    .quantity-btn {
+        width: 40px;
+        height: 40px;
+        border: 2px solid #e2e8f0;
+        background: white;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .quantity-btn:hover {
+        border-color: #2563eb;
+        color: #2563eb;
+        transform: scale(1.1);
+    }
+
+    .quantity-input {
+        width: 70px;
+        height: 40px;
+        text-align: center;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+
+    .quantity-input:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        outline: none;
+    }
+
+    /* Student Selection */
+    .student-select-container {
+        margin: 20px 0;
+        padding: 20px;
+        border-radius: 12px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+    }
+
+    .student-select-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        margin-bottom: 15px;
+        color: #334155;
+    }
+
+    .student-options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .student-option {
+        flex: 1;
+        min-width: 120px;
+        padding: 12px 15px;
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        background: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+    }
+
+    .student-option:hover {
+        border-color: #2563eb;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(37, 99, 235, 0.1);
+    }
+
+    .student-option.selected {
+        border-color: #2563eb;
+        background: rgba(37, 99, 235, 0.05);
+    }
+
+    .student-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-bottom: 5px;
+    }
+
+    .student-name {
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-bottom: 3px;
+    }
+
+    .student-grade {
+        font-size: 0.8rem;
+        color: #64748b;
+    }
+
+    /* Action Buttons */
+    .action-buttons {
+        display: flex;
+        gap: 15px;
+        margin-top: 30px;
+    }
+
+    .btn-action {
+        flex: 1;
+        height: 56px;
+        font-weight: 600;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        transition: all 0.3s ease;
+    }
+
+    .btn-action i {
+        font-size: 1.2rem;
+    }
+
+    /* Product Tabs */
+    .product-tabs {
+        margin-top: 40px;
+    }
+
+    .nav-tabs .nav-link {
+        border: none;
+        color: #64748b;
+        font-weight: 600;
+        padding: 12px 20px;
+        border-radius: 8px 8px 0 0;
+        transition: all 0.3s ease;
+    }
+
+    .nav-tabs .nav-link.active {
+        color: #2563eb;
+        background: rgba(37, 99, 235, 0.05);
+        border-bottom: 3px solid #2563eb;
+    }
+
+    .nav-tabs .nav-link:hover:not(.active) {
+        color: #2563eb;
+        background: rgba(37, 99, 235, 0.02);
+    }
+
+    .tab-content {
+        padding: 30px;
+        border: 1px solid #e2e8f0;
+        border-top: none;
+        border-radius: 0 0 12px 12px;
+        background: white;
+    }
+
+    /* Related Products */
+    .related-product-card {
+        border: none;
+        border-radius: 12px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+
+    .related-product-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+    }
+
+    .related-product-image {
+        height: 180px;
+        overflow: hidden;
+    }
+
+    .related-product-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.5s ease;
+    }
+
+    .related-product-card:hover .related-product-image img {
+        transform: scale(1.1);
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+        .product-image-main {
+            height: 300px;
+        }
+
+        .product-price {
+            font-size: 1.8rem;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+        }
+
+        .btn-action {
+            width: 100%;
+        }
+
+        .student-options {
+            flex-direction: column;
+        }
+
+        .student-option {
+            width: 100%;
+        }
+
+        .tab-content {
+            padding: 20px;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .product-image-main {
+            height: 250px;
+        }
+
+        .product-price {
+            font-size: 1.6rem;
+        }
+
+        .quantity-selector {
+            justify-content: center;
+        }
+
+        .nav-tabs .nav-link {
+            padding: 10px 15px;
+            font-size: 0.9rem;
+        }
+    }
+
+    /* Animation */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .animate-fade-in {
+        animation: fadeIn 0.5s ease;
+    }
+
+    /* Stock Warning */
+    .stock-warning {
+        padding: 10px 15px;
+        border-radius: 8px;
+        margin: 15px 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.8; }
+        100% { opacity: 1; }
+    }
+
+    .stock-warning.low {
+        background: rgba(245, 158, 11, 0.1);
+        color: #92400e;
+        border-left: 4px solid #f59e0b;
+    }
+
+    .stock-warning.out {
+        background: rgba(239, 68, 68, 0.1);
+        color: #991b1b;
+        border-left: 4px solid #ef4444;
+    }
+
+    /* Add to Cart Button States */
+    .btn-add-to-cart {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-add-to-cart.loading .btn-text {
+        visibility: hidden;
+    }
+
+    .btn-add-to-cart.loading::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 20px;
+        height: 20px;
+        margin: -10px 0 0 -10px;
+        border: 2px solid white;
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .btn-add-to-cart.success {
+        background: #10b981;
+        border-color: #10b981;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container py-4">
-    <h1 class="display-5 fw-bold text-dark mb-4">Shopping Cart</h1>
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'store:product_list' %}">Store</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'store:product_list' %}?category={{ product.category.id }}">
+                {{ product.category.name }}
+            </a></li>
+            <li class="breadcrumb-item active">{{ product.name|truncatechars:30 }}</li>
+        </ol>
+    </nav>
 
-    {% if cart.items.count > 0 %}
-    <div class="row">
-        <!-- Cart Items -->
-        <div class="col-lg-8 mb-4">
-            <div class="card">
-                <div class="card-body">
-                    {% for item in cart.items.all %}
-                    <div class="row align-items-center mb-4 pb-3 border-bottom">
-                        <div class="col-md-2">
-                            {% if item.product.image and item.product.image.url %}
-                                <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" 
-                                     class="img-fluid rounded" style="height: 80px; object-fit: cover;">
-                            {% else %}
-                                <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 80px; width: 80px;">
-                                    <i class="fas fa-image text-muted fa-lg"></i>
-                                </div>
-                            {% endif %}
-                        </div>
-                        <div class="col-md-4">
-                            <h5 class="card-title mb-1">{{ item.product.name }}</h5>
-                            <p class="text-muted mb-1">₦{{ item.product.price }}</p>
-                            {% if item.student %}
-                            <p class="text-primary small mb-0">
-                                <i class="fas fa-user-graduate me-1"></i>
-                                For: {{ item.student.get_full_name }}
-                            </p>
-                            {% else %}
-                            <p class="text-muted small mb-0">
-                                <i class="fas fa-user me-1"></i>
-                                Not tagged to student
-                            </p>
-                            {% endif %}
-                        </div>
-                        <div class="col-md-4">
-                            <div class="d-flex align-items-center">
-                                <!-- Simple Quantity Form -->
-                                <form method="post" action="{% url 'update_cart_item' item.id %}" class="d-flex align-items-center me-2">
-                                    {% csrf_token %}
-                                    <div class="input-group input-group-sm" style="width: 120px;">
-                                        <button type="submit" name="action" value="decrease" class="btn btn-outline-secondary" {% if item.quantity <= 1 %}disabled{% endif %}>
-                                            <i class="fas fa-minus"></i>
-                                        </button>
-                                        <input type="number" name="quantity" value="{{ item.quantity }}" min="1" 
-                                               class="form-control text-center" onchange="this.form.submit()">
-                                        <button type="submit" name="action" value="increase" class="btn btn-outline-secondary">
-                                            <i class="fas fa-plus"></i>
-                                        </button>
-                                    </div>
-                                </form>
-                                
-                                <!-- Remove Form -->
-                                <form method="post" action="{% url 'remove_from_cart' item.id %}" class="ms-2">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-outline-danger btn-sm">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                        <div class="col-md-2 text-end">
-                            <strong class="h5">₦{{ item.subtotal }}</strong>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
+    <div class="row g-4 animate-fade-in">
+        <!-- Product Images -->
+        <div class="col-lg-6">
+            <div class="product-image-main">
+                <img src="{{ product.image_url }}" 
+                     alt="{{ product.name }}" 
+                     id="mainProductImage"
+                     class="img-fluid">
             </div>
+
+            {% if product.images.exists %}
+            <div class="product-thumbnails">
+                <div class="product-thumbnail active" onclick="changeImage('{{ product.image_url }}')">
+                    <img src="{{ product.image_url }}" alt="{{ product.name }}">
+                </div>
+                {% for image in product.images.all %}
+                <div class="product-thumbnail" onclick="changeImage('{{ image.image.url }}')">
+                    <img src="{{ image.image.url }}" alt="{{ product.name }}">
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
         </div>
 
-        <!-- Order Summary -->
-        <div class="col-lg-4">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title mb-4">Order Summary</h5>
-                    
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Subtotal</span>
-                            <span>₦{{ cart.total_amount }}</span>
-                        </div>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Shipping</span>
-                            <span class="text-success">Free</span>
-                        </div>
-                        <hr>
-                        <div class="d-flex justify-content-between">
-                            <strong>Total</strong>
-                            <strong class="text-primary h5">₦{{ cart.total_amount }}</strong>
-                        </div>
+        <!-- Product Details -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <!-- Category & Status -->
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <span class="product-badge bg-primary text-white">
+                            {{ product.category.name }}
+                        </span>
+                        
+                        <span class="stock-status {% if product.stock > 10 %}stock-in{% elif product.stock > 0 %}stock-low{% else %}stock-out{% endif %}">
+                            <i class="fas {% if product.stock > 10 %}fa-check-circle{% elif product.stock > 0 %}fa-exclamation-circle{% else %}fa-times-circle{% endif %} me-2"></i>
+                            {% if product.stock > 10 %}
+                                In Stock ({{ product.stock }})
+                            {% elif product.stock > 0 %}
+                                Low Stock ({{ product.stock }} left)
+                            {% else %}
+                                Out of Stock
+                            {% endif %}
+                        </span>
                     </div>
-                    
-                    {% if children %}
-                    <div class="card bg-light mb-3">
-                        <div class="card-body">
-                            <h6 class="card-title">Tag Items to Students</h6>
-                            <p class="card-text small text-muted">Select a student for new items added to cart:</p>
-                            <select id="student-select" class="form-select form-select-sm" onchange="saveStudentSelection(this.value)">
-                                <option value="">-- Select Student --</option>
-                                {% for child in children %}
-                                <option value="{{ child.id }}">{{ child.get_full_name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
+
+                    <!-- Product Name -->
+                    <h1 class="h3 mb-3 fw-bold">{{ product.name }}</h1>
+
+                    <!-- Price -->
+                    <div class="mb-4">
+                        <span class="product-price">₦{{ product.price|floatformat:2 }}</span>
+                        {% if product.discount_price %}
+                        <span class="product-original-price">₦{{ product.discount_price|floatformat:2 }}</span>
+                        <span class="badge bg-danger ms-2">Save ₦{{ product.price|add:"-product.discount_price"|floatformat:2 }}</span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Stock Warnings -->
+                    {% if product.stock <= 10 and product.stock > 0 %}
+                    <div class="stock-warning low">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <small>Only {{ product.stock }} item(s) left! Order soon to avoid disappointment.</small>
+                    </div>
+                    {% elif product.stock == 0 %}
+                    <div class="stock-warning out">
+                        <i class="fas fa-times-circle"></i>
+                        <small>This product is currently out of stock. Check back later.</small>
                     </div>
                     {% endif %}
 
-                    <a href="{% url 'checkout' %}" class="btn btn-primary btn-lg w-100 mb-2">
-                        Proceed to Checkout
-                    </a>
-                    
-                    <a href="{% url 'product_list' %}" class="btn btn-outline-secondary w-100">
-                        Continue Shopping
-                    </a>
+                    <!-- Student Selection (for parents) -->
+                    {% if user.is_authenticated and user.role == 'parent' and user.children.exists %}
+                    <div class="student-select-container">
+                        <div class="student-select-label">
+                            <i class="fas fa-user-graduate text-primary"></i>
+                            <span>Who is this for?</span>
+                        </div>
+                        <div class="student-options">
+                            <!-- Option: For myself -->
+                            <div class="student-option selected" data-student-id="0" onclick="selectStudent(this, 0)">
+                                <div class="student-avatar bg-primary text-white d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <div class="student-name">For Myself</div>
+                                <div class="student-grade">{{ user.get_full_name|default:user.username }}</div>
+                            </div>
+                            
+                            <!-- Student options -->
+                            {% for child in user.children.all %}
+                            <div class="student-option" data-student-id="{{ child.id }}" onclick="selectStudent(this, {{ child.id }})">
+                                {% if child.profile_picture %}
+                                <img src="{{ child.profile_picture.url }}" alt="{{ child.get_full_name }}" class="student-avatar">
+                                {% else %}
+                                <div class="student-avatar bg-success text-white d-flex align-items-center justify-content-center">
+                                    {{ child.first_name|first|upper }}
+                                </div>
+                                {% endif %}
+                                <div class="student-name">{{ child.get_full_name|default:child.username }}</div>
+                                <div class="student-grade">{{ child.grade_level|default:"Student" }}</div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <input type="hidden" id="selectedStudentId" value="0">
+                    </div>
+                    {% endif %}
+
+                    <!-- Quantity Selector -->
+                    {% if product.stock > 0 %}
+                    <div class="quantity-selector">
+                        <label class="fw-bold me-3">Quantity:</label>
+                        <button class="quantity-btn" onclick="decreaseQuantity()">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <input type="number" 
+                               id="productQuantity" 
+                               class="quantity-input"
+                               value="1" 
+                               min="1" 
+                               max="{{ product.stock }}"
+                               onchange="validateQuantity()">
+                        <button class="quantity-btn" onclick="increaseQuantity()">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                        <small class="text-muted ms-2">Max: {{ product.stock }}</small>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="action-buttons">
+                        {% if user.is_authenticated %}
+                        <button class="btn btn-primary btn-lg btn-action btn-add-to-cart"
+                                onclick="addToCartWithStudent({{ product.id }})"
+                                id="addToCartBtn">
+                            <i class="fas fa-cart-plus"></i>
+                            <span class="btn-text">Add to Cart</span>
+                        </button>
+                        {% else %}
+                        <button class="btn btn-secondary btn-lg btn-action"
+                                onclick="showLoginAlert()">
+                            <i class="fas fa-lock"></i>
+                            <span>Login to Purchase</span>
+                        </button>
+                        {% endif %}
+                        
+                        <button class="btn btn-outline-primary btn-lg btn-action"
+                                onclick="addToWishlist({{ product.id }})"
+                                id="wishlistBtn">
+                            <i class="far fa-heart"></i>
+                            <span>Wishlist</span>
+                        </button>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        This product is currently unavailable. Please check back later.
+                    </div>
+                    {% endif %}
+
+                    <!-- Quick Info -->
+                    <div class="row mt-4 pt-3 border-top">
+                        <div class="col-6">
+                            <div class="d-flex align-items-center mb-3">
+                                <i class="fas fa-shipping-fast text-primary me-3 fa-lg"></i>
+                                <div>
+                                    <small class="d-block text-muted">Delivery</small>
+                                    <strong class="d-block">Free Shipping</strong>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="d-flex align-items-center mb-3">
+                                <i class="fas fa-shield-alt text-success me-3 fa-lg"></i>
+                                <div>
+                                    <small class="d-block text-muted">Guarantee</small>
+                                    <strong class="d-block">Quality Assured</strong>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-undo text-info me-3 fa-lg"></i>
+                                <div>
+                                    <small class="d-block text-muted">Returns</small>
+                                    <strong class="d-block">7 Days Return</strong>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-headset text-warning me-3 fa-lg"></i>
+                                <div>
+                                    <small class="d-block text-muted">Support</small>
+                                    <strong class="d-block">24/7 Help</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-    {% else %}
-    <div class="text-center py-5">
-        <i class="fas fa-shopping-cart display-1 text-muted mb-3"></i>
-        <h3 class="text-muted">Your cart is empty</h3>
-        <p class="text-muted mb-4">Add some items to get started!</p>
-        <a href="{% url 'product_list' %}" class="btn btn-primary btn-lg">
-            Start Shopping
-        </a>
+
+    <!-- Product Tabs -->
+    <div class="product-tabs">
+        <ul class="nav nav-tabs" id="productTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="description-tab" data-bs-toggle="tab" 
+                        data-bs-target="#description" type="button">
+                    <i class="fas fa-file-alt me-2"></i>Description
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="specs-tab" data-bs-toggle="tab" 
+                        data-bs-target="#specs" type="button">
+                    <i class="fas fa-list-alt me-2"></i>Specifications
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" 
+                        data-bs-target="#reviews" type="button">
+                    <i class="fas fa-star me-2"></i>Reviews
+                    <span class="badge bg-primary ms-2">0</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="faq-tab" data-bs-toggle="tab" 
+                        data-bs-target="#faq" type="button">
+                    <i class="fas fa-question-circle me-2"></i>FAQ
+                </button>
+            </li>
+        </ul>
+        <div class="tab-content" id="productTabContent">
+            <div class="tab-pane fade show active" id="description" role="tabpanel">
+                <h4 class="mb-3">Product Description</h4>
+                <div class="product-description">
+                    {{ product.description|linebreaks }}
+                </div>
+                
+                {% if product.features %}
+                <div class="mt-4">
+                    <h5>Key Features:</h5>
+                    <ul class="list-unstyled">
+                        {% for feature in product.features_as_list %}
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            {{ feature }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="tab-pane fade" id="specs" role="tabpanel">
+                <h4 class="mb-3">Specifications</h4>
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <tbody>
+                            <tr>
+                                <th style="width: 200px;">Product Name</th>
+                                <td>{{ product.name }}</td>
+                            </tr>
+                            <tr>
+                                <th>Category</th>
+                                <td>{{ product.category.name }}</td>
+                            </tr>
+                            <tr>
+                                <th>SKU</th>
+                                <td>{{ product.sku|default:"N/A" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Brand</th>
+                                <td>{{ product.brand|default:"Generic" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Available Stock</th>
+                                <td>{{ product.stock }} units</td>
+                            </tr>
+                            <tr>
+                                <th>Product Status</th>
+                                <td>
+                                    <span class="badge bg-{% if product.is_active %}success{% else %}danger{% endif %}">
+                                        {% if product.is_active %}Active{% else %}Inactive{% endif %}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Date Added</th>
+                                <td>{{ product.created_at|date:"F d, Y" }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="tab-pane fade" id="reviews" role="tabpanel">
+                <h4 class="mb-3">Customer Reviews</h4>
+                <div class="text-center py-5">
+                    <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                    <h5>No Reviews Yet</h5>
+                    <p class="text-muted">Be the first to review this product!</p>
+                    {% if user.is_authenticated %}
+                    <button class="btn btn-primary" onclick="showReviewModal()">
+                        <i class="fas fa-edit me-2"></i>Write a Review
+                    </button>
+                    {% else %}
+                    <a href="{% url 'users:login' %}?next={{ request.path }}" class="btn btn-primary">
+                        <i class="fas fa-sign-in-alt me-2"></i>Login to Review
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="tab-pane fade" id="faq" role="tabpanel">
+                <h4 class="mb-3">Frequently Asked Questions</h4>
+                <div class="accordion" id="faqAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" 
+                                    data-bs-target="#faq1">
+                                How long does delivery take?
+                            </button>
+                        </h2>
+                        <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Delivery typically takes 2-5 business days within Ibadan. For other locations, please allow 5-10 business days.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                    data-bs-target="#faq2">
+                                Can I return this product?
+                            </button>
+                        </h2>
+                        <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Yes, we offer a 7-day return policy for unused products in original packaging. Contact support for return instructions.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                    data-bs-target="#faq3">
+                                Is this product covered by warranty?
+                            </button>
+                        </h2>
+                        <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Most products come with a 1-year manufacturer warranty. Check the product specifications or contact us for details.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Related Products -->
+    {% if related_products %}
+    <div class="mt-5 pt-4 border-top">
+        <h3 class="mb-4">Related Products</h3>
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+            {% for related in related_products %}
+            <div class="col">
+                <div class="card related-product-card">
+                    <a href="{% url 'store:product_detail' related.pk %}">
+                        <div class="related-product-image">
+                            <img src="{{ related.image_url }}" alt="{{ related.name }}">
+                        </div>
+                    </a>
+                    <div class="card-body">
+                        <h6 class="card-title">
+                            <a href="{% url 'store:product_detail' related.pk %}" class="text-decoration-none text-dark">
+                                {{ related.name|truncatechars:40 }}
+                            </a>
+                        </h6>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-bold text-primary">₦{{ related.price|floatformat:2 }}</span>
+                            {% if related.stock > 0 %}
+                            <button class="btn btn-sm btn-outline-primary"
+                                    onclick="addToCart({{ related.id }})">
+                                <i class="fas fa-cart-plus"></i>
+                            </button>
+                            {% else %}
+                            <span class="badge bg-secondary">Out of Stock</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
     </div>
     {% endif %}
 </div>
 
+<!-- Login Modal -->
+<div class="modal fade" id="loginModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Login Required</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Please login to add items to your cart and make purchases.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a href="{% url 'users:login' %}?next={{ request.path }}" class="btn btn-primary">Go to Login</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Review Modal -->
+<div class="modal fade" id="reviewModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Write a Review</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="reviewForm">
+                    <div class="mb-3">
+                        <label class="form-label">Rating</label>
+                        <div class="rating-stars">
+                            <i class="far fa-star fa-2x text-warning" data-rating="1"></i>
+                            <i class="far fa-star fa-2x text-warning" data-rating="2"></i>
+                            <i class="far fa-star fa-2x text-warning" data-rating="3"></i>
+                            <i class="far fa-star fa-2x text-warning" data-rating="4"></i>
+                            <i class="far fa-star fa-2x text-warning" data-rating="5"></i>
+                        </div>
+                        <input type="hidden" id="ratingValue" value="0">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Review Title</label>
+                        <input type="text" class="form-control" id="reviewTitle" placeholder="Title of your review">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Your Review</label>
+                        <textarea class="form-control" id="reviewText" rows="4" placeholder="Share your experience..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitReview({{ product.id }})">Submit Review</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
 <script>
-// Simple student selection function
-function saveStudentSelection(studentId) {
-    if (studentId) {
-        localStorage.setItem('selectedStudent', studentId);
-    } else {
-        localStorage.removeItem('selectedStudent');
+// Global variables
+let currentQuantity = 1;
+let selectedStudentId = 0;
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize quantity
+    const quantityInput = document.getElementById('productQuantity');
+    if (quantityInput) {
+        currentQuantity = parseInt(quantityInput.value);
+    }
+    
+    // Initialize image gallery
+    initImageGallery();
+    
+    // Initialize rating stars
+    initRatingStars();
+});
+
+// Image gallery functions
+function initImageGallery() {
+    const thumbnails = document.querySelectorAll('.product-thumbnail');
+    thumbnails.forEach(thumb => {
+        thumb.addEventListener('click', function() {
+            // Remove active class from all thumbnails
+            thumbnails.forEach(t => t.classList.remove('active'));
+            // Add active class to clicked thumbnail
+            this.classList.add('active');
+        });
+    });
+}
+
+function changeImage(imageUrl) {
+    const mainImage = document.getElementById('mainProductImage');
+    if (mainImage) {
+        // Add fade out effect
+        mainImage.style.opacity = '0.5';
+        setTimeout(() => {
+            mainImage.src = imageUrl;
+            mainImage.style.opacity = '1';
+        }, 200);
     }
 }
 
-// Load saved student selection on page load
-document.addEventListener('DOMContentLoaded', function() {
-    const studentSelect = document.getElementById('student-select');
-    if (studentSelect) {
-        const savedStudent = localStorage.getItem('selectedStudent');
-        if (savedStudent) {
-            studentSelect.value = savedStudent;
-        }
+// Quantity functions
+function increaseQuantity() {
+    const max = parseInt("{{ product.stock }}");
+    if (currentQuantity < max) {
+        currentQuantity++;
+        document.getElementById('productQuantity').value = currentQuantity;
+    } else {
+        showToast(`Maximum quantity is ${max}`, 'warning');
     }
-});
+}
+
+function decreaseQuantity() {
+    if (currentQuantity > 1) {
+        currentQuantity--;
+        document.getElementById('productQuantity').value = currentQuantity;
+    }
+}
+
+function validateQuantity() {
+    const input = document.getElementById('productQuantity');
+    const value = parseInt(input.value);
+    const max = parseInt("{{ product.stock }}");
+    
+    if (isNaN(value) || value < 1) {
+        input.value = 1;
+        currentQuantity = 1;
+    } else if (value > max) {
+        input.value = max;
+        currentQuantity = max;
+        showToast(`Maximum quantity is ${max}`, 'warning');
+    } else {
+        currentQuantity = value;
+    }
+}
+
+// Student selection functions
+function selectStudent(element, studentId) {
+    // Remove selected class from all options
+    document.querySelectorAll('.student-option').forEach(option => {
+        option.classList.remove('selected');
+    });
+    
+    // Add selected class to clicked option
+    element.classList.add('selected');
+    
+    // Update selected student ID
+    selectedStudentId = studentId;
+    document.getElementById('selectedStudentId').value = studentId;
+    
+    showToast(`Selected for: ${element.querySelector('.student-name').textContent}`, 'info');
+}
+
+// Add to cart with student selection
+function addToCartWithStudent(productId) {
+    const quantity = document.getElementById('productQuantity').value;
+    const csrftoken = getCSRFToken();
+    const btn = document.getElementById('addToCartBtn');
+    
+    if (!csrftoken) {
+        showToast('Security token missing', 'error');
+        return;
+    }
+    
+    // Save original button state
+    const originalHTML = btn.innerHTML;
+    const originalClass = btn.className;
+    
+    // Show loading state
+    btn.classList.add('loading');
+    btn.disabled = true;
+    
+    // Prepare data
+    const formData = new FormData();
+    formData.append('quantity', quantity);
+    formData.append('student_id', selectedStudentId);
+    
+    // Send request
+    fetch(`/store/cart/add/${productId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken,
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update cart counter
+            updateCartCounter();
+            
+            // Show success state
+            btn.classList.remove('loading');
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-success');
+            btn.innerHTML = '<i class="fas fa-check"></i> <span class="btn-text">Added!</span>';
+            
+            // Show success message
+            showToast(data.message, 'success');
+            
+            // Revert button after 2 seconds
+            setTimeout(() => {
+                btn.className = originalClass;
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            }, 2000);
+            
+        } else {
+            // Show error
+            btn.classList.remove('loading');
+            btn.disabled = false;
+            showToast(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        btn.classList.remove('loading');
+        btn.disabled = false;
+        showToast('Network error. Please try again.', 'error');
+    });
+}
+
+// Wishlist function
+function addToWishlist(productId) {
+    const btn = document.getElementById('wishlistBtn');
+    const originalHTML = btn.innerHTML;
+    
+    // Show loading
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Adding...</span>';
+    btn.disabled = true;
+    
+    // Simulate API call
+    setTimeout(() => {
+        btn.innerHTML = '<i class="fas fa-heart text-danger"></i> <span>Added to Wishlist</span>';
+        btn.classList.remove('btn-outline-primary');
+        btn.classList.add('btn-outline-danger');
+        
+        showToast('Added to wishlist', 'success');
+        
+        setTimeout(() => {
+            btn.innerHTML = originalHTML;
+            btn.classList.remove('btn-outline-danger');
+            btn.classList.add('btn-outline-primary');
+            btn.disabled = false;
+        }, 2000);
+    }, 1000);
+}
+
+// Review functions
+function showReviewModal() {
+    const modal = new bootstrap.Modal(document.getElementById('reviewModal'));
+    modal.show();
+}
+
+function initRatingStars() {
+    const stars = document.querySelectorAll('.rating-stars .fa-star');
+    stars.forEach(star => {
+        star.addEventListener('click', function() {
+            const rating = parseInt(this.dataset.rating);
+            setRating(rating);
+        });
+        
+        star.addEventListener('mouseover', function() {
+            const rating = parseInt(this.dataset.rating);
+            highlightStars(rating);
+        });
+    });
+    
+    document.querySelector('.rating-stars').addEventListener('mouseout', function() {
+        const currentRating = parseInt(document.getElementById('ratingValue').value);
+        highlightStars(currentRating);
+    });
+}
+
+function setRating(rating) {
+    document.getElementById('ratingValue').value = rating;
+    highlightStars(rating);
+}
+
+function highlightStars(rating) {
+    const stars = document.querySelectorAll('.rating-stars .fa-star');
+    stars.forEach((star, index) => {
+        if (index < rating) {
+            star.classList.remove('far');
+            star.classList.add('fas');
+        } else {
+            star.classList.remove('fas');
+            star.classList.add('far');
+        }
+    });
+}
+
+function submitReview(productId) {
+    const rating = document.getElementById('ratingValue').value;
+    const title = document.getElementById('reviewTitle').value;
+    const text = document.getElementById('reviewText').value;
+    
+    if (rating == 0) {
+        showToast('Please select a rating', 'error');
+        return;
+    }
+    
+    if (!title.trim()) {
+        showToast('Please enter a review title', 'error');
+        return;
+    }
+    
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('reviewModal'));
+    modal.hide();
+    
+    // Show success message
+    showToast('Thank you for your review!', 'success');
+}
+
+// Login alert
+function showLoginAlert() {
+    const modal = new bootstrap.Modal(document.getElementById('loginModal'));
+    modal.show();
+}
+
+// Add to cart for related products
+function addToCart(productId) {
+    const csrftoken = getCSRFToken();
+    const btn = document.querySelector(`[onclick="addToCart(${productId})"]`);
+    
+    if (!btn) return;
+    
+    const originalHTML = btn.innerHTML;
+    
+    // Show loading
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    btn.disabled = true;
+    
+    fetch(`/store/cart/add/${productId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken,
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            updateCartCounter();
+            btn.innerHTML = '<i class="fas fa-check"></i>';
+            btn.classList.remove('btn-outline-primary');
+            btn.classList.add('btn-success');
+            
+            showToast(data.message, 'success');
+            
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-outline-primary');
+                btn.disabled = false;
+            }, 2000);
+        } else {
+            btn.innerHTML = originalHTML;
+            btn.disabled = false;
+            showToast(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        btn.innerHTML = originalHTML;
+        btn.disabled = false;
+        showToast('Network error', 'error');
+    });
+}
+
+// Helper functions
+function getCSRFToken() {
+    let csrfToken = '';
+    const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (csrfInput) {
+        csrfToken = csrfInput.value;
+    }
+    
+    if (!csrfToken) {
+        const name = 'csrftoken';
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        csrfToken = cookieValue;
+    }
+    
+    return csrfToken;
+}
+
+function showToast(message, type = 'success') {
+    // Use the global showToast function from base.html
+    if (typeof window.showToast === 'function') {
+        window.showToast(message, type);
+    } else {
+        // Fallback alert
+        alert(message);
+    }
+}
+
+function updateCartCounter() {
+    // Use the global updateCartCounter function
+    if (typeof window.updateCartCounter === 'function') {
+        window.updateCartCounter();
+    }
+}
 </script>
 {% endblock %}

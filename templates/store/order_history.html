@@ -1,69 +1,461 @@
+<!-- store/templates/store/order_history.html -->
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Order History - BrillsPay{% endblock %}
+{% block title %}Order History - BrillPay{% endblock %}
 
 {% block content %}
 <div class="container py-4">
-    <h1 class="display-5 fw-bold text-dark mb-4">Order History</h1>
-
-    {% if orders %}
-    <div class="card">
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Order Details</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                            <th>Date</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for order in orders %}
-                        <tr>
-                            <td>
-                                <div>
-                                    <strong class="d-block">{{ order.order_number }}</strong>
-                                    <small class="text-muted">{{ order.items.count }} items</small>
-                                </div>
-                            </td>
-                            <td>
-                                <strong>₦{{ order.total_amount }}</strong>
-                            </td>
-                            <td>
-                                <span class="badge {% if order.status == 'paid' %}bg-success{% elif order.status == 'pending' %}bg-warning text-dark{% elif order.status == 'shipped' %}bg-info{% elif order.status == 'delivered' %}bg-primary{% else %}bg-danger{% endif %}">
-                                    {{ order.status|title }}
-                                </span>
-                                {% if order.payment_verified %}
-                                <span class="badge bg-success ms-1">Paid</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <small class="text-muted">{{ order.created_at|date:"M d, Y" }}</small>
-                            </td>
-                            <td>
-                                <a href="{% url 'store:order_detail' order.id %}" class="btn btn-sm btn-outline-primary">
-                                    <i class="fas fa-eye me-1"></i>View
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h1 class="h3 mb-1">Order History</h1>
+                    <p class="text-muted mb-0">Track and manage your purchases</p>
+                </div>
+                <div class="text-end">
+                    <a href="{% url 'product_list' %}" class="btn btn-primary">
+                        <i class="fas fa-store me-2"></i>Continue Shopping
+                    </a>
+                </div>
             </div>
         </div>
     </div>
-    {% else %}
-    <div class="text-center py-5">
-        <i class="fas fa-shopping-bag display-1 text-muted mb-3"></i>
-        <h3 class="text-muted">No orders yet</h3>
-        <p class="text-muted mb-4">Start shopping to see your order history here.</p>
-        <a href="{% url 'store:product_list' %}" class="btn btn-primary btn-lg">
-            Start Shopping
-        </a>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 col-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <h2 class="display-6 text-primary">{{ total_orders }}</h2>
+                    <p class="text-muted mb-0">Total Orders</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <h2 class="display-6 text-success">₦{{ total_spent|floatformat:2 }}</h2>
+                    <p class="text-muted mb-0">Total Spent</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <h2 class="display-6 text-warning">{{ status_counts.pending }}</h2>
+                    <p class="text-muted mb-0">Pending Orders</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <h2 class="display-6 text-info">{{ status_counts.delivered }}</h2>
+                    <p class="text-muted mb-0">Delivered</p>
+                </div>
+            </div>
+        </div>
     </div>
-    {% endif %}
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Filter Orders</h5>
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Status</label>
+                            <select name="status" class="form-select" onchange="this.form.submit()">
+                                <option value="all" {% if current_filter == 'all' %}selected{% endif %}>All Orders ({{ status_counts.all }})</option>
+                                <option value="pending" {% if current_filter == 'pending' %}selected{% endif %}>Pending ({{ status_counts.pending }})</option>
+                                <option value="paid" {% if current_filter == 'paid' %}selected{% endif %}>Paid ({{ status_counts.paid }})</option>
+                                <option value="delivered" {% if current_filter == 'delivered' %}selected{% endif %}>Delivered ({{ status_counts.delivered }})</option>
+                                <option value="cancelled" {% if current_filter == 'cancelled' %}selected{% endif %}>Cancelled ({{ status_counts.cancelled }})</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">From Date</label>
+                            <input type="date" name="date_from" class="form-control" value="{{ date_from }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">To Date</label>
+                            <input type="date" name="date_to" class="form-control" value="{{ date_to }}">
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-filter me-2"></i>Apply Filters
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Orders List -->
+    <div class="row">
+        <div class="col-12">
+            {% if orders %}
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Order #</th>
+                                    <th>Date & Time</th>
+                                    <th>Items</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                    <th>Payment</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in orders %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ order.order_number }}</strong>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex flex-column">
+                                            <span>{{ order.date }}</span>
+                                            <small class="text-muted">{{ order.time }}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex flex-column">
+                                            <span>{{ order.item_count }} item(s)</span>
+                                            <small class="text-muted">
+                                                {% for item in order.items_list %}
+                                                    {{ item }}{% if not forloop.last %}, {% endif %}
+                                                {% endfor %}
+                                            </small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <strong>₦{{ order.total|floatformat:2 }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ order.status.color }}">
+                                            {{ order.status.text }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ order.payment_status.color }}">
+                                            {{ order.payment_status.text }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-2">
+                                            <a href="{% url 'order_detail_history' order.order_number %}" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            
+                                            {% if order.can_reorder %}
+                                            <button class="btn btn-sm btn-outline-success reorder-btn"
+                                                    data-order-number="{{ order.order_number }}">
+                                                <i class="fas fa-redo"></i>
+                                            </button>
+                                            {% endif %}
+                                            
+                                            {% if order.can_cancel %}
+                                            <button class="btn btn-sm btn-outline-danger cancel-btn"
+                                                    data-order-number="{{ order.order_number }}">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Pagination -->
+                {% comment %}
+                {% if orders.has_other_pages %}
+                <div class="card-footer">
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-center mb-0">
+                            {% if orders.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ orders.previous_page_number }}{% if current_filter != 'all' %}&status={{ current_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                            
+                            {% for i in orders.paginator.page_range %}
+                                {% if orders.number == i %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ i }}</span>
+                                </li>
+                                {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ i }}{% if current_filter != 'all' %}&status={{ current_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}">
+                                        {{ i }}
+                                    </a>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if orders.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ orders.next_page_number }}{% if current_filter != 'all' %}&status={{ current_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+                {% endcomment %}
+            </div>
+            {% else %}
+            <!-- Empty State -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-box-open fa-4x text-muted"></i>
+                    </div>
+                    <h3 class="mb-3">No Orders Yet</h3>
+                    <p class="text-muted mb-4">
+                        {% if current_filter != 'all' %}
+                        No orders found with the selected filter.
+                        {% else %}
+                        You haven't placed any orders yet.
+                        {% endif %}
+                    </p>
+                    <a href="{% url 'product_list' %}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-store me-2"></i>Start Shopping
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
 </div>
+
+<!-- Cancel Order Modal -->
+<div class="modal fade" id="cancelOrderModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Cancel Order</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to cancel this order?</p>
+                <p class="text-muted small">This action cannot be undone. Refunds may take 3-5 business days.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No, Keep Order</button>
+                <button type="button" class="btn btn-danger" id="confirmCancelBtn">Yes, Cancel Order</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentOrderToCancel = null;
+let currentOrderToReorder = null;
+
+// Cancel Order
+document.querySelectorAll('.cancel-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        currentOrderToCancel = this.dataset.orderNumber;
+        const modal = new bootstrap.Modal(document.getElementById('cancelOrderModal'));
+        modal.show();
+    });
+});
+
+// Confirm Cancel
+document.getElementById('confirmCancelBtn').addEventListener('click', function() {
+    if (!currentOrderToCancel) return;
+    
+    const csrftoken = getCSRFToken();
+    const btn = this;
+    const originalText = btn.innerHTML;
+    
+    // Show loading
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Cancelling...';
+    btn.disabled = true;
+    
+    fetch(`/store/orders/${currentOrderToCancel}/cancel/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken,
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message, 'success');
+            
+            // Close modal
+            bootstrap.Modal.getInstance(document.getElementById('cancelOrderModal')).hide();
+            
+            // Reload page after delay
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        } else {
+            showToast(data.message, 'error');
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Network error. Please try again.', 'error');
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
+});
+
+// Reorder
+document.querySelectorAll('.reorder-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const orderNumber = this.dataset.orderNumber;
+        
+        if (!confirm(`Reorder all items from order ${orderNumber}?`)) return;
+        
+        const csrftoken = getCSRFToken();
+        const originalHTML = this.innerHTML;
+        
+        // Show loading
+        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        this.disabled = true;
+        
+        fetch(`/store/orders/${orderNumber}/reorder/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrftoken,
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast(data.message, 'success');
+                
+                // Update cart counter
+                updateCartCounter();
+                
+                // Show success state briefly
+                this.innerHTML = '<i class="fas fa-check"></i>';
+                this.classList.remove('btn-outline-success');
+                this.classList.add('btn-success');
+                
+                setTimeout(() => {
+                    this.innerHTML = originalHTML;
+                    this.classList.remove('btn-success');
+                    this.classList.add('btn-outline-success');
+                    this.disabled = false;
+                    
+                    // Optionally redirect to cart
+                    if (data.added_count > 0) {
+                        setTimeout(() => {
+                            window.location.href = data.cart_url;
+                        }, 1000);
+                    }
+                }, 2000);
+            } else {
+                showToast(data.message, 'error');
+                this.innerHTML = originalHTML;
+                this.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('Network error. Please try again.', 'error');
+            this.innerHTML = originalHTML;
+            this.disabled = false;
+        });
+    });
+});
+
+// Date range validation
+document.addEventListener('DOMContentLoaded', function() {
+    const dateFrom = document.querySelector('input[name="date_from"]');
+    const dateTo = document.querySelector('input[name="date_to"]');
+    
+    if (dateFrom && dateTo) {
+        dateFrom.addEventListener('change', function() {
+            if (dateTo.value && this.value > dateTo.value) {
+                dateTo.value = this.value;
+            }
+        });
+        
+        dateTo.addEventListener('change', function() {
+            if (dateFrom.value && this.value < dateFrom.value) {
+                dateFrom.value = this.value;
+            }
+        });
+    }
+});
+</script>
+
+<style>
+.table th {
+    font-weight: 600;
+    border-top: none;
+    padding: 1rem;
+}
+
+.table td {
+    padding: 1rem;
+    vertical-align: middle;
+}
+
+.table tbody tr {
+    transition: background-color 0.2s;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(67, 97, 238, 0.05);
+}
+
+.badge {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.75rem;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .table th,
+    .table td {
+        padding: 0.75rem 0.5rem;
+    }
+    
+    .d-flex.gap-2 {
+        flex-direction: column;
+        gap: 0.25rem !important;
+    }
+    
+    .btn-sm {
+        min-width: 32px;
+    }
+}
+</style>
 {% endblock %}

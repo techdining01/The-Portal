@@ -148,7 +148,7 @@ class Command(BaseCommand):
         parents = []
         for i, parent_data in enumerate(parents_data):
             user, created = User.objects.get_or_create(
-                email=parent_data['email'],
+                email=parent_data['first_name'],
                 defaults={
                     'surname': parent_data['surname'],
                     'first_name': parent_data['first_name'],

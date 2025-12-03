@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
-from store.models import Product, Order, OrderItem, Transaction
+from store.models import Product, Order, OrderItem, PaymentRecord
 from datetime import datetime, timedelta
 import random
 
@@ -69,7 +69,7 @@ class Command(BaseCommand):
 
             # Create transaction for paid orders
             if order.payment_verified:
-                transaction = Transaction.objects.create(
+                transaction = PaymentRecord.objects.create(
                     order=order,
                     payment_reference=f"PSK_{order.order_number}_{i}",
                     amount=total_amount,

@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Register - School E-commerce{% endblock %}
+{% block title %}Register - {{setting.SCHOOL_ECOMMERCE}} E-commerce{% endblock %}
 
 {% block content %}
 <div class="container">
@@ -11,7 +11,7 @@
                     <h3 class="mb-0">
                         <i class="fas fa-user-plus"></i> Create Account
                     </h3>
-                    <p class="mb-0 mt-2">Join School E-commerce today</p>
+                    <p class="mb-0 mt-2">Join {{setting.SCHOOL_ECOMMERCE}} E-commerce today</p>
                 </div>
                 <div class="card-body p-4">
                     <form method="post" id="registerForm">

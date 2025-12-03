@@ -1,0 +1,85 @@
+<!-- templates/admin/user_statistics.html -->
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1>User Statistics</h1>
+    
+    <div class="row">
+        <!-- Role Distribution -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Users by Role</h3>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Role</th>
+                                <th>Total Users</th>
+                                <th>Active Users</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stat in role_stats %}
+                            <tr>
+                                <td>{{ stat.role|title }}</td>
+                                <td>{{ stat.count }}</td>
+                                <td>{{ stat.active }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Status Distribution -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">User Status</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6 text-center">
+                            <div class="display-4 text-success">{{ active_count }}</div>
+                            <p class="text-muted">Active Users</p>
+                        </div>
+                        <div class="col-6 text-center">
+                            <div class="display-4 text-danger">{{ inactive_count }}</div>
+                            <p class="text-muted">Inactive Users</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Monthly Registration Chart -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h3 class="card-title">Monthly Registrations</h3>
+        </div>
+        <div class="card-body">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Month</th>
+                        <th>Registrations</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in monthly_stats %}
+                    <tr>
+                        <td>{{ stat.month|date:"F Y" }}</td>
+                        <td>{{ stat.count }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
