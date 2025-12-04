@@ -163,8 +163,7 @@ class StudentRegistrationForm(UserRegistrationForm):
     GENDER_CHOICES = [
         ('M', 'Male'),
         ('F', 'Female'),
-        ('O', 'Other'),
-        ('P', 'Prefer not to say'),
+        
     ]
     
     student_class = forms.ModelChoiceField(
@@ -1660,3 +1659,6 @@ def validate_age_for_teacher(value):
     
     if age < 21:
         raise ValidationError(_('Teacher must be at least 21 years old.'))
+    
+
+    

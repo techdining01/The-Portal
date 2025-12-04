@@ -1,0 +1,281 @@
+{% extends 'store/base.html' %}
+
+{% block title %}Teacher Dashboard - School Management System{% endblock %}
+
+{% block page_title %}Teacher Dashboard{% endblock %}
+{% block page_subtitle %}Welcome, {{ user.get_full_name|default:user.username }}!{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Stats Overview -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="bg-white rounded-xl shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 bg-blue-100 rounded-lg">
+                    <i class="fas fa-users text-blue-600 text-2xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-2xl font-bold">45</h3>
+                    <p class="text-gray-600">Students</p>
+                </div>
+            </div>
+            <div class="mt-4">
+                <a href="#" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                    View Class Roster <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 bg-green-100 rounded-lg">
+                    <i class="fas fa-clipboard-list text-green-600 text-2xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-2xl font-bold">8</h3>
+                    <p class="text-gray-600">Pending Grading</p>
+                </div>
+            </div>
+            <div class="mt-4">
+                <a href="#" class="text-green-600 hover:text-green-700 text-sm font-medium">
+                    Grade Assignments <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 bg-purple-100 rounded-lg">
+                    <i class="fas fa-calendar-alt text-purple-600 text-2xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-2xl font-bold">3</h3>
+                    <p class="text-gray-600">Classes Today</p>
+                </div>
+            </div>
+            <div class="mt-4">
+                <a href="#" class="text-purple-600 hover:text-purple-700 text-sm font-medium">
+                    View Schedule <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 bg-yellow-100 rounded-lg">
+                    <i class="fas fa-comments text-yellow-600 text-2xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-2xl font-bold">12</h3>
+                    <p class="text-gray-600">New Messages</p>
+                </div>
+            </div>
+            <div class="mt-4">
+                <a href="#" class="text-yellow-600 hover:text-yellow-700 text-sm font-medium">
+                    Check Messages <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Today's Classes & To-Do -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Today's Classes -->
+        <div class="bg-white rounded-xl shadow p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold">Today's Classes</h2>
+                <span class="text-sm text-gray-500">{{ today|date:"l, F d" }}</span>
+            </div>
+            
+            <div class="space-y-4">
+                {% for class in classes %}
+                <div class="p-4 border rounded-lg hover:bg-gray-50">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h3 class="font-semibold text-lg">{{ class.subject }}</h3>
+                            <p class="text-sm text-gray-600">{{ class.grade }} • {{ class.section }}</p>
+                        </div>
+                        <span class="px-3 py-1 text-sm rounded-full bg-blue-100 text-blue-800">
+                            {{ class.time }}
+                        </span>
+                    </div>
+                    
+                    <div class="flex items-center justify-between text-sm">
+                        <div class="flex items-center">
+                            <i class="fas fa-user-friends text-gray-400 mr-2"></i>
+                            <span>{{ class.student_count }} students</span>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-map-marker-alt text-gray-400 mr-2"></i>
+                            <span>{{ class.room }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 flex space-x-2">
+                        <a href="#" class="flex-1 text-center py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+                            <i class="fas fa-clipboard-list mr-2"></i> Take Attendance
+                        </a>
+                        <a href="#" class="flex-1 text-center py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm">
+                            <i class="fas fa-edit mr-2"></i> Lesson Plan
+                        </a>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-8 text-gray-500">
+                    <i class="fas fa-chalkboard-teacher text-3xl mb-3 text-gray-300"></i>
+                    <p>No classes scheduled for today</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- To-Do List -->
+        <div class="bg-white rounded-xl shadow p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold">To-Do List</h2>
+                <button onclick="addTodoItem()" class="px-3 py-1 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+                    <i class="fas fa-plus mr-1"></i> Add Task
+                </button>
+            </div>
+            
+            <div id="todoList" class="space-y-3">
+                {% for task in todo_items %}
+                <div class="flex items-center p-3 border rounded-lg hover:bg-gray-50">
+                    <input type="checkbox" 
+                           id="task{{ forloop.counter }}" 
+                           class="h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
+                           {% if task.completed %}checked{% endif %}>
+                    <label for="task{{ forloop.counter }}" class="ml-3 flex-1 {% if task.completed %}line-through text-gray-500{% endif %}">
+                        {{ task.title }}
+                        {% if task.due_date %}
+                        <span class="text-xs text-gray-500 ml-2">Due {{ task.due_date|date:"M d" }}</span>
+                        {% endif %}
+                    </label>
+                    <button class="text-gray-400 hover:text-red-500">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                {% empty %}
+                <div class="text-center py-8 text-gray-500">
+                    <i class="fas fa-check-circle text-3xl mb-3 text-gray-300"></i>
+                    <p>All caught up!</p>
+                    <p class="text-sm mt-2">No pending tasks</p>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="mt-8">
+                <h3 class="font-semibold mb-4">Quick Actions</h3>
+                <div class="grid grid-cols-2 gap-3">
+                    <a href="#" class="p-3 bg-green-50 rounded-lg text-center hover:bg-green-100">
+                        <i class="fas fa-plus-circle text-green-600 mb-2"></i>
+                        <div class="text-sm font-medium">Create Assignment</div>
+                    </a>
+                    <a href="#" class="p-3 bg-blue-50 rounded-lg text-center hover:bg-blue-100">
+                        <i class="fas fa-chart-bar text-blue-600 mb-2"></i>
+                        <div class="text-sm font-medium">Enter Grades</div>
+                    </a>
+                    <a href="#" class="p-3 bg-purple-50 rounded-lg text-center hover:bg-purple-100">
+                        <i class="fas fa-envelope text-purple-600 mb-2"></i>
+                        <div class="text-sm font-medium">Message Parents</div>
+                    </a>
+                    <a href="#" class="p-3 bg-yellow-50 rounded-lg text-center hover:bg-yellow-100">
+                        <i class="fas fa-file-upload text-yellow-600 mb-2"></i>
+                        <div class="text-sm font-medium">Upload Materials</div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Student Submissions -->
+    <div class="bg-white rounded-xl shadow p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold">Recent Submissions</h2>
+            <a href="#" class="text-blue-600 hover:text-blue-700 font-medium">View All</a>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead>
+                    <tr class="bg-gray-50">
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Assignment</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Submitted</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for submission in submissions %}
+                    <tr>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
+                                    {{ submission.student.username|first|upper }}
+                                </div>
+                                <div class="ml-3">
+                                    <div class="font-medium">{{ submission.student.get_full_name }}</div>
+                                    <div class="text-sm text-gray-500">{{ submission.student.email }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="font-medium">{{ submission.assignment.title }}</div>
+                            <div class="text-sm text-gray-500">{{ submission.assignment.subject }}</div>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-600">
+                            {{ submission.submitted_at|date:"M d, H:i" }}
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="px-3 py-1 text-xs rounded-full 
+                                {% if submission.status == 'graded' %}bg-green-100 text-green-800
+                                {% elif submission.status == 'submitted' %}bg-blue-100 text-blue-800
+                                {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                {{ submission.status|title }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if submission.status == 'submitted' %}
+                            <a href="#" class="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700">
+                                <i class="fas fa-check mr-1"></i> Grade
+                            </a>
+                            {% else %}
+                            <a href="#" class="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm hover:bg-blue-200">
+                                <i class="fas fa-eye mr-1"></i> Review
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-8 text-center text-gray-500">
+                            <i class="fas fa-inbox text-3xl mb-3 text-gray-300"></i>
+                            <p>No recent submissions</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function addTodoItem() {
+    const todoList = document.getElementById('todoList');
+    const newItem = document.createElement('div');
+    newItem.className = 'flex items-center p-3 border rounded-lg hover:bg-gray-50';
+    newItem.innerHTML = `
+        <input type="checkbox" class="h-5 w-5 text-blue-600 rounded focus:ring-blue-500">
+        <input type="text" placeholder="Enter new task..." class="ml-3 flex-1 border-none focus:ring-0">
+        <button class="text-gray-400 hover:text-red-500" onclick="this.parentElement.remove()">
+            <i class="fas fa-trash"></i>
+        </button>
+    `;
+    todoList.appendChild(newItem);
+    newItem.querySelector('input[type="text"]').focus();
+}
+</script>
+{% endblock %}

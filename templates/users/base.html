@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}School Management System{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3a0ca3;
+            --success-color: #4cc9f0;
+            --warning-color: #f72585;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+        }
+        
+        .sidebar {
+            background: linear-gradient(180deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            min-height: 100vh;
+            width: 250px;
+            position: fixed;
+            left: 0;
+            top: 0;
+            box-shadow: 3px 0 10px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+        
+        .sidebar.collapsed {
+            margin-left: -250px;
+        }
+        
+        .main-content {
+            margin-left: 250px;
+            transition: all 0.3s;
+        }
+        
+        .main-content.expanded {
+            margin-left: 0;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                margin-left: -250px;
+            }
+            .sidebar.show {
+                margin-left: 0;
+            }
+            .main-content {
+                margin-left: 0;
+            }
+        }
+        
+        .navbar-custom {
+            background: white !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .card-custom {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        
+        .card-custom:hover {
+            transform: translateY(-5px);
+        }
+        
+        .btn-primary-custom {
+            background: var(--primary-color);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+        }
+        
+        .btn-primary-custom:hover {
+            background: var(--secondary-color);
+        }
+        
+        .table-responsive {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .table th {
+            background-color: #f8f9fa;
+            border-top: none;
+        }
+        
+        .badge-role-admin { background-color: #dc3545; }
+        .badge-role-teacher { background-color: #6f42c1; }
+        .badge-role-student { background-color: #20c997; }
+        .badge-role-parent { background-color: #0d6efd; }
+        .badge-role-staff { background-color: #fd7e14; }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .status-active { color: #198754; }
+        .status-inactive { color: #dc3545; }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="d-flex flex-column h-100">
+            <!-- Logo -->
+            <div class="p-4 text-center border-bottom border-light border-opacity-25">
+                <h2 class="text-white mb-0">
+                    <i class="bi bi-mortarboard-fill me-2"></i>
+                    <span class="fw-bold">SchoolSys</span>
+                </h2>
+                <small class="text-white text-opacity-75">Management System</small>
+            </div>
+            
+            <!-- Navigation -->
+            <div class="flex-grow-1 p-3">
+                <nav class="nav flex-column">
+                    {% if user.is_authenticated %}
+                        {% if user.userprofile.role == 'admin' %}
+                            <a class="nav-link text-white py-3 {% if request.path == '/admin/dashboard/' %}active bg-white bg-opacity-25 rounded{% endif %}" 
+                               href="{% url 'admin_dashboard' %}">
+                                <i class="bi bi-speedometer2 me-3"></i> Dashboard
+                            </a>
+                            <a class="nav-link text-white py-3 {% if 'users' in request.path %}active bg-white bg-opacity-25 rounded{% endif %}" 
+                               href="{% url 'user_list' %}">
+                                <i class="bi bi-people me-3"></i> User Management
+                            </a>
+                            <a class="nav-link text-white py-3" href="#">
+                                <i class="bi bi-shop me-3"></i> E-commerce
+                            </a>
+                            <a class="nav-link text-white py-3" href="#">
+                                <i class="bi bi-book me-3"></i> Academics
+                            </a>
+                            <a class="nav-link text-white py-3" href="#">
+                                <i class="bi bi-bar-chart me-3"></i> Reports
+                            </a>
+                            <a class="nav-link text-white py-3" href="#">
+                                <i class="bi bi-gear me-3"></i> Settings
+                            </a>
+                        
+                        {% elif user.userprofile.role == 'teacher' %}
+                            <a class="nav-link text-white py-3" href="{% url 'teacher_dashboard' %}">
+                                <i class="bi bi-speedometer2 me-3"></i> Dashboard
+                            </a>
+                            <a class="nav-link text-white py-3" href="#">
+                                <i class="bi bi-journal-text me-3"></i> My Classes
+                            </a>
+                            <a class="nav-link text-white py-3" href="#">
+                                <i class="bi bi-clipboard-check me-3"></i> Assignments
+                            </a>
+                            <a class="nav-link text-white py-3" href="#">
+                                <i class="bi bi-chat-left-text me-3"></i> Messages
+                            </a>
+                        
+                        {% elif user.userprofile.role == 'student' %}
+                            <a class="nav-link text-white py-3" href="{% url 'student_dashboard' %}">
+                                <i class="bi bi-speedometer2 me-3"></i> Dashboard
+                            </a>
+                            <a class="nav-link text-white py-3" href="#">
+                                <i class="bi bi-journal-text me-3"></i> My Classes
+                            </a>
+                            <a class="nav-link text-white py-3" href="#">
+                                <i class="bi bi-book me-3"></i> Assignments
+                            </a>
+                            <a class="nav-link text-white py-3" href="#">
+                                <i class="bi bi-shop me-3"></i> School Store
+                            </a>
+                        
+                        {% elif user.userprofile.role == 'parent' %}
+                            <a class="nav-link text-white py-3" href="{% url 'parent_dashboard' %}">
+                                <i class="bi bi-speedometer2 me-3"></i> Dashboard
+                            </a>
+                            <a class="nav-link text-white py-3" href="#">
+                                <i class="bi bi-people me-3"></i> My Children
+                            </a>
+                            <a class="nav-link text-white py-3" href="#">
+                                <i class="bi bi-cash-coin me-3"></i> Payments
+                            </a>
+                            <a class="nav-link text-white py-3" href="#">
+                                <i class="bi bi-chat-left-text me-3"></i> Messages
+                            </a>
+                        {% endif %}
+                    {% endif %}
+                </nav>
+            </div>
+            
+            <!-- User Info & Logout -->
+            {% if user.is_authenticated %}
+            <div class="p-3 border-top border-light border-opacity-25">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="user-avatar me-3" style="background-color: #4cc9f0;">
+                        {{ user.username|first|upper }}
+                    </div>
+                    <div>
+                        <h6 class="text-white mb-0">{{ user.get_full_name|default:user.username }}</h6>
+                        <small class="text-white text-opacity-75">{{ user.userprofile.get_role_display }}</small>
+                    </div>
+                </div>
+                <a href="{% url 'logout' %}" class="btn btn-outline-light w-100">
+                    <i class="bi bi-box-arrow-right me-2"></i> Logout
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content" id="mainContent">
+        <!-- Top Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-custom py-3">
+            <div class="container-fluid">
+                <!-- Toggle Sidebar Button -->
+                <button class="btn" type="button" id="sidebarToggle">
+                    <i class="bi bi-list fs-4"></i>
+                </button>
+                
+                <!-- Page Title -->
+                <div class="navbar-brand ms-3">
+                    <h4 class="mb-0">{% block page_title %}Dashboard{% endblock %}</h4>
+                    <small class="text-muted">{% block page_subtitle %}Welcome back!{% endblock %}</small>
+                </div>
+                
+                <!-- Right Side Items -->
+                <div class="d-flex align-items-center">
+                    <!-- Notifications -->
+                    <div class="dropdown me-3">
+                        <button class="btn btn-light position-relative" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-bell fs-5"></i>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                3
+                            </span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><h6 class="dropdown-header">Notifications</h6></li>
+                            <li><a class="dropdown-item" href="#">New assignment posted</a></li>
+                            <li><a class="dropdown-item" href="#">Payment reminder</a></li>
+                            <li><a class="dropdown-item" href="#">Parent meeting scheduled</a></li>
+                        </ul>
+                    </div>
+                    
+                    <!-- User Menu -->
+                    <div class="dropdown">
+                        <button class="btn btn-light d-flex align-items-center" type="button" data-bs-toggle="dropdown">
+                            <div class="user-avatar me-2" style="background-color: #4cc9f0;">
+                                {{ user.username|first|upper }}
+                            </div>
+                            <span class="d-none d-md-inline">{{ user.username }}</span>
+                            <i class="bi bi-chevron-down ms-2"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i> Profile</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i> Settings</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right me-2"></i> Logout</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Messages -->
+        <div class="container-fluid mt-3">
+            {% if messages %}
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+
+        <!-- Main Content Area -->
+        <main class="container-fluid mt-4">
+            {% block content %}{% endblock %}
+        </main>
+
+        <!-- Footer -->
+        <footer class="container-fluid py-4 mt-5 border-top">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-0">&copy; {% now "Y" %} School Management System. All rights reserved.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <a href="#" class="text-decoration-none me-3">Privacy Policy</a>
+                    <a href="#" class="text-decoration-none">Terms of Service</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script>
+        // Sidebar toggle
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        
+        sidebarToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('collapsed');
+            mainContent.classList.toggle('expanded');
+        });
+        
+        // Auto-hide alerts after 5 seconds
+        setTimeout(function() {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                const bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            });
+        }, 5000);
+        
+        // Mobile sidebar close on link click
+        if (window.innerWidth <= 768) {
+            const sidebarLinks = document.querySelectorAll('.sidebar .nav-link');
+            sidebarLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    sidebar.classList.remove('show');
+                });
+            });
+        }
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

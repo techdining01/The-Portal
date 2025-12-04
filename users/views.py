@@ -6,13 +6,37 @@ from django.utils import timezone
 from django.contrib.auth import get_user_model
 from .models import Notification
 from django.urls import reverse
-from .forms import TeacherAdminForm, EditUserRegistrationForm, EditTeacherAdminForm, UserRegistrationForm, loginForm, UserProfileForm, ParentForm, LinkStudentForm
+from .forms import *
 from django.core.paginator import Paginator
 from django.http import JsonResponse, HttpResponseForbidden
 from django.views.decorators.http import require_POST   
 from exams.models import ActionLog  
 from pickup.models import PickupAuthorization
 import json
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth import login, logout, authenticate
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib import messages
+from django.core.paginator import Paginator
+from django.db.models import Q
+from django.shortcuts import render, redirect
+from django.contrib.auth import login, authenticate
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib import messages
+from .forms import *
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required, user_passes_test
+# from django.contrib.auth.models import User
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib import messages
+from django.http import JsonResponse
+from django.db.models import Q, Count
+from django.core.paginator import Paginator
+from django.views.decorators.http import require_POST, require_GET
+import csv
+from django.http import HttpResponse
+from .models import UserProfile, StudentParentRelationship
+
 
 
 User = get_user_model()
@@ -231,27 +255,6 @@ def reject_user(request, user_id):
 
 ########## VERSION 2 ################################################
 
-from django.shortcuts import render, redirect
-from django.contrib.auth import login, authenticate
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.contrib import messages
-from .forms import (
-    StudentRegistrationForm, ParentRegistrationForm,
-    TeacherRegistrationForm, AdminRegistrationForm
-)
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.contrib.auth.models import User
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib import messages
-from django.http import JsonResponse
-from django.db.models import Q, Count
-from django.core.paginator import Paginator
-from django.views.decorators.http import require_POST, require_GET
-import csv
-from django.http import HttpResponse
-from .models import UserProfile, ParentProfile, StudentParentRelationship, Class
-
 
 def register_view(request):
     """Main registration view with role selection"""
@@ -466,7 +469,7 @@ def user_create_view(request):
             user.save()
             
             # Create user profile
-            user_profile = UserProfile.objects.create(
+            user_profile = User.objects.create(
                 user=user,
                 role=request.POST.get('role', 'student'),
                 phone_number=request.POST.get('phone', '')
@@ -804,51 +807,6 @@ def send_welcome_email(user, password):
         return False
 
 
-@login_required
-def link_student_view(request):
-    if request.method == 'POST':
-        form = LinkStudentForm(request.POST)
-        if form.is_valid():
-            reg_number = form.cleaned_data['registration_number']
-            try:
-                student = User.objects.get(
-                    registration_number=reg_number,
-                    role='student'
-                )
-                
-                # Check if student already has a parent linked
-                if student.parents.filter(id=request.user.id).exists():
-                    messages.warning(request, 'Student is already linked to your account.')
-                else:
-                    # Link student to parent
-                    request.user.children.add(student)
-                    messages.success(request, 
-                        f'Successfully linked to student: {student.get_full_name()}')
-                    
-                    return redirect('profile')
-                    
-            except User.DoesNotExist:
-                messages.error(request, 'Student not found.')
-    else:
-        form = LinkStudentForm()
-    
-    return render(request, 'registration/link_student.html', {'form': form})
-
-@login_required
-def unlink_student_view(request, student_id):
-    if request.method == 'POST':
-        try:
-            student = User.objects.get(id=student_id, role='student')
-            if student in request.user.children.all():
-                request.user.children.remove(student)
-                messages.success(request, 'Student unlinked successfully.')
-            else:
-                messages.error(request, 'Student not linked to your account.')
-        except User.DoesNotExist:
-            messages.error(request, 'Student not found.')
-    
-    return redirect('profile')
-
 # Bulk linking view for admins
 @user_passes_test(lambda u: u.is_admin)
 def bulk_link_parent_student(request):
@@ -875,6 +833,286 @@ def bulk_link_parent_student(request):
     return render(request, 'admin/bulk_link.html')
 
 
+# Helper function to check if user is admin
+def is_admin(user):
+    try:
+        return user.userprofile.role == 'admin'
+    except:
+        return False
+
+# Auth Views
+def login_view(request):
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        user = authenticate(request, username=username, password=password)
+        
+        if user is not None:
+            login(request, user)
+            messages.success(request, f'Welcome back, {user.get_full_name() or user.username}!')
+            
+            # Redirect based on role
+            try:
+                if user.userprofile.role == 'admin':
+                    return redirect('admin_dashboard')
+                elif user.userprofile.role == 'teacher':
+                    return redirect('teacher_dashboard')
+                elif user.userprofile.role == 'parent':
+                    return redirect('parent_dashboard')
+                else:
+                    return redirect('student_dashboard')
+            except:
+                return redirect('student_dashboard')
+        else:
+            messages.error(request, 'Invalid username or password.')
+    
+    return render(request, 'store/registration/login.html')
+
+def register_view(request):
+    if request.method == 'POST':
+        form = UserRegistrationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            
+            # Create user profile
+            UserProfile.objects.create(
+                user=user,
+                phone_number=form.cleaned_data['phone_number'],
+                address=form.cleaned_data['address'],
+                date_of_birth=form.cleaned_data['date_of_birth'],
+                role=form.cleaned_data['role'],
+                grade_level=form.cleaned_data.get('grade_level'),
+                parent_email=form.cleaned_data.get('parent_email')
+            )
+            
+            messages.success(request, 'Registration successful! Please login.')
+            return redirect('login')
+    else:
+        form = UserRegistrationForm()
+    
+    return render(request, 'store/registration/register.html', {'form': form})
+
+def logout_view(request):
+    logout(request)
+    messages.success(request, 'You have been logged out.')
+    return redirect('login')
+
+# Dashboard Views
+@login_required
+def student_dashboard(request):
+    context = {
+        'today': '2024-01-15',  # Replace with actual date
+        'schedule': [
+            {'time': '9:00 AM', 'subject': 'Mathematics', 'teacher': 'Mr. Smith', 'room': 'Room 101', 'type': 'Lecture'},
+            {'time': '10:30 AM', 'subject': 'Science', 'teacher': 'Ms. Johnson', 'room': 'Lab 202', 'type': 'Lab'},
+            {'time': '1:00 PM', 'subject': 'History', 'teacher': 'Mr. Davis', 'room': 'Room 105', 'type': 'Discussion'},
+        ],
+        'assignments': [
+            {'title': 'Math Homework', 'subject': 'Mathematics', 'teacher': 'Mr. Smith', 
+             'due_date': '2024-01-20', 'status': 'pending', 'priority': 'high',
+             'description': 'Complete exercises 1-10 from chapter 5'},
+            {'title': 'Science Project', 'subject': 'Science', 'teacher': 'Ms. Johnson',
+             'due_date': '2024-01-25', 'status': 'in_progress', 'priority': 'medium',
+             'description': 'Research paper on renewable energy sources'},
+        ]
+    }
+    return render(request, 'store/student/dashboard.html', context)
+
+@login_required
+def teacher_dashboard(request):
+    context = {
+        'today': '2024-01-15',
+        'classes': [
+            {'subject': 'Mathematics', 'grade': '10th Grade', 'section': 'A', 
+             'time': '9:00 AM', 'student_count': 25, 'room': 'Room 101'},
+            {'subject': 'Advanced Math', 'grade': '12th Grade', 'section': 'B',
+             'time': '11:00 AM', 'student_count': 18, 'room': 'Room 102'},
+            {'subject': 'Calculus', 'grade': '11th Grade', 'section': 'C',
+             'time': '2:00 PM', 'student_count': 22, 'room': 'Room 103'},
+        ],
+        'todo_items': [
+            {'title': 'Grade Math quizzes', 'completed': False, 'due_date': '2024-01-16'},
+            {'title': 'Prepare lesson plan', 'completed': True, 'due_date': '2024-01-15'},
+            {'title': 'Meet with parents', 'completed': False, 'due_date': '2024-01-18'},
+        ],
+        'submissions': [
+            {'student': request.user, 'assignment': {'title': 'Algebra Homework', 'subject': 'Mathematics'},
+             'submitted_at': '2024-01-14 14:30:00', 'status': 'submitted'},
+            {'student': request.user, 'assignment': {'title': 'Geometry Quiz', 'subject': 'Mathematics'},
+             'submitted_at': '2024-01-13 10:15:00', 'status': 'graded'},
+        ]
+    }
+    return render(request, 'store/teacher/dashboard.html', context)
+
+@login_required
+def parent_dashboard(request):
+    # Get linked children
+    relationships = StudentParentRelationship.objects.filter(parent=request.user)
+    children = []
+    
+    for rel in relationships:
+        children.append({
+            'student': rel.student,
+            'relationship_type': rel.relationship_type,
+            'gpa': 3.8,  # Replace with actual calculation
+            'attendance': 95,  # Replace with actual calculation
+            'pending_fees': 125.50,  # Replace with actual calculation
+        })
+    
+    context = {
+        'children': children,
+        'events': [
+            {'title': 'Parent-Teacher Conference', 'date': '2024-01-20', 'time': '6:00 PM',
+             'location': 'School Auditorium', 'description': 'Quarterly parent-teacher meetings',
+             'children_involved': 'John, Sarah'},
+            {'title': 'Science Fair', 'date': '2024-01-25', 'time': '9:00 AM - 3:00 PM',
+             'location': 'Gymnasium', 'description': 'Annual school science fair exhibition'},
+            {'title': 'Sports Day', 'date': '2024-02-01', 'time': '8:00 AM - 2:00 PM',
+             'location': 'School Field', 'description': 'Inter-house sports competition'},
+        ],
+        'fees': [
+            {'description': 'Tuition Fee - Q1 2024', 'child_name': 'John Smith', 
+             'due_date': '2024-01-31', 'amount': 500.00, 'status': 'pending'},
+            {'description': 'Lab Fee - Science', 'child_name': 'Sarah Smith',
+             'due_date': '2024-01-20', 'amount': 75.00, 'status': 'overdue'},
+            {'description': 'Library Fee', 'child_name': 'John Smith',
+             'due_date': '2024-01-15', 'amount': 25.00, 'status': 'paid'},
+        ],
+        'total_due': 575.00,
+        'academic_updates': [
+            {'child': request.user, 'subject': 'Mathematics', 'assignment': 'Midterm Exam',
+             'type': 'Exam', 'grade': 92, 'date': '2024-01-10', 'teacher': request.user},
+            {'child': request.user, 'subject': 'Science', 'assignment': 'Lab Report',
+             'type': 'Assignment', 'grade': 88, 'date': '2024-01-08', 'teacher': request.user},
+            {'child': request.user, 'subject': 'English', 'assignment': 'Essay',
+             'type': 'Project', 'grade': 95, 'date': '2024-01-05', 'teacher': request.user},
+        ]
+    }
+    return render(request, 'store/parent/dashboard.html', context)
+
+# Admin Views
+@login_required
+@user_passes_test(is_admin)
+def admin_dashboard(request):
+    total_users = User.objects.count()
+    student_count = UserProfile.objects.filter(role='student').count()
+    teacher_count = UserProfile.objects.filter(role='teacher').count()
+    
+    context = {
+        'total_users': total_users,
+        'student_count': student_count,
+        'teacher_count': teacher_count,
+        'pending_orders': 12,  # Replace with actual e-commerce count
+        'recent_activity': [
+            {'user': request.user, 'action': 'login', 'timestamp': '2024-01-15 09:30:00', 
+             'details': 'Logged into admin dashboard'},
+            {'user': request.user, 'action': 'create', 'timestamp': '2024-01-14 14:20:00',
+             'details': 'Created new student account'},
+            {'user': request.user, 'action': 'update', 'timestamp': '2024-01-14 11:15:00',
+             'details': 'Updated teacher permissions'},
+        ]
+    }
+    return render(request, 'store/admin/dashboard.html', context)
+
+@login_required
+@user_passes_test(is_admin)
+def user_list(request):
+    search_query = request.GET.get('search', '')
+    role_filter = request.GET.get('role', '')
+    
+    profiles = UserProfile.objects.select_related('user').all()
+    
+    if search_query:
+        profiles = profiles.filter(
+            Q(user__username__icontains=search_query) |
+            Q(user__first_name__icontains=search_query) |
+            Q(user__last_name__icontains=search_query) |
+            Q(user__email__icontains=search_query)
+        )
+    
+    if role_filter:
+        profiles = profiles.filter(role=role_filter)
+    
+    # Pagination
+    paginator = Paginator(profiles, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'users': page_obj,
+        'search_query': search_query,
+        'role_filter': role_filter,
+    }
+    return render(request, 'store/admin/user_list.html', context)
+
+@login_required
+@user_passes_test(is_admin)
+def create_user(request):
+    if request.method == 'POST':
+        user_form = AdminUserCreationForm(request.POST)
+        profile_form = UserProfileForm(request.POST)
+        
+        if user_form.is_valid() and profile_form.is_valid():
+            user = user_form.save()
+            profile = profile_form.save(commit=False)
+            profile.user = user
+            profile.save()
+            
+            messages.success(request, f'User {user.username} created successfully!')
+            return redirect('users:user_list')
+    else:
+        user_form = AdminUserCreationForm()
+        profile_form = UserProfileForm()
+    
+    context = {
+        'user_form': user_form,
+        'profile_form': profile_form,
+        'form_title': 'Create New User',
+        'form_subtitle': 'Add a new user to the system',
+        'submit_button': 'Create User',
+        'show_parent_linking': False,
+    }
+    return render(request, 'store/admin/user_form.html', context)
+
+@login_required
+@user_passes_test(is_admin)
+def edit_user(request, user_id):
+    user = get_object_or_404(User, id=user_id)
+    profile = get_object_or_404(UserProfile, user=user)
+    
+    if request.method == 'POST':
+        user_form = AdminUserEditForm(request.POST, instance=user)
+        profile_form = UserProfileForm(request.POST, instance=profile)
+        
+        if user_form.is_valid() and profile_form.is_valid():
+            user_form.save()
+            profile_form.save()
+            
+            messages.success(request, f'User {user.username} updated successfully!')
+            return redirect('users:user_list')
+    else:
+        user_form = AdminUserEditForm(instance=user)
+        profile_form = UserProfileForm(instance=profile)
+    
+    # Check if this is a parent to show linking form
+    show_parent_linking = profile.role == 'parent'
+    linking_form = None
+    
+    if show_parent_linking:
+        linking_form = StudentParentRelationshipFormSet(
+            queryset=StudentParentRelationship.objects.filter(parent=user)
+        )
+    
+    context = {
+        'user_form': user_form,
+        'profile_form': profile_form,
+        'linking_form': linking_form,
+        'form_title': f'Edit User: {user.username}',
+        'form_subtitle': 'Update user information and permissions',
+        'submit_button': 'Update User',
+        'show_parent_linking': show_parent_linking,
+    }
+    return render(request, 'store/admin/user_form.html', context)
 ##########################################################################
 
 @login_required
@@ -1125,3 +1363,50 @@ def delete_user(request, user_id):
     )
 
     return JsonResponse({"success": True, "id": user_id})
+
+
+
+# @login_required
+# def link_student_view(request):
+#     if request.method == 'POST':
+#         form = LinkStudentForm(request.POST)
+#         if form.is_valid():
+#             reg_number = form.cleaned_data['registration_number']
+#             try:
+#                 student = User.objects.get(
+#                     registration_number=reg_number,
+#                     role='student'
+#                 )
+                
+#                 # Check if student already has a parent linked
+#                 if student.parents.filter(id=request.user.id).exists():
+#                     messages.warning(request, 'Student is already linked to your account.')
+#                 else:
+#                     # Link student to parent
+#                     request.user.children.add(student)
+#                     messages.success(request, 
+#                         f'Successfully linked to student: {student.get_full_name()}')
+                    
+#                     return redirect('profile')
+                    
+#             except User.DoesNotExist:
+#                 messages.error(request, 'Student not found.')
+#     else:
+#         form = LinkStudentForm()
+    
+#     return render(request, 'registration/link_student.html', {'form': form})
+
+# @login_required
+# def unlink_student_view(request, student_id):
+#     if request.method == 'POST':
+#         try:
+#             student = User.objects.get(id=student_id, role='student')
+#             if student in request.user.children.all():
+#                 request.user.children.remove(student)
+#                 messages.success(request, 'Student unlinked successfully.')
+#             else:
+#                 messages.error(request, 'Student not linked to your account.')
+#         except User.DoesNotExist:
+#             messages.error(request, 'Student not found.')
+    
+#     return redirect('profile')

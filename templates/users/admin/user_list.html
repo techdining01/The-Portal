@@ -1,0 +1,240 @@
+{% extends 'store/base.html' %}
+
+{% block title %}User Management - School Management System{% endblock %}
+
+{% block page_title %}User Management{% endblock %}
+{% block page_subtitle %}Manage all user accounts and permissions{% endblock %}
+
+{% block content %}
+<!-- Filters and Search -->
+<div class="card card-custom mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <input type="text" 
+                           name="search" 
+                           value="{{ search_query }}"
+                           class="form-control" 
+                           placeholder="Search users by name, email, or username...">
+                    <button class="btn btn-outline-secondary" type="submit">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <select name="role" class="form-select">
+                    <option value="">All Roles</option>
+                    <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>Administrator</option>
+                    <option value="teacher" {% if role_filter == 'teacher' %}selected{% endif %}>Teacher</option>
+                    <option value="student" {% if role_filter == 'student' %}selected{% endif %}>Student</option>
+                    <option value="parent" {% if role_filter == 'parent' %}selected{% endif %}>Parent</option>
+                    <option value="staff" {% if role_filter == 'staff' %}selected{% endif %}>Staff</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary w-50">Filter</button>
+                    <a href="{% url 'user_list' %}" class="btn btn-outline-secondary w-50">Clear</a>
+                </div>
+            </div>
+        </form>
+        
+        <!-- Bulk Actions -->
+        <div class="mt-4">
+            <form method="post" action="{% url 'bulk_user_actions' %}">
+                {% csrf_token %}
+                <div class="row g-3 align-items-center">
+                    <div class="col-auto">
+                        <select name="bulk_action" class="form-select">
+                            <option value="">Bulk Actions</option>
+                            <option value="activate">Activate Selected</option>
+                            <option value="deactivate">Deactivate Selected</option>
+                            <option value="delete">Delete Selected</option>
+                            <option value="assign_role">Assign Role</option>
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <select name="new_role" class="form-select" style="display: none;" id="roleSelect">
+                            <option value="">Select Role</option>
+                            <option value="admin">Administrator</option>
+                            <option value="teacher">Teacher</option>
+                            <option value="student">Student</option>
+                            <option value="parent">Parent</option>
+                            <option value="staff">Staff</option>
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-outline-primary">Apply</button>
+                    </div>
+                    <div class="col-auto ms-auto">
+                        <a href="{% url 'create_user' %}" class="btn btn-success">
+                            <i class="bi bi-person-plus me-2"></i> Add New User
+                        </a>
+                    </div>
+                </div>
+        </div>
+    </div>
+</div>
+
+<!-- User List -->
+<div class="card card-custom">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 40px;">
+                            <input type="checkbox" id="selectAll" class="form-check-input">
+                        </th>
+                        <th>User</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>Last Login</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user_profile in users %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" name="selected_users" value="{{ user_profile.user.id }}" class="form-check-input user-checkbox">
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="user-avatar me-3" style="background-color: #4cc9f0;">
+                                    {{ user_profile.user.username|first|upper }}
+                                </div>
+                                <div>
+                                    <div class="fw-medium">{{ user_profile.user.get_full_name|default:user_profile.user.username }}</div>
+                                    <div class="text-muted small">{{ user_profile.user.email }}</div>
+                                    <div class="text-muted small">@{{ user_profile.user.username }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge badge-role-{{ user_profile.role }}">
+                                {{ user_profile.get_role_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="status-{% if user_profile.user.is_active %}active{% else %}inactive{% endif %} me-2">
+                                    <i class="bi bi-circle-fill"></i>
+                                </div>
+                                <span>{% if user_profile.user.is_active %}Active{% else %}Inactive{% endif %}</span>
+                            </div>
+                        </td>
+                        <td class="text-muted">
+                            {% if user_profile.user.last_login %}
+                                {{ user_profile.user.last_login|date:"M d, Y H:i" }}
+                            {% else %}
+                                Never
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{% url 'edit_user' user_profile.user.id %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="#" onclick="confirmDelete('{{ user_profile.user.id }}', '{{ user_profile.user.username }}')" 
+                                   class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                                <a href="#" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <i class="bi bi-people fs-1 mb-3"></i>
+                            <h5>No users found</h5>
+                            <p class="mb-0">Try adjusting your search or filters</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            </form> <!-- Close the bulk action form -->
+        </div>
+        
+        <!-- Pagination -->
+        {% if users.has_other_pages %}
+        <div class="card-footer">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="text-muted">
+                    Showing {{ users.start_index }} to {{ users.end_index }} of {{ users.paginator.count }} users
+                </div>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        {% if users.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ users.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for num in users.paginator.page_range %}
+                            {% if users.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                            {% elif num > users.number|add:'-3' and num < users.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}">{{ num }}</a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if users.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ users.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Bulk action form handling
+document.addEventListener('DOMContentLoaded', function() {
+    // Select all checkbox
+    const selectAll = document.getElementById('selectAll');
+    const userCheckboxes = document.querySelectorAll('.user-checkbox');
+    
+    selectAll.addEventListener('change', function() {
+        userCheckboxes.forEach(checkbox => {
+            checkbox.checked = selectAll.checked;
+        });
+    });
+    
+    // Show/hide role select based on bulk action
+    const bulkActionSelect = document.querySelector('select[name="bulk_action"]');
+    const roleSelect = document.getElementById('roleSelect');
+    
+    bulkActionSelect.addEventListener('change', function() {
+        if (this.value === 'assign_role') {
+            roleSelect.style.display = 'block';
+        } else {
+            roleSelect.style.display = 'none';
+        }
+    });
+});
+
+function confirmDelete(userId, username) {
+    if (confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) {
+        window.location.href = `/admin/users/${userId}/delete/`;
+    }
+}
+</script>
+{% endblock %}

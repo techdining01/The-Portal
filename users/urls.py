@@ -73,3 +73,47 @@ urlpatterns += [
     path('teacher/dashboard/', views.teacher_dashboard_view, name='teacher_dashboard'),
     path('admin/dashboard/', views.admin_dashboard_view, name='admin_dashboard'),
 ]
+
+
+urlpatterns = [
+    # Authentication
+    path('login/', views.login_view, name='login'),
+    path('register/', views.register_view, name='register'),
+    path('logout/', views.logout_view, name='logout'),
+    
+    # Dashboards
+    path('dashboard/', views.student_dashboard, name='student_dashboard'),
+    path('teacher/dashboard/', views.teacher_dashboard, name='teacher_dashboard'),
+    path('parent/dashboard/', views.parent_dashboard, name='parent_dashboard'),
+    
+    # Admin
+    path('admin/dashboard/', views.admin_dashboard, name='admin_dashboard'),
+    path('admin/users/', views.user_list, name='user_list'),
+    path('admin/users/create/', views.create_user, name='create_user'),
+    path('admin/users/<int:user_id>/edit/', views.edit_user, name='edit_user'),
+    
+    # Password reset (optional)
+    path('password-reset/', 
+         auth_views.PasswordResetView.as_view(
+             template_name='store/registration/password_reset.html'
+         ), 
+         name='password_reset'),
+    path('password-reset/done/', 
+         auth_views.PasswordResetDoneView.as_view(
+             template_name='store/registration/password_reset_done.html'
+         ), 
+         name='password_reset_done'),
+    path('password-reset-confirm/<uidb64>/<token>/', 
+         auth_views.PasswordResetConfirmView.as_view(
+             template_name='store/registration/password_reset_confirm.html'
+         ), 
+         name='password_reset_confirm'),
+    path('password-reset-complete/', 
+         auth_views.PasswordResetCompleteView.as_view(
+             template_name='store/registration/password_reset_complete.html'
+         ), 
+         name='password_reset_complete'),
+    
+    # Home page redirect
+    path('', views.login_view, name='home'),
+]
