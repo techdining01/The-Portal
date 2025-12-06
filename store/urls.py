@@ -5,83 +5,75 @@ from . import views, admin_views
 app_name = 'store'
 
 
-
 urlpatterns = [
-    # Public views
-    path('', views.product_list, name='product_list'),
-    path('product/<int:pk>/', views.product_detail, name='product_detail'),
+
+     # ==================== PUBLIC PAGES ====================
+    path('', views.LandingPageView.as_view(), name='landing'),
+    path('about/', views.AboutView.as_view(), name='about'),
+    path('contact/', views.ContactView.as_view(), name='contact'),
     
-    # Cart views
+      # ==================== PRODUCTS ====================
+    path('products/', views.ProductListView.as_view(), name='product_list'),
+    path('products/<slug:slug>/', views.ProductDetailView.as_view(), name='product_detail'),
+    path('category/<slug:slug>/', views.CategoryDetailView.as_view(), name='category_detail'),
+    
+    # ==================== CART ====================
     path('cart/', views.cart_view, name='cart_view'),
-    path('cart/add/<int:product_id>/', views.add_to_cart_view, name='add_to_cart'),
-    path('cart/update/', views.update_cart_view, name='update_cart'),
-    path('cart/remove/<int:cart_item_id>/', views.remove_from_cart_view, name='remove_from_cart'),
-    path('cart/clear/', views.clear_cart_view, name='clear_cart'),
-
-    # For cart only
-    path('cart/update/', views.update_cart_item, name='update_cart_item'),
+    path('cart/add/<int:product_id>/', views.add_to_cart, name='add_to_cart'),
+    path('cart/update/<int:item_id>/', views.update_cart_item, name='update_cart_item'),
     path('cart/remove/<int:item_id>/', views.remove_cart_item, name='remove_cart_item'),
-    path('cart/clear/', views.clear_cart, name='clear_cart'),
-    path("cart/increase/<int:item_id>/", views.increase_quantity, name="increase_quantity"),
-    path("cart/decrease/<int:item_id>/", views.decrease_quantity, name="decrease_quantity"),
+    path('cart/count/', views.cart_count, name='cart_count'),
     
-    # Checkout & Payment
-    path('checkout/', views.checkout, name='checkout'),
-    path('order/create/', views.create_order, name='create_order'),
+    # ==================== CHECKOUT & ORDERS ====================
+    path('checkout/', views.checkout_view, name='checkout'),
+    path('orders/', views.order_list, name='order_list'),
+    path('orders/<int:order_id>/', views.order_detail, name='order_detail'),
+    path('orders/<int:order_id>/receipt/', views.order_receipt, name='order_receipt'),
+    
+    # ==================== PAYMENTS ====================
+    path('payment/process/<int:order_id>/', views.process_payment, name='process_payment'),
     path('payment/verify/<str:reference>/', views.payment_verify, name='payment_verify'),
-    path('paystack/webhook/', views.paystack_webhook, name='paystack_webhook'),
+    path('webhook/paystack/', views.paystack_webhook, name='paystack_webhook'),
     
-    # Order views
-    # path('order/create/', views.create_order_view, name='create_order'),
-    path('orders/<str:order_number>/', views.order_detail_view, name='order_detail'),
-    path('orders/', views.order_list_view, name='order_list'),
+    # ==================== FEE PAYMENTS ====================
+    path('fees/pay/', views.fee_payment_view, name='fee_payment_view'),
+    path('fees/pay/process/<int:payment_id>/', views.process_fee_payment, name='process_fee_payment'),
+    path('fees/pay/verify/<str:reference>/', views.fee_payment_verify, name='fee_payment_verify'),
+    path('fees/history/', views.fee_payment_history, name='fee_payment_history'),
+    path('fees/receipt/<str:receipt_number>/', views.fee_receipt, name='fee_receipt'),
     
-    # Order History URLs
-    path('orders/history/', views.order_history_view, name='order_history'),
-    path('orders/<str:order_number>/', views.order_detail_history_view, name='order_detail_history'),
-    path('orders/<str:order_number>/cancel/', views.cancel_order_view, name='cancel_order'),
-    path('orders/<str:order_number>/reorder/', views.reorder_view, name='reorder'),
-
-    # AJAX helpers
-    path('cart/count/', views.get_cart_count_view, name='cart_count'),
+      # ==================== DASHBOARD ====================
+    path('dashboard/', views.dashboard, name='dashboard'),
     
-    # Admin views
+    # ==================== ADMIN PANEL ====================
     path('admin/dashboard/', views.admin_dashboard, name='admin_dashboard'),
     path('admin/products/', views.admin_products, name='admin_products'),
-    path('admin/products/add/', views.add_product, name='add_product'),
-    path('admin/users/', views.user_list_view, name='user_list'),
-    path('admin/products/edit/<int:product_id>/', views.edit_product, name='edit_product'),
-    path('admin/products/delete/<int:product_id>/', views.delete_product, name='delete_product'),
-    path('admin/products/toggle/<int:product_id>/', views.toggle_product_status, name='toggle_product_status'),
-    path('admin/categories/', views.category_management, name='category_management'),
-    path('admin/analytics/', views.sales_analytics, name='sales_analytics'),
-    path('admin/orders/', views.order_management, name='order_management'),
-    path('admin/orders/update/<int:order_id>/', views.update_order_status, name='update_order_status'),
-    path('admin/api/chart-data/', views.get_chart_data, name='chart_data'),
-    # urls.py
-    path('test/paystack/', views.test_paystack_view, name='test_paystack'),
+    path('admin/products/create/', views.admin_product_create, name='admin_product_create'),
+    path('admin/products/<int:product_id>/edit/', views.admin_product_edit, name='admin_product_edit'),
+    path('admin/products/<int:product_id>/delete/', views.admin_product_delete, name='admin_product_delete'),
+    path('admin/orders/', views.admin_orders, name='admin_orders'),
+    path('admin/orders/<int:order_id>/', views.admin_order_detail, name='admin_order_detail'),
+    path('admin/fees/', views.admin_fee_management, name='admin_fee_management'),
+    path('admin/fees/create/', views.admin_fee_create, name='admin_fee_create'),
+    path('admin/fees/<int:fee_id>/edit/', views.admin_fee_edit, name='admin_fee_edit'),
+    path('admin/analytics/sales/', views.admin_sales_analytics, name='admin_sales_analytics'),
+    path('admin/analytics/fees/', views.admin_fee_analytics, name='admin_fee_analytics'),
+    path('admin/users/', views.admin_user_management, name='admin_user_management'),
+    path('admin/users/<int:user_id>/', views.admin_user_detail, name='admin_user_detail'),
+    
+    # ==================== STUDENT PICKUP ====================
+    path('pickup/', views.pickup_dashboard, name='pickup_dashboard'),
+    path('pickup/generate/<int:student_parent_id>/', views.generate_pickup_code, name='generate_pickup_code'),
+    path('pickup/verify/', views.verify_pickup_code, name='verify_pickup_code'),
+    
+    # ==================== CBT EXAM INTEGRATION ====================
+    path('exams/access/', views.exam_access_view, name='exam_access_view'),
+    path('exams/verify/', views.exam_payment_verification, name='exam_payment_verification'),
+    path('exams/take/<int:exam_id>/', views.take_exam, name='take_exam'),
+    
+    # ==================== AJAX ENDPOINTS ====================
 
+    path('ajax/product/<int:product_id>/stock/', views.ajax_product_stock, name='ajax_product_stock'),
+    path('ajax/cart/summary/', views.ajax_cart_summary, name='ajax_cart_summary'),
 
-    path('edit/<int:user_id>/', views.edit_user, name='edit_user'),
-    path('delete/<int:user_id>/', views.delete_user, name='delete_user'),
-
-]
-
-
-urlpatterns += [
-     # Admins
-    # path('admin/dashboard/', admin_views.admin_dashboard, name='admin_dashboard'),
-    # path('admin/products/', admin_views.product_management, name='admin_product_management'),
-    # path('admin/products/add/', admin_views.add_product, name='admin_add_product'),
-    # path('admin/products/edit/<int:product_id>/', admin_views.edit_product, name='admin_edit_product'),
-    # path('admin/products/delete/<int:product_id>/', admin_views.delete_product, name='admin_delete_product'),
-    # path('admin/products/update-stock/<int:product_id>/', admin_views.update_stock, name='admin_update_stock'),
-    # path('admin/products/toggle-status/<int:product_id>/', admin_views.toggle_product_status, name='admin_toggle_product_status'),
-    # path('admin/orders/', admin_views.order_management, name='admin_order_management'),
-    # path('admin/orders/<int:order_id>/', admin_views.order_detail_admin, name='admin_order_detail'),
-    # path('admin/orders/update-status/<int:order_id>/', admin_views.update_order_status, name='admin_update_order_status'),
-    # path('admin/sales-reports/', admin_views.sales_reports, name='admin_sales_reports'),
-    # path('admin/transactions/', admin_views.transaction_management, name='admin_transaction_management'), 
-        
-      
 ]

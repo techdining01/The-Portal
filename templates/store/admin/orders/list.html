@@ -1,0 +1,454 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Order Management - BrillsPay Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'store:admin_dashboard' %}">Admin</a></li>
+                    <li class="breadcrumb-item active">Orders</li>
+                </ol>
+            </nav>
+            
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 fw-bold">Order Management</h1>
+                    <p class="text-muted mb-0">Manage and process customer orders</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#filterModal">
+                        <i class="fas fa-filter me-2"></i> Filters
+                    </button>
+                    <a href="{% url 'store:admin_orders' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-redo me-2"></i> Reset
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card border-left-primary">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon bg-primary bg-opacity-10 text-primary me-3">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div>
+                        <h3 class="fw-bold mb-0">
+                            {{ orders.paginator.count|default:0 }}
+                        </h3>
+                        <p class="text-muted mb-0">Total Orders</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card border-left-warning">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon bg-warning bg-opacity-10 text-warning me-3">
+                        <i class="fas fa-spinner"></i>
+                    </div>
+                    <div>
+                        <h3 class="fw-bold mb-0">
+                            {{ orders|filter_status:'pending,processing'|length }}
+                        </h3>
+                        <p class="text-muted mb-0">Pending/Processing</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card border-left-success">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon bg-success bg-opacity-10 text-success me-3">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div>
+                        <h3 class="fw-bold mb-0">
+                            {{ orders|filter_status:'completed,delivered'|length }}
+                        </h3>
+                        <p class="text-muted mb-0">Completed/Delivered</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card border-left-danger">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon bg-danger bg-opacity-10 text-danger me-3">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <div>
+                        <h3 class="fw-bold mb-0">
+                            {{ orders|filter_status:'cancelled'|length }}
+                        </h3>
+                        <p class="text-muted mb-0">Cancelled</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Orders Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <!-- Search and Actions -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="input-group" style="max-width: 300px;">
+                            <input type="text" class="form-control" placeholder="Search orders..." id="orderSearch">
+                            <button class="btn btn-outline-secondary" type="button">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="dropdown">
+                            <button class="btn btn-outline-primary dropdown-toggle" type="button" 
+                                    data-bs-toggle="dropdown">
+                                <i class="fas fa-download me-2"></i> Export
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#"><i class="fas fa-file-excel me-2"></i> Excel</a></li>
+                                <li><a class="dropdown-item" href="#"><i class="fas fa-file-csv me-2"></i> CSV</a></li>
+                                <li><a class="dropdown-item" href="#"><i class="fas fa-file-pdf me-2"></i> PDF</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <!-- Orders Table -->
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>
+                                        <input type="checkbox" class="form-check-input" id="selectAll">
+                                    </th>
+                                    <th>Order #</th>
+                                    <th>Customer</th>
+                                    <th>Student</th>
+                                    <th>Items</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Payment</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in orders %}
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" class="form-check-input select-order" 
+                                               value="{{ order.id }}">
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'store:admin_order_detail' order.id %}" 
+                                           class="text-decoration-none fw-bold">
+                                            {{ order.order_number }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar bg-primary bg-opacity-10 text-primary rounded-circle me-2" 
+                                                 style="width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">
+                                                <i class="fas fa-user"></i>
+                                            </div>
+                                            <div>
+                                                <p class="mb-0 fw-bold">{{ order.user.get_full_name|truncatechars:15 }}</p>
+                                                <p class="text-muted small mb-0">{{ order.user.email|truncatechars:20 }}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if order.student %}
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar bg-success bg-opacity-10 text-success rounded-circle me-2" 
+                                                 style="width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">
+                                                <i class="fas fa-graduation-cap"></i>
+                                            </div>
+                                            <div>
+                                                <p class="mb-0 fw-bold">{{ order.student.first_name }}</p>
+                                                <p class="text-muted small mb-0">{{ order.student.admission_number }}</p>
+                                            </div>
+                                        </div>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark">
+                                            {{ order.items.count }} item(s)
+                                        </span>
+                                    </td>
+                                    <td class="fw-bold">₦{{ order.total_amount|floatformat:2 }}</td>
+                                    <td>
+                                        <span class="status-badge status-{{ order.status }}">
+                                            {{ order.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="status-badge status-{{ order.payment_status }}">
+                                            {{ order.get_payment_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ order.created_at|date:"M d, H:i" }}</td>
+                                    <td>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-primary dropdown-toggle" 
+                                                    type="button" data-bs-toggle="dropdown">
+                                                <i class="fas fa-ellipsis-v"></i>
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                <li>
+                                                    <a class="dropdown-item" 
+                                                       href="{% url 'store:admin_order_detail' order.id %}">
+                                                        <i class="fas fa-eye me-2"></i> View Details
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="dropdown-item" 
+                                                       href="{% url 'store:order_receipt' order.id %}" target="_blank">
+                                                        <i class="fas fa-receipt me-2"></i> View Receipt
+                                                    </a>
+                                                </li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                {% if order.status == 'pending' %}
+                                                <li>
+                                                    <a class="dropdown-item text-success" href="#">
+                                                        <i class="fas fa-check me-2"></i> Mark as Processing
+                                                    </a>
+                                                </li>
+                                                {% endif %}
+                                                {% if order.status == 'processing' %}
+                                                <li>
+                                                    <a class="dropdown-item text-success" href="#">
+                                                        <i class="fas fa-shipping-fast me-2"></i> Mark as Shipped
+                                                    </a>
+                                                </li>
+                                                {% endif %}
+                                                {% if order.status == 'shipped' %}
+                                                <li>
+                                                    <a class="dropdown-item text-success" href="#">
+                                                        <i class="fas fa-check-circle me-2"></i> Mark as Delivered
+                                                    </a>
+                                                </li>
+                                                {% endif %}
+                                                {% if order.can_cancel %}
+                                                <li>
+                                                    <a class="dropdown-item text-danger" href="#">
+                                                        <i class="fas fa-times me-2"></i> Cancel Order
+                                                    </a>
+                                                </li>
+                                                {% endif %}
+                                            </ul>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="10" class="text-center py-5">
+                                        <div class="icon-xl bg-light text-muted rounded-circle mb-4 mx-auto">
+                                            <i class="fas fa-shopping-cart fa-3x"></i>
+                                        </div>
+                                        <h4 class="fw-bold mb-3">No orders found</h4>
+                                        <p class="text-muted mb-0">No orders match your current filters.</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Bulk Actions -->
+                    <div class="d-flex justify-content-between align-items-center mt-4">
+                        <div class="d-flex align-items-center gap-2">
+                            <select class="form-select form-select-sm" style="width: 150px;" id="bulkAction">
+                                <option value="">Bulk Actions</option>
+                                <option value="processing">Mark as Processing</option>
+                                <option value="shipped">Mark as Shipped</option>
+                                <option value="delivered">Mark as Delivered</option>
+                                <option value="cancelled">Cancel Orders</option>
+                            </select>
+                            <button class="btn btn-sm btn-primary" id="applyBulkAction">
+                                Apply
+                            </button>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        {% if page_obj.has_other_pages %}
+                        <nav>
+                            <ul class="pagination pagination-sm mb-0">
+                                {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </a>
+                                </li>
+                                {% endif %}
+                                
+                                {% for i in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == i %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ i }}</span>
+                                    </li>
+                                    {% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ i }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ i }}</a>
+                                    </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Modal -->
+<div class="modal fade" id="filterModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Filter Orders</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="get" id="filterForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Status</label>
+                        <select name="status" class="form-select">
+                            <option value="">All Status</option>
+                            <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                            <option value="processing" {% if status_filter == 'processing' %}selected{% endif %}>Processing</option>
+                            <option value="shipped" {% if status_filter == 'shipped' %}selected{% endif %}>Shipped</option>
+                            <option value="delivered" {% if status_filter == 'delivered' %}selected{% endif %}>Delivered</option>
+                            <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Payment Status</label>
+                        <select name="payment_status" class="form-select">
+                            <option value="">All Payment Status</option>
+                            <option value="pending" {% if payment_filter == 'pending' %}selected{% endif %}>Pending</option>
+                            <option value="completed" {% if payment_filter == 'completed' %}selected{% endif %}>Completed</option>
+                            <option value="failed" {% if payment_filter == 'failed' %}selected{% endif %}>Failed</option>
+                            <option value="refunded" {% if payment_filter == 'refunded' %}selected{% endif %}>Refunded</option>
+                        </select>
+                    </div>
+                    
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label fw-bold">Date From</label>
+                            <input type="date" name="date_from" class="form-control" 
+                                   value="{{ date_from }}">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-bold">Date To</label>
+                            <input type="date" name="date_to" class="form-control" 
+                                   value="{{ date_to }}">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Apply Filters</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Select all orders
+    document.getElementById('selectAll').addEventListener('change', function() {
+        document.querySelectorAll('.select-order').forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+    });
+    
+    // Bulk actions
+    document.getElementById('applyBulkAction').addEventListener('click', function() {
+        const action = document.getElementById('bulkAction').value;
+        const selectedOrders = Array.from(document.querySelectorAll('.select-order:checked'))
+            .map(checkbox => checkbox.value);
+        
+        if (!action) {
+            showToast('Please select an action', 'error');
+            return;
+        }
+        
+        if (selectedOrders.length === 0) {
+            showToast('Please select at least one order', 'error');
+            return;
+        }
+        
+        // Confirm action
+        const actionText = {
+            'processing': 'mark as processing',
+            'shipped': 'mark as shipped',
+            'delivered': 'mark as delivered',
+            'cancelled': 'cancel'
+        }[action];
+        
+        if (confirm(`Are you sure you want to ${actionText} ${selectedOrders.length} order(s)?`)) {
+            // Send bulk update request
+            fetch('/api/admin/orders/bulk-update/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    order_ids: selectedOrders,
+                    action: action
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(`${selectedOrders.length} order(s) updated successfully`, 'success');
+                    location.reload();
+                } else {
+                    showToast(data.message, 'error');
+                }
+            });
+        }
+    });
+    
+    // Search functionality
+    document.getElementById('orderSearch').addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const rows = document.querySelectorAll('tbody tr');
+        
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(searchTerm) ? '' : 'none';
+        });
+    });
+</script>
+{% endblock %}

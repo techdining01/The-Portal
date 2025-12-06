@@ -2,26 +2,22 @@ from django.db import models
 from django.conf import settings
 import uuid
 from django.utils import timezone
-from datetime import timedelta    
+from datetime import timedelta
+from users.models import User
 
-
-
-UserModel = settings.AUTH_USER_MODEL
 
 def pickup_default_expires():
     return timezone.now() + timedelta(days=2)
 
-
-
 class PickupAuthorization(models.Model):
-    parent = models.ForeignKey(UserModel, on_delete=models.CASCADE, related_name="pickup_auths")
+    prent = models.ForeignKey(User, on_delete=models.CASCADE, related_name="pickup_auths")
     # store student registration number relation via to_field
-    student = models.ForeignKey(UserModel, on_delete=models.CASCADE, related_name="pickup_for", to_field="registration_number")
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="pickup_for", to_field="registration_number")
     bearer_name = models.CharField(max_length=200)
     bearer_phone = models.CharField(max_length=20)
     code = models.CharField(max_length=12, unique=True, editable=False)
     signature_image = models.ImageField(upload_to="signatures/", null=True, blank=True)
-    verified_by = models.ForeignKey(UserModel, on_delete=models.SET_NULL, null=True, blank=True, related_name="pickup_verified")
+    verified_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="pickup_verified")
     verified_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField(default=pickup_default_expires)

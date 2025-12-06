@@ -1,110 +1,124 @@
-# forms.py
 from django import forms
-from django.contrib.auth.forms import (
-    UserCreationForm, 
-    UserChangeForm, 
-    AuthenticationForm,
-    PasswordResetForm,
-    SetPasswordForm,
-    PasswordChangeForm
-)
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm, PasswordResetForm, SetPasswordForm
+from django.contrib.auth import authenticate
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
-from django.core.validators import RegexValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
+from phonenumber_field.formfields import PhoneNumberField
+from phonenumber_field.widgets import PhoneNumberPrefixWidget
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import Layout, Submit, Row, Column, Div, HTML, Field, Fieldset
 import re
-from .models import (
-    UserProfile, StudentParentRelationship, 
-    Class, Subject, Department
-)
 from django.utils import timezone
-from datetime import date
+from .models import (
+    User, Student, Parent
+)
+from store.models import FeePayment, Payment, Attendance
+widget
+ 
+# ==================== CUSTOM WIDGETS ====================
 
-# ============================================================================
-# REGISTRATION FORMS
-# ============================================================================
-
-class UserRegistrationForm(UserCreationForm):
-    """Base registration form with common fields"""
+class DatePickerWidget(forms.DateInput):
+    input_type = 'date'
     
+    def __init__(self, **kwargs):
+        kwargs.setdefault('attrs', {})
+        kwargs['attrs'].update({'class': 'form-control datepicker'})
+        super().__init__(**kwargs)
+
+
+class PhoneNumberWidget(PhoneNumberPrefixWidget):
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('attrs', {'class': 'form-control phone-input'})
+        super().__init__(*args, **kwargs)
+
+
+class MultipleStudentSelectWidget(forms.SelectMultiple):
+    template_name = 'widgets/multiple_student_select.html'
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('attrs', {})
+        kwargs['attrs'].update({
+            'class': 'form-control select2-multiple',
+            'data-placeholder': 'Search and select students...'
+        })
+        super().__init__(*args, **kwargs)
+
+
+class PriceInput(forms.NumberInput):
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('attrs', {})
+        kwargs['attrs'].update({
+            'class': 'form-control price-input',
+            'step': '0.01',
+            'min': '0'
+        })
+        super().__init__(*args, **kwargs)
+
+
+# ==================== AUTHENTICATION FORMS ====================
+
+class BrillsPayUserCreationForm(UserCreationForm):
     email = forms.EmailField(
         required=True,
         widget=forms.EmailInput(attrs={
             'class': 'form-control',
             'placeholder': 'Enter your email address',
             'autocomplete': 'email'
-        }),
-        error_messages={
-            'required': 'Please enter your email address.',
-            'invalid': 'Please enter a valid email address.'
-        }
-    )
-    
-    first_name = forms.CharField(
-        max_length=30,
-        required=True,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Enter your first name',
-            'autocomplete': 'given-name'
         })
     )
-    
-    last_name = forms.CharField(
-        max_length=30,
+    phone = forms.CharField(
         required=True,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Enter your last name',
-            'autocomplete': 'family-name'
+            'placeholder': 'Enter phone number',
+            'pattern': '[0-9]{11}',
+            'title': 'Please enter a valid 11-digit phone number'
         })
     )
-    
-    phone_number = forms.CharField(
-        max_length=20,
-        required=False,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Phone number (optional)',
-            'autocomplete': 'tel'
-        }),
-        validators=[
-            RegexValidator(
-                regex=r'^\+?1?\d{9,15}$',
-                message='Phone number must be entered in the format: "+999999999". Up to 15 digits allowed.'
-            )
-        ]
-    )
-    
-    accept_terms = forms.BooleanField(
-        required=True,
-        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-        error_messages={'required': 'You must accept the terms and conditions.'}
+    role = forms.ChoiceField(
+        choices=User.ROLE_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-control'})
     )
     
     class Meta:
         model = User
-        fields = ['username', 'email', 'first_name', 'last_name', 'password1', 'password2']
+        fields = ('username', 'email', 'phone', 'first_name', 'last_name', 'role', 'password1', 'password2')
         widgets = {
             'username': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Choose a username',
                 'autocomplete': 'username'
             }),
+            'first_name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'First name'
+            }),
+            'last_name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Last name'
+            }),
         }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+        self.helper.form_class = 'brillspay-form'
         
-        # Add form-control class to all fields
-        for field_name, field in self.fields.items():
-            if 'class' not in field.widget.attrs:
-                field.widget.attrs['class'] = 'form-control'
-        
-        # Add Bootstrap classes to password fields
+        # Customize password help text
+        self.fields['password1'].help_text = """
+            <ul class="password-help">
+                <li>At least 8 characters</li>
+                <li>Contains uppercase letter</li>
+                <li>Contains lowercase letter</li>
+                <li>Contains number</li>
+                <li>Contains special character (!@#$%^&*)</li>
+            </ul>
+        """
         self.fields['password1'].widget.attrs.update({
-            'class': 'form-control',
-            'placeholder': 'Create a password',
+            'class': 'form-control password-strength',
+            'placeholder': 'Create a strong password',
             'autocomplete': 'new-password'
         })
         self.fields['password2'].widget.attrs.update({
@@ -112,216 +126,65 @@ class UserRegistrationForm(UserCreationForm):
             'placeholder': 'Confirm your password',
             'autocomplete': 'new-password'
         })
+    
+    def clean_phone(self):
+        phone = self.cleaned_data['phone']
+        # Nigerian phone number validation
+        if not re.match(r'^0[7-9][0-1]\d{8}$', phone):
+            raise ValidationError("Please enter a valid Nigerian phone number (e.g., 08012345678)")
         
-        # Add help text
-        self.fields['username'].help_text = 'Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.'
-        self.fields['password1'].help_text = [
-            'Your password must contain at least 8 characters.',
-            'Your password can\'t be too similar to your other personal information.',
-            'Your password can\'t be a commonly used password.',
-            'Your password can\'t be entirely numeric.',
-        ]
+        # Check if phone number already exists
+        if User.objects.filter(phone=phone).exists():
+            raise ValidationError("This phone number is already registered.")
+        
+        return phone
     
     def clean_email(self):
-        email = self.cleaned_data.get('email').lower()
+        email = self.cleaned_data['email']
         if User.objects.filter(email=email).exists():
-            raise ValidationError(_('A user with this email address already exists.'))
+            raise ValidationError("This email is already registered.")
         return email
     
-    def clean_username(self):
-        username = self.cleaned_data.get('username')
-        if User.objects.filter(username=username).exists():
-            raise ValidationError(_('This username is already taken. Please choose another.'))
-        return username
-    
-    def clean(self):
-        cleaned_data = super().clean()
+    def clean_password2(self):
+        password1 = self.cleaned_data.get("password1")
+        password2 = self.cleaned_data.get("password2")
         
-        # Ensure email and username are not the same
-        email = cleaned_data.get('email', '')
-        username = cleaned_data.get('username', '')
+        if password1 and password2 and password1 != password2:
+            raise ValidationError("Passwords don't match.")
         
-        if email and username and email.lower() == username.lower():
-            self.add_error('username', 'Username cannot be the same as email address.')
+        # Password strength validation
+        if password1:
+            if len(password1) < 8:
+                raise ValidationError("Password must be at least 8 characters long.")
+            if not re.search(r'[A-Z]', password1):
+                raise ValidationError("Password must contain at least one uppercase letter.")
+            if not re.search(r'[a-z]', password1):
+                raise ValidationError("Password must contain at least one lowercase letter.")
+            if not re.search(r'[0-9]', password1):
+                raise ValidationError("Password must contain at least one number.")
+            if not re.search(r'[!@#$%^&*]', password1):
+                raise ValidationError("Password must contain at least one special character (!@#$%^&*).")
         
-        return cleaned_data
-    
-    def save(self, commit=True):
-        user = super().save(commit=False)
-        user.email = self.cleaned_data['email']
-        user.first_name = self.cleaned_data['first_name']
-        user.last_name = self.cleaned_data['last_name']
-        
-        if commit:
-            user.save()
-        
-        return user
+        return password2
 
-class StudentRegistrationForm(UserRegistrationForm):
-    """Student registration form with additional fields"""
-    
-    GENDER_CHOICES = [
-        ('M', 'Male'),
-        ('F', 'Female'),
-        
-    ]
-    
-    student_class = forms.ModelChoiceField(
-        queryset=Class.objects.all(),
-        required=True,
-        widget=forms.Select(attrs={
-            'class': 'form-select',
-            'placeholder': 'Select your class'
-        }),
-        empty_label="Select Class"
-    )
-    
-    date_of_birth = forms.DateField(
-        required=True,
-        widget=forms.DateInput(attrs={
-            'class': 'form-control',
-            'type': 'date',
-            'max': timezone.now().date().isoformat()
-        }),
-        help_text="Format: YYYY-MM-DD"
-    )
-    
-    gender = forms.ChoiceField(
-        choices=GENDER_CHOICES,
-        required=True,
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
-    
-    parent_email = forms.EmailField(
-        required=False,
-        widget=forms.EmailInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Parent/Guardian email (optional)'
-        }),
-        help_text="If parent already has an account, enter their email to link"
-    )
-    
-    address = forms.CharField(
-        required=False,
-        widget=forms.Textarea(attrs={
-            'class': 'form-control',
-            'rows': 3,
-            'placeholder': 'Home address (optional)'
-        })
-    )
-    
-    emergency_contact = forms.CharField(
-        max_length=20,
-        required=False,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Emergency contact number'
-        })
-    )
-    
-    medical_info = forms.CharField(
-        required=False,
-        widget=forms.Textarea(attrs={
-            'class': 'form-control',
-            'rows': 2,
-            'placeholder': 'Any medical conditions or allergies (optional)'
-        })
-    )
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        
-        # Set role-specific validation
-        self.fields['date_of_birth'].widget.attrs['max'] = timezone.now().date().isoformat()
-    
-    class Meta(UserRegistrationForm.Meta):
-        fields = UserRegistrationForm.Meta.fields + [
-            'student_class', 'date_of_birth', 'gender', 'parent_email',
-            'address', 'emergency_contact', 'medical_info'
-        ]
-    
-    def clean_date_of_birth(self):
-        dob = self.cleaned_data.get('date_of_birth')
-        if dob:
-            today = timezone.now().date()
-            age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
-            
-            if age < 4:
-                raise ValidationError('Student must be at least 4 years old.')
-            elif age > 25:
-                raise ValidationError('Student age seems incorrect. Please verify.')
-        
-        return dob
-    
-    def clean_parent_email(self):
-        email = self.cleaned_data.get('parent_email')
-        if email:
-            # Check if parent exists and has parent role
-            try:
-                parent = User.objects.get(email=email)
-                if not hasattr(parent, 'userprofile') or parent.userprofile.role != 'parent':
-                    raise ValidationError(
-                        'The email provided belongs to a user who is not registered as a parent.'
-                    )
-            except User.DoesNotExist:
-                # Parent doesn't exist yet - we'll create invitation later
-                pass
-        
-        return email
-    
-    def save(self, commit=True):
-        user = super().save(commit=False)
-        
-        if commit:
-            user.save()
-            
-            # Create user profile
-            profile = UserProfile.objects.create(
-                user=user,
-                role='student',
-                phone_number=self.cleaned_data.get('phone_number', ''),
-                gender=self.cleaned_data['gender'],
-                date_of_birth=self.cleaned_data['date_of_birth'],
-                student_class=self.cleaned_data['student_class'],
-                address=self.cleaned_data.get('address', ''),
-                emergency_contact=self.cleaned_data.get('emergency_contact', ''),
-            )
-            
-            # Handle parent linking
-            parent_email = self.cleaned_data.get('parent_email')
-            if parent_email:
-                try:
-                    parent_user = User.objects.get(email=parent_email)
-                    StudentParentRelationship.objects.create(
-                        student=user,
-                        parent=parent_user,
-                        relationship='parent',
-                        is_primary=True,
-                        verified=False  # Needs admin verification
-                    )
-                except User.DoesNotExist:
-                    # Create invitation or log for admin follow-up
-                    pass
-            
-            # Add to Student group
-            student_group, created = Group.objects.get_or_create(name='Students')
-            user.groups.add(student_group)
-        
-        return user
 
-class ParentRegistrationForm(UserRegistrationForm):
-    """Parent registration form"""
-    
-    MARITAL_STATUS_CHOICES = [
-        ('single', 'Single'),
-        ('married', 'Married'),
-        ('divorced', 'Divorced'),
-        ('widowed', 'Widowed'),
-        ('separated', 'Separated'),
-    ]
-    
+class ParentRegistrationForm(BrillsPayUserCreationForm):
+    student_ids = forms.ModelMultipleChoiceField(
+        queryset=Student.objects.all(),
+        widget=MultipleStudentSelectWidget,
+        required=True,
+        label="Select Your Children"
+    )
+    relationship = forms.ChoiceField(
+        choices=[
+            ('father', 'Father'),
+            ('mother', 'Mother'),
+            ('guardian', 'Guardian'),
+            ('other', 'Other')
+        ],
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
     occupation = forms.CharField(
-        max_length=100,
         required=False,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
@@ -329,367 +192,103 @@ class ParentRegistrationForm(UserRegistrationForm):
         })
     )
     
-    marital_status = forms.ChoiceField(
-        choices=MARITAL_STATUS_CHOICES,
-        required=False,
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
+    class Meta(BrillsPayUserCreationForm.Meta):
+        fields = BrillsPayUserCreationForm.Meta.fields + (
+            'student_ids', 'relationship', 'occupation'
+        )
     
-    address = forms.CharField(
-        required=True,
-        widget=forms.Textarea(attrs={
-            'class': 'form-control',
-            'rows': 3,
-            'placeholder': 'Residential address'
-        })
-    )
-    
-    emergency_contact_name = forms.CharField(
-        max_length=100,
-        required=False,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Emergency contact person'
-        })
-    )
-    
-    emergency_contact_phone = forms.CharField(
-        max_length=20,
-        required=False,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Emergency contact phone'
-        }),
-        validators=[
-            RegexValidator(
-                regex=r'^\+?1?\d{9,15}$',
-                message='Please enter a valid phone number.'
-            )
-        ]
-    )
-    
-    student_registration_numbers = forms.CharField(
-        required=False,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Student registration numbers (comma separated)'
-        }),
-        help_text="Enter registration numbers of your children separated by commas"
-    )
-    
-    receive_sms = forms.BooleanField(
-        required=False,
-        initial=True,
-        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-        label="Receive SMS notifications"
-    )
-    
-    receive_email = forms.BooleanField(
-        required=False,
-        initial=True,
-        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-        label="Receive email notifications"
-    )
-    
-    class Meta(UserRegistrationForm.Meta):
-        fields = UserRegistrationForm.Meta.fields + [
-            'occupation', 'marital_status', 'address',
-            'emergency_contact_name', 'emergency_contact_phone',
-            'student_registration_numbers', 'receive_sms', 'receive_email'
-        ]
-    
-    def clean_student_registration_numbers(self):
-        data = self.cleaned_data.get('student_registration_numbers', '')
-        if not data:
-            return []
-        
-        reg_numbers = [rn.strip() for rn in data.split(',') if rn.strip()]
-        students = []
-        
-        for reg_num in reg_numbers:
-            try:
-                profile = UserProfile.objects.get(
-                    registration_number=reg_num,
-                    role='student'
-                )
-                students.append(profile.user)
-            except UserProfile.DoesNotExist:
-                raise ValidationError(
-                    _('Student with registration number "%(reg_num)s" not found.'),
-                    params={'reg_num': reg_num},
-                    code='student_not_found'
-                )
-        
-        return students
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['role'].initial = 'parent'
+        self.fields['role'].widget = forms.HiddenInput()
     
     def save(self, commit=True):
         user = super().save(commit=False)
+        user.role = 'parent'
         
         if commit:
             user.save()
-            
-            # Create user profile
-            profile = UserProfile.objects.create(
+            # Create parent profile
+            parent = Parent.objects.create(
                 user=user,
-                role='parent',
-                phone_number=self.cleaned_data.get('phone_number', ''),
                 occupation=self.cleaned_data.get('occupation', ''),
-                address=self.cleaned_data['address'],
-                emergency_contact=self.cleaned_data.get('emergency_contact_phone', ''),
+                relationship=self.cleaned_data.get('relationship', 'guardian')
             )
-            
-            # Link students if provided
-            students = self.cleaned_data.get('student_registration_numbers', [])
-            for student in students:
-                StudentParentRelationship.objects.get_or_create(
-                    student=student,
-                    parent=user,
-                    defaults={
-                        'relationship': 'parent',
-                        'is_primary': True,
-                        'verified': False  # Needs verification
-                    }
-                )
-            
-            # Add to Parents group
-            parent_group, created = Group.objects.get_or_create(name='Parents')
-            user.groups.add(parent_group)
+            # Link selected students
+            parent.students.set(self.cleaned_data['student_ids'])
+            parent.save()
         
         return user
 
-class TeacherRegistrationForm(UserRegistrationForm):
-    """Teacher registration form"""
-    
-    GENDER_CHOICES = [
-        ('M', 'Male'),
-        ('F', 'Female'),
-        ('O', 'Other'),
-        ('P', 'Prefer not to say'),
-    ]
-    
-    QUALIFICATION_CHOICES = [
-        ('bachelors', "Bachelor's Degree"),
-        ('masters', "Master's Degree"),
-        ('phd', 'PhD'),
-        ('diploma', 'Diploma'),
-        ('certificate', 'Certificate'),
-        ('other', 'Other'),
-    ]
-    
-    gender = forms.ChoiceField(
-        choices=GENDER_CHOICES,
-        required=True,
-        widget=forms.Select(attrs={'class': 'form-select'})
+
+class StudentRegistrationForm(BrillsPayUserCreationForm):
+    admission_number = forms.CharField(
+        max_length=20,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Admission Number'
+        })
     )
-    
     date_of_birth = forms.DateField(
-        required=True,
-        widget=forms.DateInput(attrs={
-            'class': 'form-control',
-            'type': 'date',
-            'max': timezone.now().date().isoformat()
-        })
+        widget=DatePickerWidget,
+        required=True
     )
-    
-    qualification = forms.ChoiceField(
-        choices=QUALIFICATION_CHOICES,
-        required=True,
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
-    
-    qualification_details = forms.CharField(
-        required=False,
+    current_class = forms.CharField(
+        max_length=50,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'e.g., B.Sc. Computer Science'
+            'placeholder': 'e.g., JSS 1A'
         })
     )
-    
-    subject_specialization = forms.ModelMultipleChoiceField(
-        queryset=Subject.objects.all(),
-        required=False,
-        widget=forms.SelectMultiple(attrs={
-            'class': 'form-select',
-            'style': 'height: 150px;'
-        }),
-        help_text="Hold Ctrl/Cmd to select multiple subjects"
+    gender = forms.ChoiceField(
+        choices=[('M', 'Male'), ('F', 'Female'), ('O', 'Other')],
+        widget=forms.Select(attrs={'class': 'form-control'})
     )
     
-    years_of_experience = forms.IntegerField(
-        min_value=0,
-        max_value=50,
-        required=True,
-        widget=forms.NumberInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Years of teaching experience'
-        })
-    )
+    class Meta(BrillsPayUserCreationForm.Meta):
+        fields = BrillsPayUserCreationForm.Meta.fields + (
+            'admission_number', 'date_of_birth', 'current_class', 'gender'
+        )
     
-    department = forms.ModelChoiceField(
-        queryset=Department.objects.all(),
-        required=False,
-        widget=forms.Select(attrs={'class': 'form-select'}),
-        empty_label="Select Department"
-    )
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['role'].initial = 'student'
+        self.fields['role'].widget = forms.HiddenInput()
     
-    address = forms.CharField(
-        required=True,
-        widget=forms.Textarea(attrs={
-            'class': 'form-control',
-            'rows': 3,
-            'placeholder': 'Residential address'
-        })
-    )
-    
-    emergency_contact = forms.CharField(
-        max_length=20,
-        required=True,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Emergency contact number'
-        })
-    )
-    
-    class Meta(UserRegistrationForm.Meta):
-        fields = UserRegistrationForm.Meta.fields + [
-            'gender', 'date_of_birth', 'qualification', 'qualification_details',
-            'subject_specialization', 'years_of_experience', 'department',
-            'address', 'emergency_contact'
-        ]
-    
-    def clean_date_of_birth(self):
-        dob = self.cleaned_data.get('date_of_birth')
-        if dob:
-            today = timezone.now().date()
-            age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
-            
-            if age < 21:
-                raise ValidationError('Teacher must be at least 21 years old.')
-        
-        return dob
+    def clean_admission_number(self):
+        admission_number = self.cleaned_data['admission_number']
+        if Student.objects.filter(admission_number=admission_number).exists():
+            raise ValidationError("This admission number is already registered.")
+        return admission_number
     
     def save(self, commit=True):
         user = super().save(commit=False)
+        user.role = 'student'
         
         if commit:
             user.save()
-            
-            # Create user profile
-            profile = UserProfile.objects.create(
+            # Create student profile
+            Student.objects.create(
                 user=user,
-                role='teacher',
-                phone_number=self.cleaned_data.get('phone_number', ''),
-                gender=self.cleaned_data['gender'],
+                admission_number=self.cleaned_data['admission_number'],
+                first_name=self.cleaned_data['first_name'],
+                last_name=self.cleaned_data['last_name'],
                 date_of_birth=self.cleaned_data['date_of_birth'],
-                qualification=self.cleaned_data['qualification'],
-                years_of_experience=self.cleaned_data['years_of_experience'],
-                address=self.cleaned_data['address'],
-                emergency_contact=self.cleaned_data['emergency_contact'],
+                current_class=self.cleaned_data['current_class'],
+                gender=self.cleaned_data['gender']
             )
-            
-            # Save subject specialization (many-to-many)
-            if self.cleaned_data.get('subject_specialization'):
-                profile.subject_specialization.set(self.cleaned_data['subject_specialization'])
-            
-            # Add to Teachers group
-            teacher_group, created = Group.objects.get_or_create(name='Teachers')
-            user.groups.add(teacher_group)
         
         return user
 
-class AdminRegistrationForm(UserRegistrationForm):
-    """Administrator registration form (superusers only)"""
-    
-    ADMIN_ROLE_CHOICES = [
-        ('admin', 'School Administrator'),
-        ('superadmin', 'System Administrator'),
-    ]
-    
-    role = forms.ChoiceField(
-        choices=ADMIN_ROLE_CHOICES,
-        required=True,
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
-    
-    is_staff = forms.BooleanField(
-        required=False,
-        initial=True,
-        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
-    )
-    
-    is_superuser = forms.BooleanField(
-        required=False,
-        initial=False,
-        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-        help_text="Grants full access to all features"
-    )
-    
-    phone_number = forms.CharField(
-        max_length=20,
-        required=True,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Phone number'
-        })
-    )
-    
-    department = forms.ModelChoiceField(
-        queryset=Department.objects.all(),
-        required=False,
-        widget=forms.Select(attrs={'class': 'form-select'}),
-        help_text="Assigned department (optional)"
-    )
-    
-    class Meta(UserRegistrationForm.Meta):
-        fields = UserRegistrationForm.Meta.fields + [
-            'role', 'is_staff', 'is_superuser', 'phone_number', 'department'
-        ]
-    
-    def save(self, commit=True):
-        user = super().save(commit=False)
-        
-        # Set admin permissions
-        user.is_staff = self.cleaned_data.get('is_staff', True)
-        user.is_superuser = self.cleaned_data.get('is_superuser', False)
-        
-        if commit:
-            user.save()
-            
-            # Create user profile
-            profile = UserProfile.objects.create(
-                user=user,
-                role=self.cleaned_data['role'],
-                phone_number=self.cleaned_data['phone_number'],
-            )
-            
-            # Add to appropriate admin group
-            if self.cleaned_data['role'] == 'admin':
-                group_name = 'Administrators'
-            else:
-                group_name = 'Super Administrators'
-            
-            admin_group, created = Group.objects.get_or_create(name=group_name)
-            user.groups.add(admin_group)
-        
-        return user
 
-# ============================================================================
-# AUTHENTICATION FORMS
-# ============================================================================
-
-class CustomAuthenticationForm(AuthenticationForm):
-    """Custom login form with enhanced styling"""
-    
+class BrillsPayLoginForm(AuthenticationForm):
     username = forms.CharField(
-        max_length=254,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Username or Email',
-            'autocomplete': 'username',
-            'autofocus': True
+            'placeholder': 'Email, Username or Admission Number',
+            'autocomplete': 'username'
         })
     )
-    
     password = forms.CharField(
         widget=forms.PasswordInput(attrs={
             'class': 'form-control',
@@ -697,968 +296,848 @@ class CustomAuthenticationForm(AuthenticationForm):
             'autocomplete': 'current-password'
         })
     )
-    
     remember_me = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-        label="Remember me"
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
     )
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
-        # Make error messages more user-friendly
-        self.error_messages.update({
-            'invalid_login': _(
-                "Please enter a correct username/email and password. "
-                "Note that both fields may be case-sensitive."
-            ),
-            'inactive': _("This account is inactive."),
-        })
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+        self.helper.form_class = 'brillspay-login-form'
     
-    def clean_username(self):
+    def clean(self):
         username = self.cleaned_data.get('username')
+        password = self.cleaned_data.get('password')
         
-        # Allow login with either username or email
-        if '@' in username:
-            try:
-                user = User.objects.get(email=username)
-                username = user.username
-            except User.DoesNotExist:
-                pass
+        if username and password:
+            # Try to authenticate with username/email/admission number
+            user = None
+            
+            # Check if input is admission number
+            if Student.objects.filter(admission_number=username).exists():
+                student = Student.objects.get(admission_number=username)
+                user = student.user
+            
+            # If not admission number, try username/email
+            if not user:
+                try:
+                    user = User.objects.get(username=username)
+                except User.DoesNotExist:
+                    try:
+                        user = User.objects.get(email=username)
+                    except User.DoesNotExist:
+                        pass
+            
+            if user:
+                self.user_cache = authenticate(
+                    request=self.request,
+                    username=user.username,
+                    password=password
+                )
+                
+                if self.user_cache is None:
+                    raise ValidationError(
+                        "Please enter a correct username/email/admission number and password."
+                    )
+                elif not self.user_cache.is_active:
+                    raise ValidationError("This account is inactive.")
+            else:
+                raise ValidationError(
+                    "Please enter a correct username/email/admission number and password."
+                )
         
-        return username
+        return self.cleaned_data
 
-class CustomPasswordResetForm(PasswordResetForm):
-    """Custom password reset form"""
-    
+
+class BrillsPayPasswordResetForm(PasswordResetForm):
     email = forms.EmailField(
-        max_length=254,
         widget=forms.EmailInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Enter your email address',
+            'placeholder': 'Enter your registered email address',
             'autocomplete': 'email'
         })
     )
     
-    def clean_email(self):
-        email = self.cleaned_data['email']
-        
-        # Check if email exists in system
-        if not User.objects.filter(email__iexact=email, is_active=True).exists():
-            raise ValidationError(
-                _("There is no user registered with the specified email address."),
-                code='unknown_email'
-            )
-        
-        return email
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
 
-class CustomSetPasswordForm(SetPasswordForm):
-    """Custom set password form"""
-    
+
+class BrillsPaySetPasswordForm(SetPasswordForm):
     new_password1 = forms.CharField(
-        label=_("New password"),
         widget=forms.PasswordInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Enter new password',
+            'placeholder': 'New password',
             'autocomplete': 'new-password'
-        })
+        }),
+        help_text="Your password must contain at least 8 characters with uppercase, lowercase, number, and special character."
     )
-    
     new_password2 = forms.CharField(
-        label=_("New password confirmation"),
         widget=forms.PasswordInput(attrs={
             'class': 'form-control',
             'placeholder': 'Confirm new password',
             'autocomplete': 'new-password'
         })
     )
-
-class CustomPasswordChangeForm(PasswordChangeForm):
-    """Custom password change form"""
-    
-    old_password = forms.CharField(
-        label=_("Old password"),
-        widget=forms.PasswordInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Enter current password',
-            'autocomplete': 'current-password'
-        })
-    )
-    
-    new_password1 = forms.CharField(
-        label=_("New password"),
-        widget=forms.PasswordInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Enter new password',
-            'autocomplete': 'new-password'
-        })
-    )
-    
-    new_password2 = forms.CharField(
-        label=_("New password confirmation"),
-        widget=forms.PasswordInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Confirm new password',
-            'autocomplete': 'new-password'
-        })
-    )
-
-# ============================================================================
-# PROFILE FORMS
-# ============================================================================
-
-class UserProfileForm(forms.ModelForm):
-    """Form for updating user profile"""
-    
-    email = forms.EmailField(
-        required=True,
-        widget=forms.EmailInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Email address'
-        })
-    )
-    
-    first_name = forms.CharField(
-        max_length=30,
-        required=True,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'First name'
-        })
-    )
-    
-    last_name = forms.CharField(
-        max_length=30,
-        required=True,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Last name'
-        })
-    )
-    
-    class Meta:
-        model = UserProfile
-        fields = [
-            'phone_number', 'profile_picture', 'gender', 'date_of_birth',
-            'address', 'emergency_contact'
-        ]
-        widgets = {
-            'phone_number': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Phone number'
-            }),
-            'gender': forms.Select(attrs={'class': 'form-select'}),
-            'date_of_birth': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
-            }),
-            'address': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 3,
-                'placeholder': 'Address'
-            }),
-            'emergency_contact': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Emergency contact'
-            }),
-        }
     
     def __init__(self, *args, **kwargs):
-        self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-        
-        if self.user:
-            # Pre-fill user fields
-            self.fields['email'].initial = self.user.email
-            self.fields['first_name'].initial = self.user.first_name
-            self.fields['last_name'].initial = self.user.last_name
-        
-        # Make profile picture field optional
-        self.fields['profile_picture'].required = False
-        self.fields['profile_picture'].widget.attrs.update({
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+
+
+# ==================== USER PROFILE FORMS ====================
+
+class UserProfileForm(forms.ModelForm):
+    profile_picture = forms.ImageField(
+        required=False,
+        widget=forms.FileInput(attrs={
             'class': 'form-control',
             'accept': 'image/*'
         })
-    
-    def clean_email(self):
-        email = self.cleaned_data.get('email').lower()
-        if self.user and User.objects.exclude(pk=self.user.pk).filter(email=email).exists():
-            raise ValidationError(_('This email address is already in use.'))
-        return email
-    
-    def save(self, commit=True):
-        profile = super().save(commit=False)
-        
-        # Update user fields
-        if self.user:
-            self.user.email = self.cleaned_data['email']
-            self.user.first_name = self.cleaned_data['first_name']
-            self.user.last_name = self.cleaned_data['last_name']
-            
-            if commit:
-                self.user.save()
-        
-        if commit:
-            profile.save()
-        
-        return profile
-
-class StudentProfileForm(UserProfileForm):
-    """Student-specific profile form"""
-    
-    student_class = forms.ModelChoiceField(
-        queryset=Class.objects.all(),
+    )
+    phone = forms.CharField(
         required=True,
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
-    
-    medical_info = forms.CharField(
-        required=False,
-        widget=forms.Textarea(attrs={
-            'class': 'form-control',
-            'rows': 2,
-            'placeholder': 'Medical information'
-        })
-    )
-    
-    class Meta(UserProfileForm.Meta):
-        fields = UserProfileForm.Meta.fields + ['student_class', 'medical_info']
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        
-        # Add student-specific fields
-        if self.instance and self.instance.role == 'student':
-            self.fields['medical_info'].initial = getattr(self.instance, 'medical_info', '')
-
-class ParentProfileForm(UserProfileForm):
-    """Parent-specific profile form"""
-    
-    occupation = forms.CharField(
-        max_length=100,
-        required=False,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Occupation'
+            'pattern': '[0-9]{11}'
         })
-    )
-    
-    marital_status = forms.ChoiceField(
-        choices=ParentRegistrationForm.MARITAL_STATUS_CHOICES,
-        required=False,
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
-    
-    receive_sms = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
-    )
-    
-    receive_email = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
-    )
-    
-    class Meta(UserProfileForm.Meta):
-        fields = UserProfileForm.Meta.fields + [
-            'occupation', 'marital_status', 'receive_sms', 'receive_email'
-        ]
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        
-        # Add parent-specific fields
-        if self.instance and self.instance.role == 'parent':
-            self.fields['occupation'].initial = getattr(self.instance, 'occupation', '')
-            self.fields['marital_status'].initial = getattr(self.instance, 'marital_status', '')
-            self.fields['receive_sms'].initial = getattr(self.instance, 'receive_sms', True)
-            self.fields['receive_email'].initial = getattr(self.instance, 'receive_email', True)
-
-class TeacherProfileForm(UserProfileForm):
-    """Teacher-specific profile form"""
-    
-    qualification = forms.CharField(
-        max_length=200,
-        required=False,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Qualifications'
-        })
-    )
-    
-    years_of_experience = forms.IntegerField(
-        min_value=0,
-        required=False,
-        widget=forms.NumberInput(attrs={'class': 'form-control'})
-    )
-    
-    subject_specialization = forms.ModelMultipleChoiceField(
-        queryset=Subject.objects.all(),
-        required=False,
-        widget=forms.SelectMultiple(attrs={
-            'class': 'form-select',
-            'style': 'height: 150px;'
-        })
-    )
-    
-    department = forms.ModelChoiceField(
-        queryset=Department.objects.all(),
-        required=False,
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
-    
-    class Meta(UserProfileForm.Meta):
-        fields = UserProfileForm.Meta.fields + [
-            'qualification', 'years_of_experience', 
-            'subject_specialization', 'department'
-        ]
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        
-        # Add teacher-specific fields
-        if self.instance and self.instance.role == 'teacher':
-            self.fields['qualification'].initial = getattr(self.instance, 'qualification', '')
-            self.fields['years_of_experience'].initial = getattr(self.instance, 'years_of_experience', 0)
-            
-            if hasattr(self.instance, 'subject_specialization'):
-                self.fields['subject_specialization'].initial = self.instance.subject_specialization.all()
-            
-            self.fields['department'].initial = getattr(self.instance, 'department', None)
-
-# ============================================================================
-# ADMIN MANAGEMENT FORMS
-# ============================================================================
-
-class AdminUserEditForm(UserChangeForm):
-    """Admin form for editing users"""
-    
-    email = forms.EmailField(
-        required=True,
-        widget=forms.EmailInput(attrs={'class': 'form-control'})
-    )
-    
-    first_name = forms.CharField(
-        max_length=30,
-        required=True,
-        widget=forms.TextInput(attrs={'class': 'form-control'})
-    )
-    
-    last_name = forms.CharField(
-        max_length=30,
-        required=True,
-        widget=forms.TextInput(attrs={'class': 'form-control'})
-    )
-    
-    is_active = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-        label="Active"
-    )
-    
-    is_staff = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-        label="Staff status"
-    )
-    
-    is_superuser = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-        label="Superuser status",
-        help_text="Designates that this user has all permissions without explicitly assigning them."
-    )
-    
-    groups = forms.ModelMultipleChoiceField(
-        queryset=Group.objects.all(),
-        required=False,
-        widget=forms.SelectMultiple(attrs={
-            'class': 'form-select',
-            'style': 'height: 200px;'
-        }),
-        help_text="Hold Ctrl/Cmd to select multiple groups"
     )
     
     class Meta:
         model = User
-        fields = [
-            'username', 'email', 'first_name', 'last_name',
-            'is_active', 'is_staff', 'is_superuser', 'groups'
-        ]
+        fields = ['first_name', 'last_name', 'email', 'phone', 'profile_picture', 
+                 'address', 'city', 'state', 'country', 'postal_code']
         widgets = {
-            'username': forms.TextInput(attrs={'class': 'form-control'}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'city': forms.TextInput(attrs={'class': 'form-control'}),
+            'state': forms.TextInput(attrs={'class': 'form-control'}),
+            'country': forms.TextInput(attrs={'class': 'form-control'}),
+            'postal_code': forms.TextInput(attrs={'class': 'form-control'}),
         }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
-        # Remove password field
-        self.fields.pop('password', None)
-        
-        # Add form-control class to all fields
-        for field_name, field in self.fields.items():
-            if 'class' not in field.widget.attrs:
-                field.widget.attrs['class'] = 'form-control'
-
-class AdminUserCreateForm(UserCreationForm):
-    """Admin form for creating users"""
-    
-    ROLE_CHOICES = [
-        ('student', 'Student'),
-        ('parent', 'Parent'),
-        ('teacher', 'Teacher'),
-        ('admin', 'Administrator'),
-    ]
-    
-    email = forms.EmailField(required=True)
-    first_name = forms.CharField(required=True, max_length=30)
-    last_name = forms.CharField(required=True, max_length=30)
-    
-    role = forms.ChoiceField(
-        choices=ROLE_CHOICES,
-        required=True,
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
-    
-    phone_number = forms.CharField(max_length=20, required=False)
-    is_active = forms.BooleanField(initial=True, required=False)
-    is_staff = forms.BooleanField(required=False)
-    is_superuser = forms.BooleanField(required=False)
-    
-    # Student specific
-    student_class = forms.ModelChoiceField(
-        queryset=Class.objects.all(),
-        required=False,
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
-    
-    # Parent specific
-    occupation = forms.CharField(max_length=100, required=False)
-    
-    # Teacher specific
-    qualification = forms.CharField(max_length=200, required=False)
-    
-    send_welcome_email = forms.BooleanField(
-        required=False,
-        initial=True,
-        label="Send welcome email with login details"
-    )
-    
-    class Meta:
-        model = User
-        fields = [
-            'username', 'email', 'first_name', 'last_name',
-            'password1', 'password2', 'role', 'phone_number',
-            'is_active', 'is_staff', 'is_superuser'
-        ]
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        
-        # Add form-control class to all fields
-        for field_name, field in self.fields.items():
-            if 'class' not in field.widget.attrs:
-                field.widget.attrs['class'] = 'form-control'
-    
-    def clean_email(self):
-        email = self.cleaned_data.get('email')
-        if User.objects.filter(email=email).exists():
-            raise ValidationError(_('A user with this email already exists.'))
-        return email
-    
-    def save(self, commit=True):
-        user = super().save(commit=False)
-        user.email = self.cleaned_data['email']
-        user.first_name = self.cleaned_data['first_name']
-        user.last_name = self.cleaned_data['last_name']
-        user.is_active = self.cleaned_data.get('is_active', True)
-        user.is_staff = self.cleaned_data.get('is_staff', False)
-        user.is_superuser = self.cleaned_data.get('is_superuser', False)
-        
-        if commit:
-            user.save()
-            
-            # Create user profile
-            profile = UserProfile.objects.create(
-                user=user,
-                role=self.cleaned_data['role'],
-                phone_number=self.cleaned_data.get('phone_number', ''),
-            )
-            
-            # Set role-specific fields
-            role = self.cleaned_data['role']
-            if role == 'student':
-                profile.student_class = self.cleaned_data.get('student_class')
-            elif role == 'parent':
-                profile.occupation = self.cleaned_data.get('occupation', '')
-            elif role == 'teacher':
-                profile.qualification = self.cleaned_data.get('qualification', '')
-            
-            profile.save()
-            
-            # Add to appropriate group
-            group_map = {
-                'student': 'Students',
-                'parent': 'Parents',
-                'teacher': 'Teachers',
-                'admin': 'Administrators',
-            }
-            
-            if role in group_map:
-                group, created = Group.objects.get_or_create(name=group_map[role])
-                user.groups.add(group)
-        
-        return user
-
-class BulkUserImportForm(forms.Form):
-    """Form for bulk importing users from CSV"""
-    
-    IMPORT_TYPE_CHOICES = [
-        ('csv', 'CSV File'),
-        ('excel', 'Excel File'),
-    ]
-    
-    import_type = forms.ChoiceField(
-        choices=IMPORT_TYPE_CHOICES,
-        widget=forms.RadioSelect(attrs={'class': 'form-check-input'})
-    )
-    
-    file = forms.FileField(
-        widget=forms.FileInput(attrs={
-            'class': 'form-control',
-            'accept': '.csv,.xlsx,.xls'
-        }),
-        help_text="Upload CSV or Excel file with user data"
-    )
-    
-    default_role = forms.ChoiceField(
-        choices=AdminUserCreateForm.ROLE_CHOICES,
-        required=False,
-        widget=forms.Select(attrs={'class': 'form-select'}),
-        help_text="Default role if not specified in file"
-    )
-    
-    send_welcome_emails = forms.BooleanField(
-        required=False,
-        initial=True,
-        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-        label="Send welcome emails to new users"
-    )
-    
-    update_existing = forms.BooleanField(
-        required=False,
-        initial=False,
-        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-        label="Update existing users (matching by email)",
-        help_text="If checked, existing users will be updated instead of skipping"
-    )
-    
-    def clean_file(self):
-        file = self.cleaned_data.get('file')
-        if file:
-            # Check file extension
-            valid_extensions = ['.csv', '.xlsx', '.xls']
-            ext = file.name.lower().rsplit('.', 1)[-1]
-            
-            if f'.{ext}' not in valid_extensions:
-                raise ValidationError(
-                    _('Unsupported file format. Please upload CSV or Excel file.')
-                )
-            
-            # Check file size (max 10MB)
-            max_size = 10 * 1024 * 1024  # 10MB
-            if file.size > max_size:
-                raise ValidationError(_('File size must be less than 10MB.'))
-        
-        return file
-
-class UserSearchFilterForm(forms.Form):
-    """Form for searching and filtering users"""
-    
-    ROLE_CHOICES = [
-        ('', 'All Roles'),
-        ('student', 'Student'),
-        ('parent', 'Parent'),
-        ('teacher', 'Teacher'),
-        ('admin', 'Administrator'),
-        ('superadmin', 'Super Administrator'),
-    ]
-    
-    STATUS_CHOICES = [
-        ('', 'All Status'),
-        ('active', 'Active'),
-        ('inactive', 'Inactive'),
-        ('suspended', 'Suspended'),
-    ]
-    
-    search = forms.CharField(
-        required=False,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Search by name, email, username...'
-        })
-    )
-    
-    role = forms.ChoiceField(
-        choices=ROLE_CHOICES,
-        required=False,
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
-    
-    status = forms.ChoiceField(
-        choices=STATUS_CHOICES,
-        required=False,
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
-    
-    date_from = forms.DateField(
-        required=False,
-        widget=forms.DateInput(attrs={
-            'class': 'form-control',
-            'type': 'date'
-        })
-    )
-    
-    date_to = forms.DateField(
-        required=False,
-        widget=forms.DateInput(attrs={
-            'class': 'form-control',
-            'type': 'date'
-        })
-    )
-    
-    student_class = forms.ModelChoiceField(
-        queryset=Class.objects.all(),
-        required=False,
-        widget=forms.Select(attrs={'class': 'form-select'}),
-        label="Class"
-    )
-    
-    def clean(self):
-        cleaned_data = super().clean()
-        date_from = cleaned_data.get('date_from')
-        date_to = cleaned_data.get('date_to')
-        
-        if date_from and date_to and date_from > date_to:
-            self.add_error('date_to', 'End date must be after start date.')
-        
-        return cleaned_data
-
-class StudentParentLinkForm(forms.ModelForm):
-    """Form for linking students to parents"""
-    
-    student = forms.ModelChoiceField(
-        queryset=User.objects.filter(userprofile__role='student'),
-        widget=forms.Select(attrs={
-            'class': 'form-select select2',
-            'data-placeholder': 'Select student'
-        })
-    )
-    
-    parent = forms.ModelChoiceField(
-        queryset=User.objects.filter(userprofile__role='parent'),
-        widget=forms.Select(attrs={
-            'class': 'form-select select2',
-            'data-placeholder': 'Select parent'
-        })
-    )
-    
-    relationship = forms.ChoiceField(
-        choices=StudentParentRelationship._meta.get_field('relationship').choices,
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
-    
-    is_primary = forms.BooleanField(
-        required=False,
-        initial=True,
-        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-        help_text="Mark as primary parent/guardian"
-    )
-    
-    verified = forms.BooleanField(
-        required=False,
-        initial=False,
-        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-        help_text="Mark relationship as verified"
-    )
-    
-    class Meta:
-        model = StudentParentRelationship
-        fields = ['student', 'parent', 'relationship', 'is_primary', 'verified']
-    
-    def clean(self):
-        cleaned_data = super().clean()
-        student = cleaned_data.get('student')
-        parent = cleaned_data.get('parent')
-        
-        if student and parent:
-            # Check if relationship already exists
-            existing = StudentParentRelationship.objects.filter(
-                student=student,
-                parent=parent
-            ).exists()
-            
-            if existing and not self.instance.pk:
-                raise ValidationError(_('This relationship already exists.'))
-            
-            # If marking as primary, ensure only one primary per student
-            if cleaned_data.get('is_primary'):
-                StudentParentRelationship.objects.filter(
-                    student=student,
-                    is_primary=True
-                ).exclude(pk=self.instance.pk if self.instance else None).update(is_primary=False)
-        
-        return cleaned_data
-
-class BulkUserActionForm(forms.Form):
-    """Form for bulk user actions"""
-    
-    ACTION_CHOICES = [
-        ('activate', 'Activate Selected Users'),
-        ('deactivate', 'Deactivate Selected Users'),
-        ('delete', 'Delete Selected Users'),
-        ('assign_group', 'Assign to Group'),
-        ('remove_group', 'Remove from Group'),
-    ]
-    
-    action = forms.ChoiceField(
-        choices=ACTION_CHOICES,
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
-    
-    group = forms.ModelChoiceField(
-        queryset=Group.objects.all(),
-        required=False,
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
-    
-    user_ids = forms.CharField(
-        widget=forms.HiddenInput()
-    )
-    
-    def clean_user_ids(self):
-        data = self.cleaned_data.get('user_ids', '')
-        if data:
-            try:
-                user_ids = [int(id.strip()) for id in data.split(',') if id.strip()]
-                return user_ids
-            except ValueError:
-                raise ValidationError(_('Invalid user IDs format.'))
-        return []
-    
-    def clean(self):
-        cleaned_data = super().clean()
-        action = cleaned_data.get('action')
-        group = cleaned_data.get('group')
-        
-        if action in ['assign_group', 'remove_group'] and not group:
-            self.add_error('group', 'Please select a group for this action.')
-        
-        return cleaned_data
-
-# ============================================================================
-# QUICK ACTION FORMS
-# ============================================================================
-
-class QuickUserEditForm(forms.ModelForm):
-    """Quick edit form for user details"""
-    
-    email = forms.EmailField(required=True)
-    first_name = forms.CharField(max_length=30, required=True)
-    last_name = forms.CharField(max_length=30, required=True)
-    phone_number = forms.CharField(max_length=20, required=False)
-    
-    class Meta:
-        model = User
-        fields = ['email', 'first_name', 'last_name']
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        
-        # Add form-control class to all fields
-        for field_name, field in self.fields.items():
-            field.widget.attrs['class'] = 'form-control'
-        
-        # Add phone number from profile
-        if self.instance and hasattr(self.instance, 'userprofile'):
-            self.fields['phone_number'].initial = self.instance.userprofile.phone_number
-    
-    def save(self, commit=True):
-        user = super().save(commit=False)
-        
-        # Update phone number in profile
-        if hasattr(user, 'userprofile'):
-            user.userprofile.phone_number = self.cleaned_data.get('phone_number', '')
-            if commit:
-                user.userprofile.save()
-        
-        if commit:
-            user.save()
-        
-        return user
-
-class QuickPasswordResetForm(forms.Form):
-    """Quick password reset form"""
-    
-    password1 = forms.CharField(
-        widget=forms.PasswordInput(attrs={'class': 'form-control'})
-    )
-    
-    password2 = forms.CharField(
-        widget=forms.PasswordInput(attrs={'class': 'form-control'})
-    )
-    
-    send_email = forms.BooleanField(
-        required=False,
-        initial=True,
-        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-        label="Send email notification to user"
-    )
-    
-    def clean(self):
-        cleaned_data = super().clean()
-        password1 = cleaned_data.get('password1')
-        password2 = cleaned_data.get('password2')
-        
-        if password1 and password2 and password1 != password2:
-            raise ValidationError(_("Passwords don't match"))
-        
-        # Password validation
-        if password1:
-            if len(password1) < 8:
-                raise ValidationError(_("Password must be at least 8 characters long"))
-            
-            if password1.isdigit():
-                raise ValidationError(_("Password cannot be entirely numeric"))
-        
-        return cleaned_data
-
-# ============================================================================
-# WIDGETS AND MIXINS
-# ============================================================================
-
-class BootstrapFormMixin:
-    """Mixin to add Bootstrap classes to form fields"""
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        
-        # Add form-control class to all fields except checkboxes and radios
-        for field_name, field in self.fields.items():
-            if isinstance(field.widget, (forms.CheckboxInput, forms.RadioSelect)):
-                if 'class' not in field.widget.attrs:
-                    field.widget.attrs['class'] = 'form-check-input'
-            elif isinstance(field.widget, forms.Select):
-                if 'class' not in field.widget.attrs:
-                    field.widget.attrs['class'] = 'form-select'
-            else:
-                if 'class' not in field.widget.attrs:
-                    field.widget.attrs['class'] = 'form-control'
-
-class DateInputWidget(forms.DateInput):
-    """Custom date input widget"""
-    
-    input_type = 'date'
-    
-    def __init__(self, **kwargs):
-        kwargs.setdefault('attrs', {})
-        kwargs['attrs'].update({
-            'class': 'form-control'
-        })
-        super().__init__(**kwargs)
-
-class Select2Widget(forms.Select):
-    """Select2 widget for better select fields"""
-    
-    def __init__(self, attrs=None, choices=()):
-        if attrs is None:
-            attrs = {}
-        attrs.update({
-            'class': 'form-select select2',
-            'data-placeholder': 'Select an option'
-        })
-        super().__init__(attrs, choices)
-
-class ImagePreviewWidget(forms.ClearableFileInput):
-    """Widget for image preview"""
-    
-    template_name = 'widgets/image_preview_widget.html'
-    
-    def __init__(self, attrs=None):
-        if attrs is None:
-            attrs = {}
-        attrs.update({'class': 'form-control'})
-        super().__init__(attrs)
-
-# ============================================================================
-# FORM FACTORY
-# ============================================================================
-
-class FormFactory:
-    """Factory to create appropriate forms based on user role"""
-    
-    @staticmethod
-    def get_registration_form(role):
-        """Get registration form based on role"""
-        forms = {
-            'student': StudentRegistrationForm,
-            'parent': ParentRegistrationForm,
-            'teacher': TeacherRegistrationForm,
-            'admin': AdminRegistrationForm,
-        }
-        return forms.get(role, UserRegistrationForm)
-    
-    @staticmethod
-    def get_profile_form(role):
-        """Get profile form based on role"""
-        forms = {
-            'student': StudentProfileForm,
-            'parent': ParentProfileForm,
-            'teacher': TeacherProfileForm,
-        }
-        return forms.get(role, UserProfileForm)
-    
-    @staticmethod
-    def get_edit_form(role):
-        """Get edit form based on role (admin use)"""
-        forms = {
-            'student': AdminUserEditForm,
-            'parent': AdminUserEditForm,
-            'teacher': AdminUserEditForm,
-            'admin': AdminUserEditForm,
-        }
-        return forms.get(role, AdminUserEditForm)
-
-# ============================================================================
-# CUSTOM VALIDATORS
-# ============================================================================
-
-def validate_phone_number(value):
-    """Validate phone number"""
-    pattern = r'^\+?1?\d{9,15}$'
-    if not re.match(pattern, value):
-        raise ValidationError(
-            _('Enter a valid phone number in the format: +999999999. Up to 15 digits allowed.')
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+        self.helper.layout = Layout(
+            Row(
+                Column('first_name', css_class='col-md-6'),
+                Column('last_name', css_class='col-md-6'),
+            ),
+            Row(
+                Column('email', css_class='col-md-6'),
+                Column('phone', css_class='col-md-6'),
+            ),
+            'profile_picture',
+            'address',
+            Row(
+                Column('city', css_class='col-md-4'),
+                Column('state', css_class='col-md-4'),
+                Column('postal_code', css_class='col-md-4'),
+            ),
+            'country',
+            Submit('submit', 'Update Profile', css_class='btn-primary w-100')
         )
 
-def validate_age_for_student(value):
-    """Validate student age"""
-    today = timezone.now().date()
-    age = today.year - value.year - ((today.month, today.day) < (value.month, value.day))
-    
-    if age < 4:
-        raise ValidationError(_('Student must be at least 4 years old.'))
-    elif age > 25:
-        raise ValidationError(_('Student age seems incorrect. Please verify.'))
 
-def validate_age_for_teacher(value):
-    """Validate teacher age"""
-    today = timezone.now().date()
-    age = today.year - value.year - ((today.month, today.day) < (value.month, value.day))
+class ParentProfileForm(forms.ModelForm):
+    class Meta:
+        model = Parent
+        fields = ['occupation', 'employer', 'income_range', 'relationship', 'is_primary']
+        widgets = {
+            'occupation': forms.TextInput(attrs={'class': 'form-control'}),
+            'employer': forms.TextInput(attrs={'class': 'form-control'}),
+            'income_range': forms.Select(attrs={'class': 'form-control'}),
+            'relationship': forms.Select(attrs={'class': 'form-control'}),
+            'is_primary': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+
+class StudentProfileForm(forms.ModelForm):
+    date_of_birth = forms.DateField(widget=DatePickerWidget)
     
-    if age < 21:
-        raise ValidationError(_('Teacher must be at least 21 years old.'))
+    class Meta:
+        model = Student
+        fields = ['date_of_birth', 'gender', 'student_class', 'section', 
+                 'roll_number', 'academic_year', 'emergency_contact', 
+                 'emergency_phone', 'notes']
+        widgets = {
+            'gender': forms.Select(attrs={'class': 'form-control'}),
+            'current_class': forms.TextInput(attrs={'class': 'form-control'}),
+            'section': forms.TextInput(attrs={'class': 'form-control'}),
+            'roll_number': forms.TextInput(attrs={'class': 'form-control'}),
+            'academic_year': forms.TextInput(attrs={'class': 'form-control'}),
+            'emergency_contact': forms.TextInput(attrs={'class': 'form-control'}),
+            'emergency_phone': forms.TextInput(attrs={'class': 'form-control'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+
+# ==================== ATTENDANCE & SCHOOL MANAGEMENT FORMS ====================
+
+class AttendanceForm(forms.ModelForm):
+    date = forms.DateField(
+        widget=DatePickerWidget,
+        initial=lambda: timezone.now().date() if 'timezone' in locals() else None
+    )
+    
+    class Meta:
+        model = Attendance
+        fields = ['student', 'date', 'status', 'check_in', 'check_out', 'notes']
+        widgets = {
+            'student': forms.Select(attrs={'class': 'form-control'}),
+            'status': forms.Select(attrs={'class': 'form-control'}),
+            'check_in': forms.TimeInput(attrs={
+                'class': 'form-control',
+                'type': 'time'
+            }),
+            'check_out': forms.TimeInput(attrs={
+                'class': 'form-control',
+                'type': 'time'
+            }),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        }
+
+
+class BulkAttendanceForm(forms.Form):
+    date = forms.DateField(
+        widget=DatePickerWidget,
+        label="Attendance Date"
+    )
+    class_name = forms.CharField(
+        max_length=50,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'e.g., JSS 1A'
+        }),
+        label="Class"
+    )
+    attendance_data = forms.CharField(
+        widget=forms.HiddenInput()
+    )
+
+
+from django.contrib.auth.forms import PasswordChangeForm as BasePasswordChangeForm
+
+class PasswordChangeForm(BasePasswordChangeForm):
+    """Custom password change form with better styling"""
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Customize widget attributes
+        self.fields['old_password'].widget.attrs.update({
+            'class': 'form-control',
+            'placeholder': 'Current password',
+            'autocomplete': 'current-password'
+        })
+        
+        self.fields['new_password1'].widget.attrs.update({
+            'class': 'form-control password-strength',
+            'placeholder': 'New password',
+            'autocomplete': 'new-password'
+        })
+        
+        self.fields['new_password2'].widget.attrs.update({
+            'class': 'form-control',
+            'placeholder': 'Confirm new password',
+            'autocomplete': 'new-password'
+        })
+        
+        # Update help text
+        self.fields['new_password1'].help_text = """
+            <div class="password-requirements">
+                <small>Your password must contain:</small>
+                <ul class="small text-muted mt-2 mb-0">
+                    <li>At least 8 characters</li>
+                    <li>At least one uppercase letter</li>
+                    <li>At least one lowercase letter</li>
+                    <li>At least one number</li>
+                    <li>At least one special character (!@#$%^&*)</li>
+                </ul>
+            </div>
+        """
+        
+        # Add FormHelper for crispy forms
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+        self.helper.form_class = 'password-change-form'
+        self.helper.layout = Layout(
+            Fieldset(
+                'Change Password',
+                'old_password',
+                'new_password1',
+                HTML('<div class="password-strength-meter mb-3">'
+                     '<small>Password strength: <span id="strengthText">None</span></small>'
+                     '<div class="progress" style="height: 4px;">'
+                     '<div class="progress-bar" id="strengthBar" style="width: 0%"></div>'
+                     '</div>'
+                     '</div>'),
+                'new_password2',
+                css_class='mb-4'
+            ),
+            Submit('submit', 'Change Password', css_class='btn-primary w-100')
+        )
+    
+    def clean_new_password2(self):
+        """Additional password validation"""
+        password1 = self.cleaned_data.get('new_password1')
+        password2 = self.cleaned_data.get('new_password2')
+        
+        if password1 and password2 and password1 != password2:
+            raise ValidationError("The two password fields didn't match.")
+        
+        # Additional password strength validation
+        if password1:
+            if len(password1) < 8:
+                raise ValidationError("Password must be at least 8 characters long.")
+            if not re.search(r'[A-Z]', password1):
+                raise ValidationError("Password must contain at least one uppercase letter.")
+            if not re.search(r'[a-z]', password1):
+                raise ValidationError("Password must contain at least one lowercase letter.")
+            if not re.search(r'[0-9]', password1):
+                raise ValidationError("Password must contain at least one number.")
+            if not re.search(r'[!@#$%^&*]', password1):
+                raise ValidationError("Password must contain at least one special character (!@#$%^&*).")
+        
+        return password2
+
+
+class PasswordResetRequestForm(forms.Form):
+    """Password reset request form"""
+    email = forms.EmailField(
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter your registered email address',
+            'autocomplete': 'email'
+        })
+    )
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+        self.helper.form_class = 'password-reset-form'
+        self.helper.layout = Layout(
+            Fieldset(
+                'Reset Password',
+                HTML('<p class="text-muted mb-3">'
+                     'Enter your email address and we will send you instructions to reset your password.'
+                     '</p>'),
+                'email',
+                css_class='mb-4'
+            ),
+            Submit('submit', 'Send Reset Instructions', css_class='btn-primary w-100')
+        )
+
+
+class SetNewPasswordForm(SetPasswordForm):
+    """Set new password form"""
+    new_password1 = forms.CharField(
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control password-strength',
+            'placeholder': 'New password',
+            'autocomplete': 'new-password'
+        }),
+        help_text="Your password must contain at least 8 characters with uppercase, lowercase, number, and special character."
+    )
+    new_password2 = forms.CharField(
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Confirm new password',
+            'autocomplete': 'new-password'
+        })
+    )
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+        self.helper.form_class = 'set-password-form'
+        self.helper.layout = Layout(
+            Fieldset(
+                'Set New Password',
+                HTML('<p class="text-muted mb-3">'
+                     'Please enter your new password twice to verify you typed it correctly.'
+                     '</p>'),
+                'new_password1',
+                HTML('<div class="password-strength-meter mb-3">'
+                     '<small>Password strength: <span id="strengthText">None</span></small>'
+                     '<div class="progress" style="height: 4px;">'
+                     '<div class="progress-bar" id="strengthBar" style="width: 0%"></div>'
+                     '</div>'
+                     '</div>'),
+                'new_password2',
+                css_class='mb-4'
+            ),
+            Submit('submit', 'Set New Password', css_class='btn-primary w-100')
+        )
+    
+    def clean_new_password2(self):
+        """Additional password validation"""
+        password1 = self.cleaned_data.get('new_password1')
+        password2 = self.cleaned_data.get('new_password2')
+        
+        if password1 and password2 and password1 != password2:
+            raise ValidationError("The two password fields didn't match.")
+        
+        # Additional password strength validation
+        if password1:
+            if len(password1) < 8:
+                raise ValidationError("Password must be at least 8 characters long.")
+            if not re.search(r'[A-Z]', password1):
+                raise ValidationError("Password must contain at least one uppercase letter.")
+            if not re.search(r'[a-z]', password1):
+                raise ValidationError("Password must contain at least one lowercase letter.")
+            if not re.search(r'[0-9]', password1):
+                raise ValidationError("Password must contain at least one number.")
+            if not re.search(r'[!@#$%^&*]', password1):
+                raise ValidationError("Password must contain at least one special character (!@#$%^&*).")
+        
+        return password2
     
 
+
+# ==================== REPORT & ANALYTICS FORMS ====================
+
+class SalesReportForm(forms.Form):
+    start_date = forms.DateField(
+        widget=DatePickerWidget,
+        label="Start Date"
+    )
+    end_date = forms.DateField(
+        widget=DatePickerWidget,
+        label="End Date"
+    )
+    report_type = forms.ChoiceField(
+        choices=[
+            ('daily', 'Daily Sales'),
+            ('weekly', 'Weekly Sales'),
+            ('monthly', 'Monthly Sales'),
+            ('yearly', 'Yearly Sales'),
+            ('custom', 'Custom Range'),
+        ],
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    group_by = forms.ChoiceField(
+        required=False,
+        choices=[
+            ('category', 'Category'),
+            ('product', 'Product'),
+            ('student', 'Student'),
+            ('class', 'Class'),
+            ('payment_method', 'Payment Method'),
+        ],
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
     
+    def clean(self):
+        cleaned_data = super().clean()
+        start_date = cleaned_data.get('start_date')
+        end_date = cleaned_data.get('end_date')
+        
+        if start_date and end_date and start_date > end_date:
+            raise ValidationError("Start date cannot be after end date.")
+        
+        return cleaned_data
+
+
+class FeeCollectionReportForm(forms.Form):
+    academic_year = forms.CharField(
+        max_length=20,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'e.g., 2024/2025'
+        })
+    )
+    term = forms.ChoiceField(
+        required=False,
+        choices=[
+            ('', 'All Terms'),
+            ('first', 'First Term'),
+            ('second', 'Second Term'),
+            ('third', 'Third Term'),
+        ],
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    class_level = forms.CharField(
+        max_length=50,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'e.g., JSS 1, SSS 3'
+        })
+    )
+    payment_status = forms.ChoiceField(
+        required=False,
+        choices=[
+            ('', 'All Status'),
+            ('paid', 'Paid'),
+            ('partial', 'Partial'),
+            ('unpaid', 'Unpaid'),
+        ],
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+
+
+# ==================== CBT EXAM INTEGRATION FORMS ====================
+
+class ExamAccessForm(forms.Form):
+    student = forms.ModelChoiceField(
+        queryset=Student.objects.all(),
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    exam_type = forms.ChoiceField(
+        choices=[
+            ('cbt', 'Computer Based Test'),
+            ('practice', 'Practice Test'),
+            ('mock', 'Mock Exam'),
+            ('final', 'Final Exam'),
+        ],
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    subject = forms.CharField(
+        max_length=100,
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    exam_date = forms.DateField(
+        widget=DatePickerWidget
+    )
+    duration = forms.IntegerField(
+        min_value=1,
+        max_value=300,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Duration in minutes'
+        })
+    )
+    
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if user:
+            if user.role == 'parent':
+                try:
+                    parent = Parent.objects.get(user=user)
+                    self.fields['student'].queryset = parent.students.all()
+                except Parent.DoesNotExist:
+                    self.fields['student'].queryset = Student.objects.none()
+            elif user.role == 'student':
+                try:
+                    student = Student.objects.get(user=user)
+                    self.fields['student'].queryset = Student.objects.filter(id=student.id)
+                    self.fields['student'].initial = student
+                    self.fields['student'].widget = forms.HiddenInput()
+                except Student.DoesNotExist:
+                    self.fields['student'].queryset = Student.objects.none()
+
+
+class ExamPaymentVerificationForm(forms.Form):
+    payment_reference = forms.CharField(
+        max_length=100,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter payment reference number'
+        })
+    )
+    student_admission = forms.CharField(
+        max_length=20,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Student admission number'
+        })
+    )
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        payment_reference = cleaned_data.get('payment_reference')
+        student_admission = cleaned_data.get('student_admission')
+        
+        # Verify payment exists and is for the correct student
+        try:
+            payment = Payment.objects.get(
+                reference=payment_reference,
+                status='completed'
+            )
+            student = Student.objects.get(admission_number=student_admission)
+            
+            # Check if payment is for this student's fees
+            fee_payment = FeePayment.objects.filter(
+                student=student,
+                payment_reference=payment_reference
+            ).first()
+            
+            if not fee_payment:
+                raise ValidationError(
+                    "No fee payment found for this student with the given reference."
+                )
+            
+            cleaned_data['payment'] = payment
+            cleaned_data['student'] = student
+            cleaned_data['fee_payment'] = fee_payment
+            
+        except Payment.DoesNotExist:
+            raise ValidationError("Payment not found or not completed.")
+        except Student.DoesNotExist:
+            raise ValidationError("Student not found.")
+        
+        return cleaned_data
+
+
+# ==================== UTILITY FORMS ====================
+
+class ContactForm(forms.Form):
+    name = forms.CharField(
+        max_length=100,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Your name'
+        })
+    )
+    email = forms.EmailField(
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Your email'
+        })
+    )
+    phone = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Phone number (optional)'
+        })
+    )
+    subject = forms.CharField(
+        max_length=200,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Subject'
+        })
+    )
+    message = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 5,
+            'placeholder': 'Your message'
+        })
+    )
+    message_type = forms.ChoiceField(
+        choices=[
+            ('general', 'General Inquiry'),
+            ('payment', 'Payment Issue'),
+            ('technical', 'Technical Support'),
+            ('suggestion', 'Suggestion'),
+            ('complaint', 'Complaint'),
+        ],
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+
+
+class FeedbackForm(forms.Form):
+    rating = forms.ChoiceField(
+        choices=[
+            (5, '★★★★★ Excellent'),
+            (4, '★★★★ Very Good'),
+            (3, '★★★ Good'),
+            (2, '★★ Fair'),
+            (1, '★ Poor'),
+        ],
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'})
+    )
+    comment = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 4,
+            'placeholder': 'Your feedback helps us improve...'
+        })
+    )
+    anonymous = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        label="Submit anonymously"
+    )
+
+
+# ==================== FORM UTILITIES ====================
+
+class FormHelperMixin:
+    """Mixin to add FormHelper to forms"""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+        
+        if not hasattr(self.helper, 'layout'):
+            self.helper.layout = Layout(*self.get_layout_fields())
+    
+    def get_layout_fields(self):
+        """Get fields for layout - override in subclasses"""
+        return [Field(field) for field in self.fields]
+
+
+class DynamicStudentSelectForm(FormHelperMixin, forms.Form):
+    """Form that dynamically loads students based on user"""
+    student = forms.ModelChoiceField(
+        queryset=Student.objects.none(),
+        widget=forms.Select(attrs={'class': 'form-control select2-dynamic'})
+    )
+    
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if user:
+            if user.role == 'parent':
+                try:
+                    parent = Parent.objects.get(user=user)
+                    self.fields['student'].queryset = parent.students.all()
+                except Parent.DoesNotExist:
+                    self.fields['student'].queryset = Student.objects.none()
+            elif user.role == 'student':
+                try:
+                    student = Student.objects.get(user=user)
+                    self.fields['student'].queryset = Student.objects.filter(id=student.id)
+                    self.fields['student'].initial = student
+                except Student.DoesNotExist:
+                    self.fields['student'].queryset = Student.objects.none()
+
+
+# ==================== FORM VALIDATORS ====================
+
+def validate_nigerian_phone(value):
+    """Validate Nigerian phone number"""
+    pattern = r'^0[7-9][0-1]\d{8}$'
+    if not re.match(pattern, value):
+        raise ValidationError(
+            _('Enter a valid Nigerian phone number (e.g., 08012345678)'),
+            code='invalid_phone'
+        )
+
+
+def validate_admission_number(value):
+    """Validate admission number format"""
+    # Example: BR/2024/001
+    pattern = r'^[A-Z]{2,4}/\d{4}/\d{3,4}$'
+    if not re.match(pattern, value):
+        raise ValidationError(
+            _('Enter a valid admission number (e.g., BR/2024/001)'),
+            code='invalid_admission'
+        )
+
+
+def validate_price(value):
+    """Validate price is positive"""
+    if value <= 0:
+        raise ValidationError(
+            _('Price must be greater than zero'),
+            code='invalid_price'
+        )
+
+
+def validate_stock_quantity(value):
+    """Validate stock quantity"""
+    if value < 0:
+        raise ValidationError(
+            _('Stock quantity cannot be negative'),
+            code='invalid_stock'
+        )
+
+
+# ==================== FORM FACTORIES ====================
+
+def create_student_selector_form(user):
+    """Factory function to create student selector form based on user role"""
+    class StudentSelectorForm(forms.Form):
+        student = forms.ModelChoiceField(
+            queryset=Student.objects.none(),
+            label="Select Student",
+            widget=forms.Select(attrs={'class': 'form-control'})
+        )
+        
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            if user.role == 'parent':
+                try:
+                    parent = Parent.objects.get(user=user)
+                    self.fields['student'].queryset = parent.students.all()
+                except Parent.DoesNotExist:
+                    self.fields['student'].queryset = Student.objects.none()
+            elif user.role == 'student':
+                try:
+                    student = Student.objects.get(user=user)
+                    self.fields['student'].queryset = Student.objects.filter(id=student.id)
+                    self.fields['student'].initial = student
+                    self.fields['student'].widget = forms.HiddenInput()
+                except Student.DoesNotExist:
+                    self.fields['student'].queryset = Student.objects.none()
+    
+    return StudentSelectorForm
+
+
+# Export forms for easy import
+__all__ = [
+    # Authentication
+    'BrillsPayUserCreationForm',
+    'ParentRegistrationForm',
+    'StudentRegistrationForm',
+    'BrillsPayLoginForm',
+    'BrillsPayPasswordResetForm',
+    'BrillsPaySetPasswordForm',
+    
+    # Profile
+    'UserProfileForm',
+    'ParentProfileForm',
+    'StudentProfileForm',
+    
+    # # Store
+    # 'ProductForm',
+    # 'CategoryForm',
+    # 'ProductSearchForm',
+    # 'AddToCartForm',
+    # 'CartItemUpdateForm',
+    
+    # # Orders & Payments
+    # 'CheckoutForm',
+    # 'PaystackPaymentForm',
+    # 'OrderStatusUpdateForm',
+    
+    # # Fee Payments
+    # 'FeePaymentForm',
+    # 'BulkFeePaymentForm',
+    
+    # # Inventory
+    # 'InventoryForm',
+    # 'SupplierForm',
+    # 'PurchaseOrderForm',
+    
+    # # Attendance
+    # 'AttendanceForm',
+    # 'BulkAttendanceForm',
+    
+    # # Reports
+    # 'SalesReportForm',
+    # 'FeeCollectionReportForm',
+    
+    # # CBT Integration
+    # 'ExamAccessForm',
+    # 'ExamPaymentVerificationForm',
+    
+    # Utilities
+    'ContactForm',
+    'FeedbackForm',
+    'DynamicStudentSelectForm',
+    
+    # Validators
+    'validate_nigerian_phone',
+    'validate_admission_number',
+    'validate_price',
+    'validate_stock_quantity',
+    
+    # Factories
+    'create_student_selector_form',
+]

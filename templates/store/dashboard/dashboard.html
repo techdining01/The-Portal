@@ -1,0 +1,710 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - BrillsPay{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Dashboard Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 fw-bold">Dashboard</h1>
+                    <p class="text-muted mb-0">
+                        Welcome back, {{ user.get_full_name|default:user.username }}!
+                        {% if user.role == 'parent' %}
+                        <span class="parent-badge ms-2">Parent</span>
+                        {% elif user.role == 'student' %}
+                        <span class="student-badge ms-2">Student</span>
+                        {% elif user.role == 'admin' %}
+                        <span class="brillspay-badge ms-2">Administrator</span>
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="d-none d-md-block">
+                    <span class="text-muted">{{ user.date_joined|date:"F d, Y" }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Stats Cards -->
+    {% if user.role == 'parent' %}
+    <!-- Parent Dashboard -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card border-left-primary">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon bg-primary bg-opacity-10 text-primary me-3">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div>
+                        <h3 class="fw-bold mb-0">{{ students.count }}</h3>
+                        <p class="text-muted mb-0">Children</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card border-left-success">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon bg-success bg-opacity-10 text-success me-3">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <div>
+                        <h3 class="fw-bold mb-0">₦{{ total_spent|floatformat:2 }}</h3>
+                        <p class="text-muted mb-0">Total Spent</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card border-left-warning">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon bg-warning bg-opacity-10 text-warning me-3">
+                        <i class="fas fa-receipt"></i>
+                    </div>
+                    <div>
+                        <h3 class="fw-bold mb-0">{{ recent_orders.count }}</h3>
+                        <p class="text-muted mb-0">Recent Orders</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card border-left-danger">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon bg-danger bg-opacity-10 text-danger me-3">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div>
+                        <h3 class="fw-bold mb-0">₦{{ total_unpaid|floatformat:2 }}</h3>
+                        <p class="text-muted mb-0">Unpaid Fees</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">
+                        <i class="fas fa-bolt me-2 text-primary"></i>Quick Actions
+                    </h5>
+                    <div class="row g-3">
+                        <div class="col-md-3 col-6">
+                            <a href="{% url 'store:fee_payment_view' %}" class="text-decoration-none">
+                                <div class="text-center p-3 border rounded hover-lift">
+                                    <div class="icon-lg bg-primary bg-opacity-10 text-primary rounded-circle mb-3 mx-auto">
+                                        <i class="fas fa-graduation-cap fa-2x"></i>
+                                    </div>
+                                    <h6 class="fw-bold mb-0">Pay Fees</h6>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <div class="col-md-3 col-6">
+                            <a href="{% url 'store:product_list' %}" class="text-decoration-none">
+                                <div class="text-center p-3 border rounded hover-lift">
+                                    <div class="icon-lg bg-success bg-opacity-10 text-success rounded-circle mb-3 mx-auto">
+                                        <i class="fas fa-shopping-bag fa-2x"></i>
+                                    </div>
+                                    <h6 class="fw-bold mb-0">Shop Now</h6>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <div class="col-md-3 col-6">
+                            <a href="{% url 'store:pickup_dashboard' %}" class="text-decoration-none">
+                                <div class="text-center p-3 border rounded hover-lift">
+                                    <div class="icon-lg bg-warning bg-opacity-10 text-warning rounded-circle mb-3 mx-auto">
+                                        <i class="fas fa-user-check fa-2x"></i>
+                                    </div>
+                                    <h6 class="fw-bold mb-0">Pickup</h6>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <div class="col-md-3 col-6">
+                            <a href="{% url 'store:exam_access_view' %}" class="text-decoration-none">
+                                <div class="text-center p-3 border rounded hover-lift">
+                                    <div class="icon-lg bg-info bg-opacity-10 text-info rounded-circle mb-3 mx-auto">
+                                        <i class="fas fa-book-open fa-2x"></i>
+                                    </div>
+                                    <h6 class="fw-bold mb-0">Exams</h6>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Children List -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-child me-2 text-primary"></i>Your Children
+                        </h5>
+                        <span class="badge bg-primary rounded-pill">{{ students.count }}</span>
+                    </div>
+                    
+                    <div class="row g-3">
+                        {% for student in students %}
+                        <div class="col-md-4">
+                            <div class="card border hover-lift">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-shrink-0">
+                                            <div class="avatar bg-primary bg-opacity-10 text-primary rounded-circle" 
+                                                 style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;">
+                                                <i class="fas fa-user-graduate fa-lg"></i>
+                                            </div>
+                                        </div>
+                                        <div class="flex-grow-1 ms-3">
+                                            <h6 class="fw-bold mb-1">{{ student.get_full_name }}</h6>
+                                            <p class="text-muted small mb-1">
+                                                {{ student.admission_number }} • {{ student.current_class }}
+                                            </p>
+                                            <div class="d-flex align-items-center">
+                                                <span class="badge bg-light text-dark small">
+                                                    Age: {{ student.get_age }}
+                                                </span>
+                                                {% if student.total_spent > 0 %}
+                                                <span class="badge bg-success ms-2 small">
+                                                    ₦{{ student.total_spent|floatformat:2 }}
+                                                </span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3">
+                                        <a href="{% url 'store:fee_payment_view' %}?student={{ student.id }}" 
+                                           class="btn btn-sm btn-outline-primary w-100">
+                                            <i class="fas fa-graduation-cap me-1"></i> Pay Fees
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="col-12 text-center py-4">
+                            <i class="fas fa-users fa-2x text-muted mb-3"></i>
+                            <p class="text-muted mb-0">No children linked to your account</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Orders & Fee Payments -->
+    <div class="row">
+        <!-- Recent Orders -->
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-shopping-cart me-2 text-primary"></i>Recent Orders
+                        </h5>
+                        <a href="{% url 'store:order_list' %}" class="btn btn-sm btn-outline-primary">
+                            View All
+                        </a>
+                    </div>
+                    
+                    {% if recent_orders %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Order #</th>
+                                    <th>Date</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in recent_orders %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'store:order_detail' order.id %}" class="text-decoration-none">
+                                            {{ order.order_number|truncatechars:8 }}
+                                        </a>
+                                    </td>
+                                    <td>{{ order.created_at|date:"M d" }}</td>
+                                    <td>₦{{ order.total_amount|floatformat:2 }}</td>
+                                    <td>
+                                        <span class="status-badge status-{{ order.status }}">
+                                            {{ order.get_status_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-shopping-cart fa-2x text-muted mb-3"></i>
+                        <p class="text-muted mb-0">No recent orders</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Fee Payments -->
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-receipt me-2 text-success"></i>Recent Fee Payments
+                        </h5>
+                        <a href="{% url 'store:fee_payment_history' %}" class="btn btn-sm btn-outline-success">
+                            View All
+                        </a>
+                    </div>
+                    
+                    {% if recent_fee_payments %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Date</th>
+                                    <th>Amount</th>
+                                    <th>Receipt</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for payment in recent_fee_payments %}
+                                <tr>
+                                    <td>{{ payment.student.first_name }}</td>
+                                    <td>{{ payment.payment_date|date:"M d" }}</td>
+                                    <td>₦{{ payment.amount_paid|floatformat:2 }}</td>
+                                    <td>
+                                        <a href="{% url 'store:fee_receipt' payment.receipt_number %}" 
+                                           class="btn btn-sm btn-outline-success">
+                                            <i class="fas fa-download"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-receipt fa-2x text-muted mb-3"></i>
+                        <p class="text-muted mb-0">No recent fee payments</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% elif user.role == 'student' %}
+    <!-- Student Dashboard -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="avatar-xl bg-primary bg-opacity-10 text-primary rounded-circle mb-3 mx-auto">
+                        <i class="fas fa-user-graduate fa-3x"></i>
+                    </div>
+                    <h4 class="fw-bold mb-1">{{ student.get_full_name }}</h4>
+                    <p class="text-muted mb-2">{{ student.admission_number }}</p>
+                    <div class="d-flex justify-content-center gap-2 mb-3">
+                        <span class="badge bg-primary">{{ student.current_class }}</span>
+                        <span class="badge bg-secondary">Age: {{ student.get_age }}</span>
+                    </div>
+                    <p class="text-muted small mb-0">
+                        <i class="fas fa-calendar me-1"></i>
+                        Enrolled: {{ student.enrollment_date|date:"M d, Y" }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">
+                        <i class="fas fa-chart-line me-2 text-primary"></i>Your Summary
+                    </h5>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="text-center p-3 border rounded">
+                                <h3 class="fw-bold text-primary mb-1">₦{{ student.total_spent|floatformat:2 }}</h3>
+                                <p class="text-muted small mb-0">Total Spent</p>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center p-3 border rounded">
+                                <h3 class="fw-bold text-danger mb-1">₦{{ total_unpaid|floatformat:2 }}</h3>
+                                <p class="text-muted small mb-0">Unpaid Fees</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Unpaid Fees Alert -->
+                    {% if unpaid_fees %}
+                    <div class="alert alert-warning mt-4">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-exclamation-triangle fa-lg me-3"></i>
+                            <div>
+                                <h6 class="fw-bold mb-1">Outstanding Fees</h6>
+                                <p class="mb-0">You have {{ unpaid_fees|length }} unpaid fee(s).</p>
+                            </div>
+                            <a href="{% url 'store:fee_payment_view' %}" class="btn btn-sm btn-warning ms-auto">
+                                Pay Now
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions for Students -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">
+                        <i class="fas fa-bolt me-2 text-primary"></i>Quick Actions
+                    </h5>
+                    <div class="row g-3">
+                        <div class="col-md-3 col-6">
+                            <a href="{% url 'store:fee_payment_view' %}" class="text-decoration-none">
+                                <div class="text-center p-3 border rounded hover-lift">
+                                    <div class="icon-lg bg-primary bg-opacity-10 text-primary rounded-circle mb-3 mx-auto">
+                                        <i class="fas fa-graduation-cap fa-2x"></i>
+                                    </div>
+                                    <h6 class="fw-bold mb-0">Pay Fees</h6>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <div class="col-md-3 col-6">
+                            <a href="{% url 'store:product_list' %}" class="text-decoration-none">
+                                <div class="text-center p-3 border rounded hover-lift">
+                                    <div class="icon-lg bg-success bg-opacity-10 text-success rounded-circle mb-3 mx-auto">
+                                        <i class="fas fa-shopping-bag fa-2x"></i>
+                                    </div>
+                                    <h6 class="fw-bold mb-0">Shop Now</h6>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <div class="col-md-3 col-6">
+                            <a href="{% url 'store:exam_access_view' %}" class="text-decoration-none">
+                                <div class="text-center p-3 border rounded hover-lift">
+                                    <div class="icon-lg bg-warning bg-opacity-10 text-warning rounded-circle mb-3 mx-auto">
+                                        <i class="fas fa-book-open fa-2x"></i>
+                                    </div>
+                                    <h6 class="fw-bold mb-0">Take Exams</h6>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <div class="col-md-3 col-6">
+                            <a href="{% url 'store:order_list' %}" class="text-decoration-none">
+                                <div class="text-center p-3 border rounded hover-lift">
+                                    <div class="icon-lg bg-info bg-opacity-10 text-info rounded-circle mb-3 mx-auto">
+                                        <i class="fas fa-history fa-2x"></i>
+                                    </div>
+                                    <h6 class="fw-bold mb-0">Order History</h6>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% elif user.role in 'admin superadmin' %}
+    <!-- Admin Dashboard -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card border-left-primary">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon bg-primary bg-opacity-10 text-primary me-3">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <div>
+                        <h3 class="fw-bold mb-0">₦{{ today_sales|floatformat:2 }}</h3>
+                        <p class="text-muted mb-0">Today's Sales</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card border-left-success">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon bg-success bg-opacity-10 text-success me-3">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div>
+                        <h3 class="fw-bold mb-0">₦{{ monthly_sales|floatformat:2 }}</h3>
+                        <p class="text-muted mb-0">Monthly Sales</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card border-left-warning">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon bg-warning bg-opacity-10 text-warning me-3">
+                        <i class="fas fa-receipt"></i>
+                    </div>
+                    <div>
+                        <h3 class="fw-bold mb-0">{{ pending_orders }}</h3>
+                        <p class="text-muted mb-0">Pending Orders</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card border-left-danger">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon bg-danger bg-opacity-10 text-danger me-3">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div>
+                        <h3 class="fw-bold mb-0">{{ low_stock_products.count }}</h3>
+                        <p class="text-muted mb-0">Low Stock Items</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Admin Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">
+                        <i class="fas fa-cogs me-2 text-primary"></i>Admin Actions
+                    </h5>
+                    <div class="row g-3">
+                        <div class="col-md-2 col-4">
+                            <a href="{% url 'store:admin_products' %}" class="text-decoration-none">
+                                <div class="text-center p-3 border rounded hover-lift">
+                                    <div class="icon-lg bg-primary bg-opacity-10 text-primary rounded-circle mb-3 mx-auto">
+                                        <i class="fas fa-box fa-2x"></i>
+                                    </div>
+                                    <h6 class="fw-bold mb-0">Products</h6>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <div class="col-md-2 col-4">
+                            <a href="{% url 'store:admin_orders' %}" class="text-decoration-none">
+                                <div class="text-center p-3 border rounded hover-lift">
+                                    <div class="icon-lg bg-success bg-opacity-10 text-success rounded-circle mb-3 mx-auto">
+                                        <i class="fas fa-shopping-cart fa-2x"></i>
+                                    </div>
+                                    <h6 class="fw-bold mb-0">Orders</h6>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <div class="col-md-2 col-4">
+                            <a href="{% url 'store:admin_fee_management' %}" class="text-decoration-none">
+                                <div class="text-center p-3 border rounded hover-lift">
+                                    <div class="icon-lg bg-warning bg-opacity-10 text-warning rounded-circle mb-3 mx-auto">
+                                        <i class="fas fa-graduation-cap fa-2x"></i>
+                                    </div>
+                                    <h6 class="fw-bold mb-0">Fees</h6>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <div class="col-md-2 col-4">
+                            <a href="{% url 'store:admin_sales_analytics' %}" class="text-decoration-none">
+                                <div class="text-center p-3 border rounded hover-lift">
+                                    <div class="icon-lg bg-info bg-opacity-10 text-info rounded-circle mb-3 mx-auto">
+                                        <i class="fas fa-chart-bar fa-2x"></i>
+                                    </div>
+                                    <h6 class="fw-bold mb-0">Analytics</h6>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <div class="col-md-2 col-4">
+                            <a href="{% url 'store:pickup_dashboard' %}" class="text-decoration-none">
+                                <div class="text-center p-3 border rounded hover-lift">
+                                    <div class="icon-lg bg-secondary bg-opacity-10 text-secondary rounded-circle mb-3 mx-auto">
+                                        <i class="fas fa-user-check fa-2x"></i>
+                                    </div>
+                                    <h6 class="fw-bold mb-0">Pickup</h6>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <div class="col-md-2 col-4">
+                            <a href="{% url 'store:admin_user_management' %}" class="text-decoration-none">
+                                <div class="text-center p-3 border rounded hover-lift">
+                                    <div class="icon-lg bg-dark bg-opacity-10 text-dark rounded-circle mb-3 mx-auto">
+                                        <i class="fas fa-users fa-2x"></i>
+                                    </div>
+                                    <h6 class="fw-bold mb-0">Users</h6>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Low Stock Alert -->
+    {% if low_stock_products %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm border-left-warning">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="fas fa-exclamation-triangle fa-lg text-warning me-3"></i>
+                        <h5 class="card-title mb-0">Low Stock Products</h5>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>SKU</th>
+                                    <th>Current Stock</th>
+                                    <th>Threshold</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in low_stock_products %}
+                                <tr>
+                                    <td>{{ product.name }}</td>
+                                    <td><code>{{ product.sku }}</code></td>
+                                    <td>
+                                        <span class="badge bg-warning">{{ product.stock_quantity }}</span>
+                                    </td>
+                                    <td>{{ product.low_stock_threshold }}</td>
+                                    <td>
+                                        <a href="{% url 'store:admin_product_edit' product.id %}" 
+                                           class="btn btn-sm btn-outline-warning">
+                                            Restock
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Recent Orders -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-history me-2 text-primary"></i>Recent Orders
+                        </h5>
+                        <a href="{% url 'store:admin_orders' %}" class="btn btn-sm btn-outline-primary">
+                            View All
+                        </a>
+                    </div>
+                    
+                    {% if recent_orders %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Order #</th>
+                                    <th>Customer</th>
+                                    <th>Student</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Payment</th>
+                                    <th>Date</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in recent_orders %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'store:admin_order_detail' order.id %}" class="text-decoration-none">
+                                            {{ order.order_number|truncatechars:8 }}
+                                        </a>
+                                    </td>
+                                    <td>{{ order.user.get_full_name|default:order.user.username }}</td>
+                                    <td>
+                                        {% if order.student %}
+                                        {{ order.student.first_name }}
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>₦{{ order.total_amount|floatformat:2 }}</td>
+                                    <td>
+                                        <span class="status-badge status-{{ order.status }}">
+                                            {{ order.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="status-badge status-{{ order.payment_status }}">
+                                            {{ order.get_payment_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ order.created_at|date:"M d, H:i" }}</td>
+                                    <td>
+                                        <a href="{% url 'store:admin_order_detail' order.id %}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-shopping-cart fa-2x text-muted mb-3"></i>
+                        <p class="text-muted mb-0">No orders found</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

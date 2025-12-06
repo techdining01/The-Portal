@@ -1,0 +1,329 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Products - BrillsPay{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'store:landing' %}">Home</a></li>
+                    <li class="breadcrumb-item active">Products</li>
+                </ol>
+            </nav>
+            <h1 class="h2 fw-bold">School Store</h1>
+            <p class="text-muted">Browse our collection of school supplies, uniforms, and more</p>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Sidebar Filters -->
+        <div class="col-lg-3 mb-4">
+            <div class="card border-0 shadow-sm sticky-top" style="top: 100px;">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-filter me-2 text-primary"></i>Filters
+                    </h5>
+                    
+                    <!-- Search Form -->
+                    <form method="get" class="mb-4">
+                        <div class="input-group">
+                            <input type="text" 
+                                   name="q" 
+                                   class="form-control" 
+                                   placeholder="Search products..."
+                                   value="{{ request.GET.q }}">
+                            <button class="btn btn-primary" type="submit">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <!-- Category Filter -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-3">Categories</h6>
+                        <div class="list-group list-group-flush">
+                            <a href="{% url 'store:product_list' %}" 
+                               class="list-group-item list-group-item-action border-0 py-2 {% if not current_category %}active{% endif %}">
+                                All Categories
+                            </a>
+                            {% for category in categories %}
+                            <a href="{% url 'store:product_list' %}?category={{ category.slug }}" 
+                               class="list-group-item list-group-item-action border-0 py-2 {% if current_category == category.slug %}active{% endif %}">
+                                {{ category.name }}
+                                <span class="badge bg-primary rounded-pill float-end">
+                                    {{ category.products.count }}
+                                </span>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <!-- Price Filter -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-3">Price Range</h6>
+                        <form method="get" id="priceFilter">
+                            <input type="hidden" name="q" value="{{ request.GET.q }}">
+                            <input type="hidden" name="category" value="{{ request.GET.category }}">
+                            <input type="hidden" name="sort_by" value="{{ request.GET.sort_by }}">
+                            
+                            <div class="row g-2 mb-3">
+                                <div class="col-6">
+                                    <input type="number" 
+                                           name="min_price" 
+                                           class="form-control form-control-sm" 
+                                           placeholder="Min" 
+                                           value="{{ request.GET.min_price }}">
+                                </div>
+                                <div class="col-6">
+                                    <input type="number" 
+                                           name="max_price" 
+                                           class="form-control form-control-sm" 
+                                           placeholder="Max" 
+                                           value="{{ request.GET.max_price }}">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-outline-primary w-100">
+                                Apply Filter
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <!-- Sort Options -->
+                    <div class="mb-3">
+                        <h6 class="fw-bold mb-3">Sort By</h6>
+                        <select name="sort_by" 
+                                class="form-select form-select-sm" 
+                                onchange="this.form.submit()"
+                                form="priceFilter">
+                            <option value="-created_at" {% if request.GET.sort_by == '-created_at' %}selected{% endif %}>
+                                Newest First
+                            </option>
+                            <option value="created_at" {% if request.GET.sort_by == 'created_at' %}selected{% endif %}>
+                                Oldest First
+                            </option>
+                            <option value="price" {% if request.GET.sort_by == 'price' %}selected{% endif %}>
+                                Price: Low to High
+                            </option>
+                            <option value="-price" {% if request.GET.sort_by == '-price' %}selected{% endif %}>
+                                Price: High to Low
+                            </option>
+                            <option value="name" {% if request.GET.sort_by == 'name' %}selected{% endif %}>
+                                Name: A-Z
+                            </option>
+                            <option value="-name" {% if request.GET.sort_by == '-name' %}selected{% endif %}>
+                                Name: Z-A
+                            </option>
+                        </select>
+                    </div>
+                    
+                    <!-- Clear Filters -->
+                    {% if request.GET %}
+                    <div class="mt-4">
+                        <a href="{% url 'store:product_list' %}" class="btn btn-outline-danger btn-sm w-100">
+                            <i class="fas fa-times me-2"></i>Clear All Filters
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Products Grid -->
+        <div class="col-lg-9">
+            <!-- Products Count -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <p class="mb-0">
+                    <span class="fw-bold">{{ products.paginator.count }}</span> products found
+                </p>
+                <div class="d-none d-lg-block">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-primary active" id="gridView">
+                            <i class="fas fa-th"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline-primary" id="listView">
+                            <i class="fas fa-list"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Products -->
+            {% if products %}
+            <div class="row" id="productsGrid">
+                {% for product in products %}
+                <div class="col-xl-3 col-lg-4 col-md-6 mb-4">
+                    <div class="card product-card h-100">
+                        <div class="position-relative overflow-hidden">
+                            <a href="{% url 'store:product_detail' product.slug %}">
+                                <img src="{{ product.image.url|default:'/static/images/default-product.jpg' }}" 
+                                     alt="{{ product.name }}"
+                                     class="card-img-top product-image">
+                            </a>
+                            {% if product.is_featured %}
+                            <span class="position-absolute top-0 start-0 m-2 brillspay-badge">
+                                <i class="fas fa-star me-1"></i> Featured
+                            </span>
+                            {% endif %}
+                            {% if product.is_low_stock %}
+                            <span class="position-absolute top-0 end-0 m-2 bg-warning text-dark px-2 py-1 rounded small">
+                                <i class="fas fa-exclamation-triangle me-1"></i> Low Stock
+                            </span>
+                            {% endif %}
+                        </div>
+                        <div class="card-body d-flex flex-column">
+                            <div class="mb-2">
+                                <span class="badge bg-light text-dark small mb-2">
+                                    {{ product.category.name }}
+                                </span>
+                            </div>
+                            <h5 class="card-title mb-2">
+                                <a href="{% url 'store:product_detail' product.slug %}" class="text-decoration-none text-dark">
+                                    {{ product.name|truncatechars:40 }}
+                                </a>
+                            </h5>
+                            <p class="text-muted small mb-3">
+                                {{ product.description|truncatechars:60 }}
+                            </p>
+                            <div class="mt-auto">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <span class="h5 mb-0 text-primary">₦{{ product.price|floatformat:2 }}</span>
+                                    <span class="text-muted small">
+                                        <i class="fas fa-box me-1"></i>
+                                        {{ product.stock_quantity }}
+                                    </span>
+                                </div>
+                                {% if user.is_authenticated %}
+                                <button class="btn btn-primary w-100 add-to-cart" 
+                                        data-product-id="{{ product.id }}"
+                                        data-product-name="{{ product.name }}">
+                                    <i class="fas fa-cart-plus me-2"></i> Add to Cart
+                                </button>
+                                {% else %}
+                                <a href="{% url 'store:login' %}?next={{ request.path }}" class="btn btn-outline-primary w-100">
+                                    <i class="fas fa-sign-in-alt me-2"></i> Login to Buy
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination -->
+            {% if products.has_other_pages %}
+            <nav aria-label="Page navigation" class="mt-5">
+                <ul class="pagination justify-content-center">
+                    {% if products.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ products.previous_page_number }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for i in products.paginator.page_range %}
+                        {% if products.number == i %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ i }}</span>
+                        </li>
+                        {% elif i > products.number|add:'-3' and i < products.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ i }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ i }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if products.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ products.next_page_number }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            
+            {% else %}
+            <!-- No Products Found -->
+            <div class="text-center py-5">
+                <div class="icon-xl bg-light text-muted rounded-circle mb-4 mx-auto">
+                    <i class="fas fa-search fa-3x"></i>
+                </div>
+                <h4 class="fw-bold mb-3">No products found</h4>
+                <p class="text-muted mb-4">
+                    Try adjusting your search or filter to find what you're looking for.
+                </p>
+                <a href="{% url 'store:product_list' %}" class="btn btn-primary">
+                    <i class="fas fa-undo me-2"></i> Clear Search
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // View toggle functionality
+    const gridViewBtn = document.getElementById('gridView');
+    const listViewBtn = document.getElementById('listView');
+    const productsGrid = document.getElementById('productsGrid');
+    
+    gridViewBtn.addEventListener('click', function() {
+        productsGrid.classList.remove('list-view');
+        productsGrid.classList.add('row');
+        gridViewBtn.classList.add('active');
+        listViewBtn.classList.remove('active');
+    });
+    
+    listViewBtn.addEventListener('click', function() {
+        productsGrid.classList.remove('row');
+        productsGrid.classList.add('list-view');
+        listViewBtn.classList.add('active');
+        gridViewBtn.classList.remove('active');
+    });
+</script>
+
+<style>
+    /* List View Styles */
+    .list-view .col-xl-3 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+    
+    .list-view .product-card {
+        flex-direction: row;
+        height: auto;
+    }
+    
+    .list-view .product-image {
+        width: 200px;
+        height: 200px;
+        object-fit: cover;
+    }
+    
+    .list-view .card-body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    @media (max-width: 768px) {
+        .list-view .product-card {
+            flex-direction: column;
+        }
+        
+        .list-view .product-image {
+            width: 100%;
+            height: 200px;
+        }
+    }
+</style>
+{% endblock %}

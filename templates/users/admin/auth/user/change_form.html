@@ -1,0 +1,225 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_urls static admin_modify %}
+
+{% block content %}
+<div id="content-main">
+    <!-- Custom Header -->
+    <div class="custom-admin-header mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1>
+                    {% if add %}
+                        Add New User
+                    {% else %}
+                        Edit User: {{ original.username }}
+                    {% endif %}
+                </h1>
+                <p class="text-muted">
+                    {% if add %}
+                        Create a new user account with specific role
+                    {% else %}
+                        Modify user information and permissions
+                    {% endif %}
+                </p>
+            </div>
+            <div class="btn-group">
+                <a href="{% url 'admin:auth_user_changelist' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to List
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Info Summary -->
+    {% if not add %}
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-2 text-center">
+                    <div class="user-avatar-large mb-3">
+                        {{ original.username|first|upper }}
+                    </div>
+                    <span class="badge bg-{{ original.userprofile.role }}">
+                        {{ original.userprofile.get_role_display }}
+                    </span>
+                </div>
+                <div class="col-md-10">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>User Information</h5>
+                            <table class="table table-sm">
+                                <tr>
+                                    <th>Username:</th>
+                                    <td>{{ original.username }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Email:</th>
+                                    <td>{{ original.email }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Full Name:</th>
+                                    <td>{{ original.get_full_name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Last Login:</th>
+                                    <td>
+                                        {% if original.last_login %}
+                                            {{ original.last_login|date:"Y-m-d H:i" }}
+                                        {% else %}
+                                            Never
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Account Status</h5>
+                            <table class="table table-sm">
+                                <tr>
+                                    <th>Active:</th>
+                                    <td>
+                                        {% if original.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Staff:</th>
+                                    <td>
+                                        {% if original.is_staff %}
+                                            <span class="badge bg-info">Staff</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Not Staff</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Superuser:</th>
+                                    <td>
+                                        {% if original.is_superuser %}
+                                            <span class="badge bg-warning">Superuser</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Not Superuser</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Joined:</th>
+                                    <td>{{ original.date_joined|date:"Y-m-d" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Main Form -->
+    <form {% if has_file_field %}enctype="multipart/form-data" {% endif %}action="{{ form_url }}" method="post" id="{{ opts.model_name }}_form" novalidate>
+        {% csrf_token %}
+        {% block form_top %}{% endblock %}
+        
+        <div>
+            {% if is_popup %}<input type="hidden" name="{{ is_popup_var }}" value="1">{% endif %}
+            {% if to_field %}<input type="hidden" name="{{ to_field_var }}" value="{{ to_field }}">{% endif %}
+            {% if save_on_top %}{% block submit_buttons_top %}{% submit_row %}{% endblock %}{% endif %}
+            {% if errors %}
+                <p class="errornote">
+                {% if errors|length == 1 %}{% translate "Please correct the error below." %}{% else %}{% translate "Please correct the errors below." %}{% endif %}
+                </p>
+                {{ adminform.form.non_field_errors }}
+            {% endif %}
+
+            {% block field_sets %}
+            {% for fieldset in adminform %}
+                {% include "admin/includes/fieldset.html" %}
+            {% endfor %}
+            {% endblock %}
+
+            {% block after_field_sets %}{% endblock %}
+
+            {% block inline_field_sets %}
+            {% for inline_admin_formset in inline_admin_formsets %}
+                {% include inline_admin_formset.opts.template %}
+            {% endfor %}
+            {% endblock %}
+
+            {% block after_related_objects %}{% endblock %}
+
+            {% block submit_buttons_bottom %}{% submit_row %}{% endblock %}
+
+            {% block admin_change_form_document_ready %}
+                <script id="django-admin-form-add-constants"
+                        src="{% static 'admin/js/change_form.js' %}"
+                        {% if adminform and add %}
+                            data-model-name="{{ opts.model_name }}"
+                        {% endif %}
+                        async>
+                </script>
+            {% endblock %}
+
+            {% prepopulated_fields_js %}
+        </div>
+    </form>
+
+    <!-- Additional Actions for Existing Users -->
+    {% if not add %}
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0">Quick Actions</h5>
+        </div>
+        <div class="card-body">
+            <div class="btn-group" role="group">
+                <a href="{% url 'admin:send_welcome_email' original.id %}" class="btn btn-outline-primary">
+                    <i class="fas fa-envelope"></i> Send Welcome Email
+                </a>
+                <a href="{% url 'admin:reset_password' original.id %}" class="btn btn-outline-warning">
+                    <i class="fas fa-key"></i> Reset Password
+                </a>
+                <a href="{% url 'admin:impersonate_user' original.id %}" class="btn btn-outline-info">
+                    <i class="fas fa-user-secret"></i> Impersonate User
+                </a>
+                {% if original.is_active %}
+                <a href="{% url 'admin:deactivate_user' original.id %}" class="btn btn-outline-danger">
+                    <i class="fas fa-user-slash"></i> Deactivate
+                </a>
+                {% else %}
+                <a href="{% url 'admin:activate_user' original.id %}" class="btn btn-outline-success">
+                    <i class="fas fa-user-check"></i> Activate
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+.user-avatar-large {
+    width: 80px;
+    height: 80px;
+    background-color: #4361ee;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    font-weight: bold;
+    margin: 0 auto;
+}
+
+.badge.bg-admin { background-color: #dc3545; }
+.badge.bg-teacher { background-color: #fd7e14; }
+.badge.bg-student { background-color: #20c997; }
+.badge.bg-parent { background-color: #0d6efd; }
+.badge.bg-staff { background-color: #6f42c1; }
+</style>
+{% endblock %}

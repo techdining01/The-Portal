@@ -1,0 +1,170 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls static admin_list %}
+
+{% block content %}
+<div class="custom-admin-header mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1>User Management</h1>
+            <p class="text-muted">Manage all user accounts and their roles</p>
+        </div>
+        <div>
+            <a href="{% url 'admin:auth_user_add' %}" class="btn btn-primary">
+                <i class="fas fa-user-plus"></i> Add User
+            </a>
+            <a href="{% url 'bulk_import_users' %}" class="btn btn-secondary">
+                <i class="fas fa-file-import"></i> Bulk Import
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted">Total Users</h6>
+                        <h3>{{ cl.result_count }}</h3>
+                    </div>
+                    <div class="text-primary">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted">Admins</h6>
+                        <h3>{{ admin_count }}</h3>
+                    </div>
+                    <div class="text-danger">
+                        <i class="fas fa-user-shield fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted">Students</h6>
+                        <h3>{{ student_count }}</h3>
+                    </div>
+                    <div class="text-success">
+                        <i class="fas fa-user-graduate fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted">Teachers</h6>
+                        <h3>{{ teacher_count }}</h3>
+                    </div>
+                    <div class="text-warning">
+                        <i class="fas fa-chalkboard-teacher fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Filters -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Quick Filters</h5>
+    </div>
+    <div class="card-body">
+        <div class="btn-group" role="group">
+            <a href="?role__exact=admin" class="btn btn-outline-danger">
+                <i class="fas fa-user-shield"></i> Admins
+            </a>
+            <a href="?role__exact=teacher" class="btn btn-outline-warning">
+                <i class="fas fa-chalkboard-teacher"></i> Teachers
+            </a>
+            <a href="?role__exact=student" class="btn btn-outline-success">
+                <i class="fas fa-user-graduate"></i> Students
+            </a>
+            <a href="?role__exact=parent" class="btn btn-outline-primary">
+                <i class="fas fa-user-friends"></i> Parents
+            </a>
+            <a href="?is_active__exact=0" class="btn btn-outline-secondary">
+                <i class="fas fa-user-slash"></i> Inactive
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Actions Form -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Bulk Actions</h5>
+    </div>
+    <div class="card-body">
+        <form method="post" action="{% url 'admin:bulk_user_actions' %}">
+            {% csrf_token %}
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <select name="action" class="form-select">
+                        <option value="">--- Select Action ---</option>
+                        <option value="activate_users">Activate Selected</option>
+                        <option value="deactivate_users">Deactivate Selected</option>
+                        <option value="make_staff">Make Staff</option>
+                        <option value="send_welcome_email">Send Welcome Email</option>
+                        <option value="export_users">Export Selected</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <input type="text" name="selected_users" id="selected-users-input" class="form-control" placeholder="Selected user IDs" readonly>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Apply</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{ block.super }}
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle bulk action selection
+    const actionResultCount = document.querySelector('#action-toggle');
+    const selectedUsersInput = document.getElementById('selected-users-input');
+    
+    if (actionResultCount && selectedUsersInput) {
+        // Update selected users input when checkboxes are checked
+        const checkboxes = document.querySelectorAll('.action-select');
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', updateSelectedUsers);
+        });
+        
+        function updateSelectedUsers() {
+            const selected = [];
+            document.querySelectorAll('.action-select:checked').forEach(cb => {
+                selected.push(cb.value);
+            });
+            selectedUsersInput.value = selected.join(',');
+        }
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,249 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1>{{ student.get_full_name }}'s Grades</h1>
+                    <p class="text-muted">
+                        Student ID: {{ student.userprofile.student_id|default:"—" }} | 
+                        Grade Level: {{ student.userprofile.grade_level|default:"—" }}
+                    </p>
+                </div>
+                <div>
+                    <a href="{% url 'admin:generate_progress_report' student.id %}" class="btn btn-success">
+                        <i class="fas fa-file-pdf"></i> Generate Report
+                    </a>
+                    <a href="{% url 'admin:auth_user_change' student.id %}" class="btn btn-secondary">
+                        <i class="fas fa-user"></i> View Profile
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Student Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">Overall Average</h6>
+                    <h2 class="mb-0">{{ overall_avg|floatformat:1 }}%</h2>
+                    <p class="text-muted mb-0">Across all subjects</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">Total Assignments</h6>
+                    <h2 class="mb-0">{{ total_assignments }}</h2>
+                    <p class="text-muted mb-0">Completed assignments</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">Average GPA</h6>
+                    <h2 class="mb-0">{{ gpa|floatformat:2 }}</h2>
+                    <p class="text-muted mb-0">4.0 scale</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">Attendance Rate</h6>
+                    <h2 class="mb-0">{{ attendance_rate|floatformat:1 }}%</h2>
+                    <p class="text-muted mb-0">Current academic year</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Subject-wise Grades -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Subject-wise Performance</h5>
+        </div>
+        <div class="card-body">
+            {% if subject_grades %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Subject</th>
+                            <th>Teacher</th>
+                            <th>Assignments</th>
+                            <th>Average Grade</th>
+                            <th>Letter Grade</th>
+                            <th>Progress</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for subject_data in subject_grades %}
+                        <tr>
+                            <td>
+                                <strong>{{ subject_data.subject.name }}</strong>
+                                <br>
+                                <small class="text-muted">{{ subject_data.subject.code }}</small>
+                            </td>
+                            <td>
+                                {% if subject_data.teacher %}
+                                    {{ subject_data.teacher.get_full_name }}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                            <td>{{ subject_data.count }}</td>
+                            <td>
+                                <strong>{{ subject_data.avg|floatformat:1 }}%</strong>
+                            </td>
+                            <td>
+                                {% with letter_grade=subject_data.letter_grade %}
+                                {% if letter_grade %}
+                                <span class="badge bg-{% if letter_grade == 'A' %}success{% elif letter_grade == 'B' %}info{% elif letter_grade == 'C' %}warning{% elif letter_grade == 'D' %}secondary{% else %}danger{% endif %}">
+                                    {{ letter_grade }}
+                                </span>
+                                {% else %}
+                                —
+                                {% endif %}
+                                {% endwith %}
+                            </td>
+                            <td>
+                                <div class="progress" style="height: 10px;">
+                                    <div class="progress-bar bg-{% if subject_data.avg >= 90 %}success{% elif subject_data.avg >= 80 %}info{% elif subject_data.avg >= 70 %}warning{% elif subject_data.avg >= 60 %}secondary{% else %}danger{% endif %}" 
+                                         style="width: {{ subject_data.avg }}%"
+                                         role="progressbar" 
+                                         aria-valuenow="{{ subject_data.avg }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                    </div>
+                                </div>
+                                <small class="text-muted">{{ subject_data.avg|floatformat:1 }}%</small>
+                            </td>
+                            <td>
+                                <a href="#" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-chart-line"></i> Details
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-book fa-4x text-muted mb-3"></i>
+                <p class="text-muted">No grades found for this student</p>
+                <a href="{% url 'admin:store_studentacademicrecord_add' %}?student={{ student.id }}" 
+                   class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add Grade
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Recent Assignments -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Recent Assignments</h5>
+        </div>
+        <div class="card-body">
+            {% if recent_assignments %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Subject</th>
+                            <th>Assignment</th>
+                            <th>Type</th>
+                            <th>Score</th>
+                            <th>Grade</th>
+                            <th>Status</th>
+                            <th>Feedback</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for assignment in recent_assignments %}
+                        <tr>
+                            <td>{{ assignment.date_submitted|date:"M d"|default:"—" }}</td>
+                            <td>{{ assignment.subject.code }}</td>
+                            <td>
+                                <strong>{{ assignment.title }}</strong>
+                                {% if assignment.description %}
+                                <br>
+                                <small class="text-muted">{{ assignment.description|truncatewords:10 }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-{% if assignment.grade_type == 'exam' %}danger{% elif assignment.grade_type == 'quiz' %}info{% else %}primary{% endif %}">
+                                    {{ assignment.get_grade_type_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if assignment.score %}
+                                <strong>{{ assignment.score }}/{{ assignment.max_score }}</strong>
+                                <br>
+                                <small class="text-muted">{{ assignment.percentage|floatformat:1 }}%</small>
+                                {% else %}
+                                —
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if assignment.letter_grade %}
+                                <span class="badge bg-{% if assignment.letter_grade == 'A' %}success{% elif assignment.letter_grade == 'B' %}info{% elif assignment.letter_grade == 'C' %}warning{% elif assignment.letter_grade == 'D' %}secondary{% else %}danger{% endif %}">
+                                    {{ assignment.letter_grade }}
+                                </span>
+                                {% else %}
+                                —
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-{% if assignment.status == 'published' %}success{% elif assignment.status == 'draft' %}warning{% else %}secondary{% endif %}">
+                                    {{ assignment.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if assignment.teacher_notes %}
+                                <button type="button" class="btn btn-sm btn-outline-info" 
+                                        data-bs-toggle="popover" 
+                                        data-bs-placement="left"
+                                        data-bs-content="{{ assignment.teacher_notes }}">
+                                    <i class="fas fa-comment"></i> View
+                                </button>
+                                {% else %}
+                                <span class="text-muted">No feedback</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-3">
+                <p class="text-muted">No recent assignments found</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+// Initialize popovers
+document.addEventListener('DOMContentLoaded', function() {
+    var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'))
+    var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+        return new bootstrap.Popover(popoverTriggerEl)
+    })
+})
+</script>
+{% endblock %}

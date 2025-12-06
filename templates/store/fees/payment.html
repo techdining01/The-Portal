@@ -1,0 +1,319 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Fee Payment - BrillsPay{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'store:dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Fee Payment</li>
+                </ol>
+            </nav>
+            <h1 class="h2 fw-bold">School Fee Payment</h1>
+            <p class="text-muted">Pay school fees securely using Paystack or other payment methods</p>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Fee Payment Form -->
+        <div class="col-lg-8 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">
+                        <i class="fas fa-credit-card me-2 text-primary"></i>Make Payment
+                    </h5>
+                    
+                    <form method="post" id="feePaymentForm">
+                        {% csrf_token %}
+                        
+                        <!-- Student Selection -->
+                        <div class="mb-4">
+                            <label for="student" class="form-label fw-bold">
+                                Select Student <span class="text-danger">*</span>
+                            </label>
+                            {{ form.student }}
+                            {% if form.student.errors %}
+                            <div class="text-danger small mt-1">{{ form.student.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Fee Structure -->
+                        <div class="mb-4">
+                            <label for="fee_structure" class="form-label fw-bold">
+                                Fee Structure <span class="text-danger">*</span>
+                            </label>
+                            {{ form.fee_structure }}
+                            {% if form.fee_structure.errors %}
+                            <div class="text-danger small mt-1">{{ form.fee_structure.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Amount -->
+                        <div class="mb-4">
+                            <label for="amount_paid" class="form-label fw-bold">
+                                Amount to Pay (₦) <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">₦</span>
+                                {{ form.amount_paid }}
+                            </div>
+                            {% if form.amount_paid.errors %}
+                            <div class="text-danger small mt-1">{{ form.amount_paid.errors }}</div>
+                            {% endif %}
+                            <div class="form-text">
+                                Enter the amount you wish to pay. You can pay in full or partially.
+                            </div>
+                        </div>
+                        
+                        <!-- Payment Method -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Payment Method <span class="text-danger">*</span></label>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <div class="form-check card border p-3">
+                                        <input class="form-check-input" type="radio" name="payment_method" 
+                                               id="paystack" value="paystack" checked>
+                                        <label class="form-check-label w-100" for="paystack">
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-credit-card fa-2x text-primary me-3"></i>
+                                                <div>
+                                                    <h6 class="fw-bold mb-1">Paystack</h6>
+                                                    <p class="text-muted small mb-0">Card & Bank Transfer</p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <div class="form-check card border p-3">
+                                        <input class="form-check-input" type="radio" name="payment_method" 
+                                               id="bank_transfer" value="bank_transfer">
+                                        <label class="form-check-label w-100" for="bank_transfer">
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-university fa-2x text-success me-3"></i>
+                                                <div>
+                                                    <h6 class="fw-bold mb-1">Bank Transfer</h6>
+                                                    <p class="text-muted small mb-0">Manual Transfer</p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <div class="form-check card border p-3">
+                                        <input class="form-check-input" type="radio" name="payment_method" 
+                                               id="cash" value="cash">
+                                        <label class="form-check-label w-100" for="cash">
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-money-bill-wave fa-2x text-warning me-3"></i>
+                                                <div>
+                                                    <h6 class="fw-bold mb-1">Cash</h6>
+                                                    <p class="text-muted small mb-0">School Office</p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Notes -->
+                        <div class="mb-4">
+                            <label for="notes" class="form-label fw-bold">Additional Notes</label>
+                            {{ form.notes }}
+                        </div>
+                        
+                        <!-- Terms -->
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="terms" required>
+                                <label class="form-check-label" for="terms">
+                                    I agree that all fee payments are non-refundable except as stated in school policy.
+                                    I understand that exam access will be granted upon successful payment verification.
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Submit Button -->
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-lock me-2"></i> Proceed to Payment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Unpaid Fees & Info -->
+        <div class="col-lg-4">
+            <!-- Unpaid Fees Summary -->
+            {% if unpaid_fees %}
+            <div class="card border-0 shadow-sm mb-4 border-left-danger">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="fas fa-exclamation-triangle fa-lg text-danger me-3"></i>
+                        <h5 class="card-title mb-0">Unpaid Fees</h5>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h3 class="fw-bold text-danger">₦{{ total_unpaid|floatformat:2 }}</h3>
+                        <p class="text-muted small">Total outstanding balance</p>
+                    </div>
+                    
+                    <div class="accordion" id="unpaidFeesAccordion">
+                        {% for fee in unpaid_fees %}
+                        <div class="accordion-item border-0">
+                            <h6 class="accordion-header">
+                                <button class="accordion-button collapsed py-2" type="button" 
+                                        data-bs-toggle="collapse" 
+                                        data-bs-target="#fee{{ forloop.counter }}">
+                                    {{ fee.fee.name }}
+                                </button>
+                            </h6>
+                            <div id="fee{{ forloop.counter }}" class="accordion-collapse collapse" 
+                                 data-bs-parent="#unpaidFeesAccordion">
+                                <div class="accordion-body p-3">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Total Amount:</span>
+                                        <strong>₦{{ fee.fee.amount|floatformat:2 }}</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Paid:</span>
+                                        <span class="text-success">₦{{ fee.paid|floatformat:2 }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Balance:</span>
+                                        <span class="text-danger">₦{{ fee.balance|floatformat:2 }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Due Date:</span>
+                                        <span>{{ fee.fee.due_date|date:"M d, Y" }}</span>
+                                    </div>
+                                    {% if fee.fee.late_fee_applicable %}
+                                    <div class="alert alert-warning py-2 mb-0">
+                                        <i class="fas fa-clock me-2"></i>
+                                        Late fee applies: ₦{{ fee.fee.late_fee|floatformat:2 }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Payment Info -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">
+                        <i class="fas fa-info-circle me-2 text-primary"></i>Payment Information
+                    </h5>
+                    
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-3">Bank Transfer Details</h6>
+                        <div class="bg-light p-3 rounded">
+                            <p class="mb-2"><strong>Bank:</strong> Access Bank</p>
+                            <p class="mb-2"><strong>Account Name:</strong> The Brills School</p>
+                            <p class="mb-2"><strong>Account Number:</strong> 0123456789</p>
+                            <p class="mb-0"><strong>Reference:</strong> Student Admission Number</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-3">Exam Access</h6>
+                        <p class="text-muted small">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            CBT exam access is automatically granted upon successful fee payment.
+                        </p>
+                        <p class="text-muted small">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            Access remains valid for the entire academic term.
+                        </p>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-headset fa-lg me-3"></i>
+                            <div>
+                                <h6 class="fw-bold mb-1">Need Help?</h6>
+                                <p class="mb-0 small">Contact: <strong>0807 982 3665</strong></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Update amount field when fee structure changes
+    document.getElementById('id_fee_structure').addEventListener('change', function() {
+        const feeId = this.value;
+        if (feeId) {
+            fetch(`/api/fee-structure/${feeId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('id_amount_paid').value = data.amount;
+                    document.getElementById('id_amount_paid').max = data.amount;
+                });
+        }
+    });
+    
+    // Payment method selection
+    document.querySelectorAll('input[name="payment_method"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const submitBtn = document.querySelector('button[type="submit"]');
+            if (this.value === 'paystack') {
+                submitBtn.innerHTML = '<i class="fas fa-lock me-2"></i> Proceed to Paystack';
+                submitBtn.classList.remove('btn-success', 'btn-warning');
+                submitBtn.classList.add('btn-primary');
+            } else if (this.value === 'bank_transfer') {
+                submitBtn.innerHTML = '<i class="fas fa-university me-2"></i> Record Transfer';
+                submitBtn.classList.remove('btn-primary', 'btn-warning');
+                submitBtn.classList.add('btn-success');
+            } else if (this.value === 'cash') {
+                submitBtn.innerHTML = '<i class="fas fa-money-bill-wave me-2"></i> Record Cash Payment';
+                submitBtn.classList.remove('btn-primary', 'btn-success');
+                submitBtn.classList.add('btn-warning');
+            }
+        });
+    });
+    
+    // Form validation
+    document.getElementById('feePaymentForm').addEventListener('submit', function(e) {
+        const amount = parseFloat(document.getElementById('id_amount_paid').value);
+        const feeStructure = document.getElementById('id_fee_structure').value;
+        
+        if (!feeStructure) {
+            e.preventDefault();
+            showToast('Please select a fee structure', 'error');
+            return;
+        }
+        
+        if (amount <= 0) {
+            e.preventDefault();
+            showToast('Please enter a valid amount', 'error');
+            return;
+        }
+        
+        // Show loading
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Processing...';
+        submitBtn.disabled = true;
+    });
+</script>
+{% endblock %}

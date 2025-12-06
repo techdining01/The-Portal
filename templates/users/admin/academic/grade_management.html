@@ -1,0 +1,209 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    .grade-card {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        background: white;
+    }
+    .grade-badge {
+        font-size: 0.8em;
+        padding: 3px 8px;
+    }
+    .grade-score {
+        font-weight: bold;
+        font-size: 1.2em;
+    }
+    .grade-percentage {
+        font-size: 0.9em;
+        color: #6c757d;
+    }
+    .grade-letter {
+        font-size: 1.5em;
+        font-weight: bold;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        color: white;
+    }
+    .grade-letter.A { background-color: #28a745; }
+    .grade-letter.B { background-color: #17a2b8; }
+    .grade-letter.C { background-color: #ffc107; color: #212529; }
+    .grade-letter.D { background-color: #6c757d; }
+    .grade-letter.F { background-color: #dc3545; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1>Grade Management</h1>
+            <p class="text-muted">Manage student grades and academic records</p>
+        </div>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">Total Grades</h6>
+                            <h2 class="mb-0">{{ recent_grades.count }}</h2>
+                        </div>
+                        <i class="fas fa-graduation-cap fa-3x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">Pending Grades</h6>
+                            <h2 class="mb-0">{{ pending_grades }}</h2>
+                        </div>
+                        <i class="fas fa-edit fa-3x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">Published Grades</h6>
+                            <h2 class="mb-0">{{ published_grades }}</h2>
+                        </div>
+                        <i class="fas fa-check-circle fa-3x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-info">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">Quick Actions</h6>
+                        </div>
+                        <i class="fas fa-bolt fa-3x"></i>
+                    </div>
+                    <div class="mt-3">
+                        <a href="{% url 'admin:bulk_grade_entry' %}" class="btn btn-light btn-sm">
+                            <i class="fas fa-upload"></i> Bulk Entry
+                        </a>
+                        <a href="{% url 'admin:grade_analytics' %}" class="btn btn-light btn-sm">
+                            <i class="fas fa-chart-bar"></i> Analytics
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Grades -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Recent Grades</h5>
+        </div>
+        <div class="card-body">
+            {% if recent_grades %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Subject</th>
+                            <th>Assignment</th>
+                            <th>Type</th>
+                            <th>Score</th>
+                            <th>Grade</th>
+                            <th>Status</th>
+                            <th>Due Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for grade in recent_grades %}
+                        <tr>
+                            <td>
+                                <strong>{{ grade.student.get_full_name }}</strong>
+                                <br>
+                                <small class="text-muted">{{ grade.student.userprofile.grade_level|default:"—" }}</small>
+                            </td>
+                            <td>{{ grade.subject.name }}</td>
+                            <td>{{ grade.title }}</td>
+                            <td>
+                                <span class="badge grade-badge bg-{% if grade.grade_type == 'exam' %}danger{% elif grade.grade_type == 'quiz' %}info{% else %}primary{% endif %}">
+                                    {{ grade.get_grade_type_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="grade-score">
+                                    {% if grade.score %}
+                                        {{ grade.score }}/{{ grade.max_score }}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </div>
+                                {% if grade.percentage %}
+                                <div class="grade-percentage">
+                                    {{ grade.percentage|floatformat:1 }}%
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if grade.letter_grade %}
+                                <div class="grade-letter {{ grade.letter_grade }}">
+                                    {{ grade.letter_grade }}
+                                </div>
+                                {% else %}
+                                —
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-{% if grade.status == 'published' %}success{% elif grade.status == 'draft' %}warning{% else %}secondary{% endif %}">
+                                    {{ grade.get_status_display }}
+                                </span>
+                            </td>
+                            <td>{{ grade.date_due|date:"M d, Y" }}</td>
+                            <td>
+                                <a href="{% url 'admin:store_studentacademicrecord_change' grade.id %}" 
+                                   class="btn btn-sm btn-outline-primary" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="#" class="btn btn-sm btn-outline-info" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-graduation-cap fa-4x text-muted mb-3"></i>
+                <p class="text-muted">No grades found</p>
+                <a href="{% url 'admin:store_studentacademicrecord_add' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add First Grade
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

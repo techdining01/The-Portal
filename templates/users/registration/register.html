@@ -1,320 +1,599 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - School Management System</title>
-    
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
-    
-    <style>
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Register - BrillsPay{% endblock %}
+
+{% block extra_head %}
+<style>
+    .auth-container {
+        max-width: 1000px;
+        margin: 2rem auto;
+    }
+
+    .auth-card {
+        border: none;
+        border-radius: 16px;
+        box-shadow: var(--shadow-lg);
+        overflow: hidden;
+        background: white;
+    }
+
+    .auth-header {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+    }
+
+    .auth-header h1 {
+        font-family: 'Poppins', sans-serif;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .auth-header p {
+        opacity: 0.9;
+    }
+
+    .auth-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        min-height: 500px;
+    }
+
+    .auth-info {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        padding: 2.5rem;
+        border-right: 1px solid var(--border);
+    }
+
+    .auth-form {
+        padding: 2.5rem;
+    }
+
+    .user-type-selector {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .user-type-btn {
+        flex: 1;
+        padding: 1rem;
+        border: 2px solid var(--border);
+        background: white;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+        font-weight: 500;
+    }
+
+    .user-type-btn:hover {
+        border-color: var(--primary);
+        transform: translateY(-2px);
+    }
+
+    .user-type-btn.active {
+        border-color: var(--primary);
+        background: rgba(37, 99, 235, 0.05);
+        color: var(--primary);
+    }
+
+    .user-type-btn i {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    .form-section {
+        display: none;
+        animation: fadeIn 0.5s ease;
+    }
+
+    .form-section.active {
+        display: block;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .student-select {
+        position: relative;
+    }
+
+    .student-select i {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--primary);
+        z-index: 10;
+    }
+
+    .student-select select {
+        padding-left: 45px;
+    }
+
+    .password-strength {
+        margin-top: 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .strength-bar {
+        height: 4px;
+        background: #e2e8f0;
+        border-radius: 2px;
+        margin-top: 0.25rem;
+        overflow: hidden;
+    }
+
+    .strength-fill {
+        height: 100%;
+        width: 0%;
+        background: var(--danger);
+        transition: all 0.3s ease;
+    }
+
+    .strength-fill.weak { width: 33%; background: var(--danger); }
+    .strength-fill.medium { width: 66%; background: var(--warning); }
+    .strength-fill.strong { width: 100%; background: var(--success); }
+
+    .terms-check {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        margin: 1.5rem 0;
+    }
+
+    .terms-check input {
+        margin-top: 0.25rem;
+    }
+
+    .terms-check label {
+        font-size: 0.9rem;
+        color: var(--secondary);
+    }
+
+    .terms-check a {
+        color: var(--primary);
+        text-decoration: none;
+    }
+
+    .terms-check a:hover {
+        text-decoration: underline;
+    }
+
+    .login-redirect {
+        text-align: center;
+        margin-top: 1.5rem;
+        color: var(--secondary);
+    }
+
+    .login-redirect a {
+        color: var(--primary);
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .login-redirect a:hover {
+        text-decoration: underline;
+    }
+
+    .brillspay-features {
+        margin-top: 2rem;
+    }
+
+    .feature-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        padding: 0.75rem;
+        border-radius: 10px;
+        background: white;
+        box-shadow: var(--shadow);
+    }
+
+    .feature-item i {
+        color: var(--primary);
+        font-size: 1.25rem;
+        width: 24px;
+    }
+
+    @media (max-width: 768px) {
+        .auth-content {
+            grid-template-columns: 1fr;
         }
         
-        .register-card {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        .auth-info {
+            border-right: none;
+            border-bottom: 1px solid var(--border);
         }
         
-        .register-header {
-            background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
-            color: white;
-            padding: 40px;
-            text-align: center;
-            border-radius: 20px 20px 0 0;
+        .user-type-selector {
+            flex-direction: column;
         }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-container fade-in-up">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h1>Join BrillsPay</h1>
+            <p>Register to manage school payments and purchases for students</p>
+        </div>
         
-        .register-body {
-            padding: 40px;
-        }
-        
-        .form-control, .form-select {
-            border-radius: 10px;
-            padding: 12px 15px;
-            border: 2px solid #e9ecef;
-        }
-        
-        .form-control:focus, .form-select:focus {
-            border-color: #4361ee;
-            box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.25);
-        }
-        
-        .btn-register {
-            background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
-            border: none;
-            color: white;
-            padding: 12px;
-            border-radius: 10px;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-        
-        .btn-register:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(67, 97, 238, 0.3);
-        }
-        
-        .role-card {
-            border: 2px solid #e9ecef;
-            border-radius: 10px;
-            padding: 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-            height: 100%;
-        }
-        
-        .role-card:hover {
-            border-color: #4361ee;
-            transform: translateY(-5px);
-        }
-        
-        .role-card.selected {
-            border-color: #4361ee;
-            background-color: rgba(67, 97, 238, 0.1);
-        }
-        
-        .role-icon {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            color: #4361ee;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-lg-10">
-                <div class="register-card">
-                    <!-- Header -->
-                    <div class="register-header">
-                        <div class="mb-4">
-                            <i class="bi bi-mortarboard-fill" style="font-size: 3rem;"></i>
+        <div class="auth-content">
+            <!-- Info Panel -->
+            <div class="auth-info">
+                <h2 class="h4 mb-4">Why Register with BrillsPay?</h2>
+                <p class="mb-4">BrillsPay is integrated with {{ SCHOOL_NAME }}'s school management system to provide seamless payment solutions for:</p>
+                
+                <div class="brillspay-features">
+                    <div class="feature-item">
+                        <i class="fas fa-graduation-cap"></i>
+                        <div>
+                            <h6 class="mb-1">School Fee Payments</h6>
+                            <small>Pay tuition fees securely with Paystack integration</small>
                         </div>
-                        <h1 class="h2 mb-3">Join SchoolSys</h1>
-                        <p class="mb-0 opacity-75">Create your school management account</p>
                     </div>
                     
-                    <!-- Body -->
-                    <div class="register-body">
-                        {% if form.errors %}
-                        <div class="alert alert-danger mb-4">
-                            <i class="bi bi-exclamation-triangle me-2"></i>
-                            Please correct the errors below:
-                            <ul class="mb-0 mt-2">
-                                {% for field in form %}
-                                    {% for error in field.errors %}
-                                        <li>{{ field.label }}: {{ error }}</li>
-                                    {% endfor %}
-                                {% endfor %}
-                                {% for error in form.non_field_errors %}
-                                    <li>{{ error }}</li>
-                                {% endfor %}
-                            </ul>
+                    <div class="feature-item">
+                        <i class="fas fa-book"></i>
+                        <div>
+                            <h6 class="mb-1">Exam Access</h6>
+                            <small>Enable CBT exam access after fee payment</small>
                         </div>
-                        {% endif %}
-                        
-                        <form method="post">
-                            {% csrf_token %}
-                            
-                            <!-- Account Information -->
-                            <div class="mb-4">
-                                <h5 class="mb-4">Account Information</h5>
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">Username <span class="text-danger">*</span></label>
-                                        <input type="text" name="username" class="form-control" required>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Email Address <span class="text-danger">*</span></label>
-                                        <input type="email" name="email" class="form-control" required>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">First Name <span class="text-danger">*</span></label>
-                                        <input type="text" name="first_name" class="form-control" required>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Last Name <span class="text-danger">*</span></label>
-                                        <input type="text" name="last_name" class="form-control" required>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Password <span class="text-danger">*</span></label>
-                                        <input type="password" name="password1" class="form-control" required>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Confirm Password <span class="text-danger">*</span></label>
-                                        <input type="password" name="password2" class="form-control" required>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Role Selection -->
-                            <div class="mb-4">
-                                <h5 class="mb-4">Select Your Role <span class="text-danger">*</span></h5>
-                                <div class="row g-3">
-                                    <div class="col-md-3">
-                                        <div class="role-card" onclick="selectRole('student')">
-                                            <div class="role-icon">
-                                                <i class="bi bi-mortarboard"></i>
-                                            </div>
-                                            <h6>Student</h6>
-                                            <p class="small text-muted mb-0">Access classes and assignments</p>
-                                            <input type="radio" name="role" value="student" class="d-none">
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="role-card" onclick="selectRole('parent')">
-                                            <div class="role-icon">
-                                                <i class="bi bi-people"></i>
-                                            </div>
-                                            <h6>Parent</h6>
-                                            <p class="small text-muted mb-0">Monitor child's progress</p>
-                                            <input type="radio" name="role" value="parent" class="d-none">
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="role-card" onclick="selectRole('teacher')">
-                                            <div class="role-icon">
-                                                <i class="bi bi-person-badge"></i>
-                                            </div>
-                                            <h6>Teacher</h6>
-                                            <p class="small text-muted mb-0">Manage classes and grades</p>
-                                            <input type="radio" name="role" value="teacher" class="d-none">
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="role-card" onclick="selectRole('staff')">
-                                            <div class="role-icon">
-                                                <i class="bi bi-person-gear"></i>
-                                            </div>
-                                            <h6>Staff</h6>
-                                            <p class="small text-muted mb-0">Administrative access</p>
-                                            <input type="radio" name="role" value="staff" class="d-none">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Profile Information -->
-                            <div class="mb-4">
-                                <h5 class="mb-4">Profile Information</h5>
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">Phone Number</label>
-                                        <input type="tel" name="phone_number" class="form-control">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Date of Birth</label>
-                                        <input type="date" name="date_of_birth" class="form-control">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Gender</label>
-                                        <select name="gender" class="form-select">
-                                            <option value="">Select Gender</option>
-                                            <option value="M">Male</option>
-                                            <option value="F">Female</option>
-                                            <option value="O">Other</option>
-                                            <option value="N">Prefer not to say</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Address</label>
-                                        <textarea name="address" class="form-control" rows="1"></textarea>
-                                    </div>
-                                    <!-- Student specific fields -->
-                                    <div class="col-md-6 student-fields" style="display: none;">
-                                        <label class="form-label">Grade Level</label>
-                                        <input type="text" name="grade_level" class="form-control">
-                                    </div>
-                                    <div class="col-md-6 student-fields" style="display: none;">
-                                        <label class="form-label">Parent Email</label>
-                                        <input type="email" name="parent_email" class="form-control">
-                                    </div>
-                                    <!-- Teacher specific fields -->
-                                    <div class="col-md-6 teacher-fields" style="display: none;">
-                                        <label class="form-label">Department</label>
-                                        <input type="text" name="department" class="form-control">
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Terms and Conditions -->
-                            <div class="mb-4">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="terms" id="terms" required>
-                                    <label class="form-check-label" for="terms">
-                                        I agree to the <a href="#" class="text-decoration-none">Terms of Service</a> 
-                                        and <a href="#" class="text-decoration-none">Privacy Policy</a>
-                                    </label>
-                                </div>
-                            </div>
-                            
-                            <!-- Submit Button -->
-                            <div class="d-grid">
-                                <button type="submit" class="btn btn-register">
-                                    Create Account
-                                </button>
-                            </div>
-                            
-                            <!-- Login Link -->
-                            <div class="text-center mt-4">
-                                <p class="text-muted mb-0">Already have an account?</p>
-                                <a href="{% url 'login' %}" class="text-decoration-none">Sign in here</a>
-                            </div>
-                        </form>
                     </div>
+                    
+                    <div class="feature-item">
+                        <i class="fas fa-shopping-cart"></i>
+                        <div>
+                            <h6 class="mb-1">School Store</h6>
+                            <small>Purchase uniforms, books, and supplies</small>
+                        </div>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <i class="fas fa-user-check"></i>
+                        <div>
+                            <h6 class="mb-1">Student Management</h6>
+                            <small>Link purchases to specific students</small>
+                        </div>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <i class="fas fa-chart-line"></i>
+                        <div>
+                            <h6 class="mb-1">Payment History</h6>
+                            <small>Track all payments and purchases</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Form Panel -->
+            <div class="auth-form">
+                <form method="post" id="registerForm">
+                    {% csrf_token %}
+                    
+                    <!-- User Type Selection -->
+                    <div class="user-type-selector">
+                        <button type="button" class="user-type-btn active" data-user-type="parent">
+                            <i class="fas fa-users"></i>
+                            Parent/Guardian
+                        </button>
+                        <button type="button" class="user-type-btn" data-user-type="student">
+                            <i class="fas fa-user-graduate"></i>
+                            Student
+                        </button>
+                    </div>
+                    
+                    <!-- Parent/Guardian Form -->
+                    <div class="form-section active" id="parentForm">
+                        <h3 class="h5 mb-4">Parent/Guardian Registration</h3>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="parentFirstName" class="form-label">First Name *</label>
+                                <input type="text" class="form-control" id="parentFirstName" name="parent_first_name" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="parentLastName" class="form-label">Last Name *</label>
+                                <input type="text" class="form-control" id="parentLastName" name="parent_last_name" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3 mt-3">
+                            <div class="col-md-6">
+                                <label for="parentEmail" class="form-label">Email Address *</label>
+                                <input type="email" class="form-control" id="parentEmail" name="parent_email" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="parentPhone" class="form-label">Phone Number *</label>
+                                <input type="tel" class="form-control" id="parentPhone" name="parent_phone" required>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <label for="relationship" class="form-label">Relationship to Student *</label>
+                            <select class="form-select" id="relationship" name="relationship" required>
+                                <option value="">Select Relationship</option>
+                                <option value="father">Father</option>
+                                <option value="mother">Mother</option>
+                                <option value="guardian">Guardian</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <label class="form-label">Select Students *</label>
+                            <div class="student-select">
+                                <i class="fas fa-search"></i>
+                                <select class="form-select" name="students" multiple required data-placeholder="Search and select students...">
+                                    <option value="">Search for students...</option>
+                                    <!-- Students will be populated via AJAX -->
+                                </select>
+                            </div>
+                            <small class="text-muted">Hold Ctrl/Cmd to select multiple students</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Student Form -->
+                    <div class="form-section" id="studentForm">
+                        <h3 class="h5 mb-4">Student Registration</h3>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="studentFirstName" class="form-label">First Name *</label>
+                                <input type="text" class="form-control" id="studentFirstName" name="student_first_name">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="studentLastName" class="form-label">Last Name *</label>
+                                <input type="text" class="form-control" id="studentLastName" name="student_last_name">
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3 mt-3">
+                            <div class="col-md-6">
+                                <label for="studentEmail" class="form-label">Email Address *</label>
+                                <input type="email" class="form-control" id="studentEmail" name="student_email">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="studentAdmission" class="form-label">Admission Number *</label>
+                                <input type="text" class="form-control" id="studentAdmission" name="admission_number">
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3 mt-3">
+                            <div class="col-md-6">
+                                <label for="studentClass" class="form-label">Class *</label>
+                                <select class="form-select" id="studentClass" name="student_class">
+                                    <option value="">Select Class</option>
+                                    <!-- Classes will be populated -->
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="studentPhone" class="form-label">Phone Number</label>
+                                <input type="tel" class="form-control" id="studentPhone" name="student_phone">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Common Fields -->
+                    <div class="mt-4">
+                        <h4 class="h6 mb-3">Account Security</h4>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="password" class="form-label">Password *</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="password" name="password" required>
+                                    <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                                <div class="password-strength">
+                                    <small>Password strength: <span id="strengthText">None</span></small>
+                                    <div class="strength-bar">
+                                        <div class="strength-fill" id="strengthFill"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="confirmPassword" class="form-label">Confirm Password *</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="confirmPassword" name="confirm_password" required>
+                                    <button class="btn btn-outline-secondary" type="button" id="toggleConfirmPassword">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Terms and Conditions -->
+                    <div class="terms-check">
+                        <input type="checkbox" class="form-check-input" id="terms" name="terms" required>
+                        <label for="terms">
+                            I agree to the <a href="#" target="_blank">Terms of Service</a> and 
+                            <a href="#" target="_blank">Privacy Policy</a>. I understand that all payments 
+                            are processed securely via Paystack and are non-refundable except as stated in 
+                            school policy.
+                        </label>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100 py-3">
+                        <i class="fas fa-user-plus me-2"></i> Create Account
+                    </button>
+                </form>
+                
+                <div class="login-redirect">
+                    Already have an account? <a href="{% url 'users:login' %}">Sign In Here</a>
                 </div>
             </div>
         </div>
     </div>
-    
-    <!-- Bootstrap JS Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <script>
-        // Role selection with visual feedback
-        function selectRole(role) {
-            // Remove selected class from all cards
-            document.querySelectorAll('.role-card').forEach(card => {
-                card.classList.remove('selected');
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // User type switching
+        const userTypeBtns = document.querySelectorAll('.user-type-btn');
+        const parentForm = document.getElementById('parentForm');
+        const studentForm = document.getElementById('studentForm');
+        
+        userTypeBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Update active button
+                userTypeBtns.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Show correct form
+                const userType = this.dataset.userType;
+                if (userType === 'parent') {
+                    parentForm.classList.add('active');
+                    studentForm.classList.remove('active');
+                    
+                    // Update required fields
+                    document.querySelectorAll('#parentForm [required]').forEach(el => el.required = true);
+                    document.querySelectorAll('#studentForm [required]').forEach(el => el.required = false);
+                } else {
+                    parentForm.classList.remove('active');
+                    studentForm.classList.add('active');
+                    
+                    // Update required fields
+                    document.querySelectorAll('#parentForm [required]').forEach(el => el.required = false);
+                    document.querySelectorAll('#studentForm [required]').forEach(el => el.required = true);
+                }
             });
+        });
+        
+        // Password toggle
+        const togglePassword = document.getElementById('togglePassword');
+        const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
+        const passwordField = document.getElementById('password');
+        const confirmPasswordField = document.getElementById('confirmPassword');
+        
+        togglePassword.addEventListener('click', function() {
+            const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordField.setAttribute('type', type);
+            this.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+        });
+        
+        toggleConfirmPassword.addEventListener('click', function() {
+            const type = confirmPasswordField.getAttribute('type') === 'password' ? 'text' : 'password';
+            confirmPasswordField.setAttribute('type', type);
+            this.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+        });
+        
+        // Password strength checker
+        passwordField.addEventListener('input', function() {
+            const password = this.value;
+            const strengthFill = document.getElementById('strengthFill');
+            const strengthText = document.getElementById('strengthText');
             
-            // Add selected class to clicked card
-            event.currentTarget.classList.add('selected');
+            let strength = 0;
             
-            // Set the radio button value
-            const radio = event.currentTarget.querySelector('input[type="radio"]');
-            radio.checked = true;
+            // Length check
+            if (password.length >= 8) strength++;
+            if (password.length >= 12) strength++;
             
-            // Show/hide role-specific fields
-            document.querySelectorAll('.student-fields, .teacher-fields').forEach(field => {
-                field.style.display = 'none';
-            });
+            // Complexity checks
+            if (/[A-Z]/.test(password)) strength++;
+            if (/[0-9]/.test(password)) strength++;
+            if (/[^A-Za-z0-9]/.test(password)) strength++;
             
-            if (role === 'student') {
-                document.querySelectorAll('.student-fields').forEach(field => {
-                    field.style.display = 'block';
-                });
-            } else if (role === 'teacher') {
-                document.querySelectorAll('.teacher-fields').forEach(field => {
-                    field.style.display = 'block';
-                });
+            // Update display
+            strengthFill.className = 'strength-fill';
+            if (password.length === 0) {
+                strengthText.textContent = 'None';
+                strengthFill.style.width = '0%';
+            } else if (strength <= 2) {
+                strengthText.textContent = 'Weak';
+                strengthFill.classList.add('weak');
+            } else if (strength <= 4) {
+                strengthText.textContent = 'Medium';
+                strengthFill.classList.add('medium');
+            } else {
+                strengthText.textContent = 'Strong';
+                strengthFill.classList.add('strong');
             }
+        });
+        
+        // Form validation
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            const password = passwordField.value;
+            const confirmPassword = confirmPasswordField.value;
+            
+            // Check password match
+            if (password !== confirmPassword) {
+                e.preventDefault();
+                showToast('Passwords do not match!', 'error');
+                confirmPasswordField.focus();
+                return;
+            }
+            
+            // Check password strength
+            if (password.length < 8) {
+                e.preventDefault();
+                showToast('Password must be at least 8 characters long', 'error');
+                passwordField.focus();
+                return;
+            }
+            
+            // Show loading
+            showLoading();
+        });
+        
+        // Load student data for parent form
+        function loadStudents(query = '') {
+            fetch(`/api/students/?q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    const select = document.querySelector('select[name="students"]');
+                    select.innerHTML = '<option value="">Search for students...</option>';
+                    
+                    data.students.forEach(student => {
+                        const option = document.createElement('option');
+                        option.value = student.id;
+                        option.textContent = `${student.name} - ${student.admission_no} (${student.class_name})`;
+                        select.appendChild(option);
+                    });
+                })
+                .catch(error => console.error('Error loading students:', error));
         }
         
-        // Initialize form with first role selected
-        document.addEventListener('DOMContentLoaded', function() {
-            selectRole('student');
+        // Initial load of students
+        loadStudents();
+        
+        // Search students on input
+        document.querySelector('select[name="students"]').addEventListener('input', function(e) {
+            if (e.target.value.length >= 2) {
+                loadStudents(e.target.value);
+            }
         });
-    </script>
-</body>
-</html>
+        
+        // Load classes for student form
+        fetch('/api/classes/')
+            .then(response => response.json())
+            .then(data => {
+                const select = document.getElementById('studentClass');
+                data.classes.forEach(cls => {
+                    const option = document.createElement('option');
+                    option.value = cls.id;
+                    option.textContent = cls.name;
+                    select.appendChild(option);
+                });
+            })
+            .catch(error => console.error('Error loading classes:', error));
+    });
+</script>
+{% endblock %}

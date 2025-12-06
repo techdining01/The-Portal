@@ -1,0 +1,124 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} | School Management System{% endblock %}
+
+{% block branding %}
+<h1 id="site-name">
+    <a href="{% url 'admin:index' %}">
+        <img src="{% static 'admin/img/school-logo.png' %}" alt="School Logo" height="40" class="me-2">
+        School Management System Admin
+    </a>
+</h1>
+{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+:root {
+    --primary: #4361ee;
+    --secondary: #3a0ca3;
+}
+
+#header {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    color: white;
+}
+
+#branding h1 a {
+    color: white;
+}
+
+.module h2, .module caption, .inline-group h2 {
+    background: var(--primary);
+}
+
+a:link, a:visited {
+    color: var(--primary);
+}
+
+a:hover {
+    color: var(--secondary);
+}
+
+.button, input[type=submit], input[type=button], .submit-row input, a.button {
+    background: var(--primary);
+}
+
+.button:hover, input[type=submit]:hover, input[type=button]:hover {
+    background: var(--secondary);
+}
+
+/* Custom dashboard styles */
+.dashboard #content {
+    width: auto;
+}
+
+.dashboard .module table th {
+    width: 100%;
+}
+
+.dashboard .module table td {
+    white-space: nowrap;
+}
+
+/* Custom card styling for admin */
+.custom-admin-header {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #4cc9f0;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+/* Bootstrap-like badges */
+.badge {
+    display: inline-block;
+    padding: 0.35em 0.65em;
+    font-size: 0.75em;
+    font-weight: 700;
+    line-height: 1;
+    color: #fff;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 0.375rem;
+}
+
+.bg-success { background-color: #198754; }
+.bg-danger { background-color: #dc3545; }
+.bg-warning { background-color: #ffc107; }
+.bg-info { background-color: #0dcaf0; }
+.bg-primary { background-color: #0d6efd; }
+.bg-secondary { background-color: #6c757d; }
+</style>
+{% endblock %}
+
+{% block nav-global %}
+<!-- Add global navigation items if needed -->
+{% endblock %}
+
+{% block footer %}
+{{ block.super }}
+<div id="footer" class="mt-4">
+    <div class="text-center text-muted">
+        <p class="mb-1">School Management System &copy; {% now "Y" %}</p>
+        <p class="mb-0">
+            <a href="{% url 'admin:documentation' %}" class="text-decoration-none me-3">Documentation</a> |
+            <a href="mailto:support@schoolsys.com" class="text-decoration-none ms-3">Support</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

@@ -1,1422 +1,1002 @@
-
 from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse, HttpResponse, HttpResponseForbidden
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST, require_GET
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
-from .models import Product, Order,PaymentRecord
-import json, datetime, requests
-from users.models import User
-from django.utils import timezone
-import secrets
-from django.conf import settings
-
-from django.contrib.admin.views.decorators import staff_member_required
-from django.db import models
-
-
-
-
-from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse, HttpResponse
-from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_POST, require_GET
-from django.contrib import messages
-from django.db import transaction
-from django.views import View
-from django.utils.decorators import method_decorator
-from django.conf import settings
-from django.urls import reverse
+from django.db.models import Q, Sum, Count, F, DecimalField
+from django.db.models.functions import TruncMonth, TruncYear, TruncDay
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView
+from django.urls import reverse_lazy, reverse
+from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
+from django.core.paginator import Paginator
+from django.utils import timezone
+from datetime import timedelta, datetime
 import json
-import uuid
-from decimal import Decimal
-from datetime import datetime
-from paystackapi.paystack import Paystack
-from paystackapi.transaction import Transaction
 import logging
-from datetime import timedelta
-from .models import Product, Category, Cart, CartItem, Order, OrderItem, PaymentRecord
-from django.db.models import Sum, Avg, F, Q 
+from decimal import Decimal
+from . import paystack
+from django.contrib.auth import get_user_model
+from django.conf import settings
+from users.models import Student
+from .models import (
+    Payment, Product, Order, OrderItem, Inventory, Cart,
+    CartItem, Category, FeePayment, Parent, PurchaseOrder, 
+    FeeStructure, StudentParent, Attendance
+)
+from .forms import *
+from .forms import FeeStructureForm
+from .utils import *
 
 
+User = get_user_model()
 
 logger = logging.getLogger(__name__)
 
-# Initialize Paystack
-paystack = Paystack(secret_key=settings.PAYSTACK_TEST_SECRET_KEY)
+ 
+# ==================== UTILITY FUNCTIONS ====================
 
-# ====================== PRODUCT VIEWS ======================
-def product_list(request):
-    """Public product listing - accessible to all"""
-    categories = Category.objects.all()
-    category_id = request.GET.get('category')
-    
-    products = Product.objects.filter(is_active=True)
-    
-    if category_id:
-        products = products.filter(category_id=category_id)
-    
-    return render(request, 'store/product_list.html', {
-        'products': products,
-        'categories': categories,
-        'selected_category': category_id
-    })
+def is_admin(user):
+    """Check if user is admin or superadmin"""
+    return user.is_authenticated and user.role in ['admin', 'superadmin']
 
-def product_detail(request, pk):
-    """Public product detail - accessible to all"""
-    product = get_object_or_404(Product, pk=pk, is_active=True)
-    
-    # Get related products
-    related_products = Product.objects.filter(
-        category=product.category,
-        is_active=True
-    ).exclude(pk=pk)[:4]
-    
-    return render(request, 'store/product_detail.html', {
-        'product': product,
-        'related_products': related_products,
-        'is_authenticated': request.user.is_authenticated
-    })
+def is_parent(user):
+    """Check if user is parent"""
+    return user.is_authenticated and user.role == 'parent'
 
-# ====================== CART VIEWS ======================
-@login_required
-def get_or_create_cart(request):
-    """Get or create cart for user"""
-    cart, created = Cart.objects.get_or_create(user=request.user)
-    return cart
+def is_student(user):
+    """Check if user is student"""
+    return user.is_authenticated and user.role == 'student'
+
+def is_teacher_or_staff(user):
+    """Check if user is teacher or staff"""
+    return user.is_authenticated and user.role in ['teacher', 'staff']
+
+# ==================== LANDING & PUBLIC VIEWS ====================
+
+class LandingPageView(TemplateView):
+    """Landing page view"""
+    template_name = 'store/landing.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['featured_products'] = Product.objects.filter(
+            is_featured=True,
+            is_active=True
+        )[:8]
+        context['categories'] = Category.objects.filter(
+            is_active=True,
+            parent__isnull=True
+        )[:6]
+        context['new_arrivals'] = Product.objects.filter(
+            is_active=True
+        ).order_by('-created_at')[:6]
+        return context
+
+
+class AboutView(TemplateView):
+    """About page view"""
+    template_name = 'store/about.html'
+
+
+class ContactView(TemplateView):
+    """Contact page view"""
+    template_name = 'store/contact.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['contact_form'] = ContactForm()
+        return context
+    
+    def post(self, request, *args, **kwargs):
+        form = ContactForm(request.POST)
+        if form.is_valid():
+            # Save contact message (you might want to create a ContactMessage model)
+            messages.success(request, 'Thank you for your message! We will get back to you soon.')
+            return redirect('store:contact')
+        return render(request, self.template_name, {'contact_form': form})
+
+
+# ==================== PRODUCT VIEWS ====================
+
+class ProductListView(ListView):
+    """Product listing page"""
+    model = Product
+    template_name = 'store/products/list.html'
+    context_object_name = 'products'
+    paginate_by = 12
+    
+    def get_queryset(self):
+        queryset = Product.objects.filter(is_active=True)
+        
+        # Search
+        search_query = self.request.GET.get('q', '')
+        if search_query:
+            queryset = queryset.filter(
+                Q(name__icontains=search_query) |
+                Q(description__icontains=search_query) |
+                Q(sku__icontains=search_query)
+            )
+        
+        # Category filter
+        category_slug = self.request.GET.get('category', '')
+        if category_slug:
+            try:
+                category = Category.objects.get(slug=category_slug)
+                # Get all subcategories
+                categories = category.get_descendants()
+                categories.append(category)
+                queryset = queryset.filter(category__in=categories)
+            except Category.DoesNotExist:
+                pass
+        
+        # Price range filter
+        min_price = self.request.GET.get('min_price', '')
+        max_price = self.request.GET.get('max_price', '')
+        if min_price:
+            queryset = queryset.filter(price__gte=min_price)
+        if max_price:
+            queryset = queryset.filter(price__lte=max_price)
+        
+        # Sort
+        sort_by = self.request.GET.get('sort_by', '-created_at')
+        if sort_by in ['name', '-name', 'price', '-price', 'created_at', '-created_at']:
+            queryset = queryset.order_by(sort_by)
+        
+        return queryset
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['categories'] = Category.objects.filter(is_active=True, parent__isnull=True)
+        context['search_form'] = ProductSearchForm(self.request.GET)
+        context['current_category'] = self.request.GET.get('category', '')
+        return context
+
+
+class ProductDetailView(DetailView):
+    """Product detail page"""
+    model = Product
+    template_name = 'store/products/detail.html'
+    context_object_name = 'product'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        product = self.get_object()
+        
+        # Increment view count
+        product.total_views += 1
+        product.save(update_fields=['total_views'])
+        
+        # Get related products
+        context['related_products'] = product.get_related_products()
+        
+        # Add to cart form
+        if self.request.user.is_authenticated:
+            context['add_to_cart_form'] = AddToCartForm(
+                user=self.request.user,
+                product=product
+            )
+        
+        return context
+
+
+# ==================== CART VIEWS ====================
 
 @login_required
 def cart_view(request):
-    """View cart contents"""
-    cart = get_or_create_cart(request)
+    """Shopping cart view"""
+    cart, created = Cart.objects.get_or_create(
+        user=request.user,
+        is_active=True
+    )
     
-    # Calculate totals
-    cart_items = cart.items.select_related('product').all()
-    cart_total = sum(item.total_price for item in cart_items)
-    
-    return render(request, 'store/cart.html', {
-        'cart': cart,
-        'cart_items': cart_items,
-        'cart_total': cart_total,
-        'item_count': len(cart_items)
-    })
-
-
-@require_POST
-@login_required
-def add_to_cart_view(request, product_id):
-    """Add item to cart with student selection"""
-    try:
-        product = get_object_or_404(Product, id=product_id, is_active=True)
-        
-        # Check stock
-        if product.stock < 1:
-            return JsonResponse({
-                'success': False,
-                'message': f'Sorry, {product.name} is out of stock'
-            }, status=400)
-        
-        # Get quantity
-        quantity = int(request.POST.get('quantity', 1))
-        if quantity < 1:
-            quantity = 1
-        
-        # Check if we have enough stock
-        if quantity > product.stock:
-            return JsonResponse({
-                'success': False,
-                'message': f'Only {product.stock} units available in stock'
-            }, status=400)
-        
-        # Get student ID if provided
-        student_id = request.POST.get('student_id')
-        student = None
-        if student_id and student_id != '0':
-            try:
-                from users.models import User
-                student = User.objects.get(id=int(student_id), role='student')
-                # Verify parent owns this student
-                if request.user.role == 'parent' and student not in request.user.children.all():
-                    student = None
-            except User.DoesNotExist:
-                student = None
-        
-        # Get or create cart
-        cart = get_or_create_cart(request)
-        
-        # Check if item already in cart for same student
-        existing_item = CartItem.objects.filter(
-            cart=cart,
-            product=product,
-            student=student
-        ).first()
-        
-        if existing_item:
-            # Update quantity
-            new_quantity = existing_item.quantity + quantity
-            if new_quantity > product.stock:
-                return JsonResponse({
-                    'success': False,
-                    'message': f'Maximum stock reached. Only {product.stock - existing_item.quantity} more available'
-                }, status=400)
+    if request.method == 'POST':
+        form = AddToCartForm(request.POST, user=request.user)
+        if form.is_valid():
+            product_id = request.POST.get('product_id')
+            quantity = form.cleaned_data['quantity']
+            student = form.cleaned_data['student']
             
-            existing_item.quantity = new_quantity
-            existing_item.save()
-            cart_item = existing_item
-        else:
-            # Create new cart item
-            cart_item = CartItem.objects.create(
-                cart=cart,
-                product=product,
-                quantity=quantity,
-                student=student
-            )
+            try:
+                product = Product.objects.get(id=product_id)
+                cart.add_item(product, quantity, student)
+                messages.success(request, f'{product.name} added to cart!')
+                return redirect('store:cart_view')
+            except Product.DoesNotExist:
+                messages.error(request, 'Product not found.')
+    
+    context = {
+        'cart': cart,
+        'items': cart.items.all(),
+        'total_amount': cart.total_amount,
+        'student_form': create_student_selector_form(request.user)()
+    }
+    return render(request, 'store/cart/view.html', context)
+
+
+@login_required
+@require_POST
+def add_to_cart(request, product_id):
+    """AJAX endpoint to add product to cart"""
+    if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'success': False, 'message': 'Invalid request'})
+    
+    try:
+        product = Product.objects.get(id=product_id, is_active=True)
+        cart, created = Cart.objects.get_or_create(
+            user=request.user,
+            is_active=True
+        )
         
-        # Get updated cart info
-        cart_items = cart.items.all()
-        cart_total = sum(item.total_price for item in cart_items)
-        item_count = cart_items.count()
+        quantity = int(request.POST.get('quantity', 1))
         
-        # Update session for cart count
-        request.session['cart_items_count'] = item_count
-        request.session.modified = True
+        # Validate stock
+        if product.stock_quantity < quantity:
+            return JsonResponse({
+                'success': False,
+                'message': f'Only {product.stock_quantity} items available.'
+            })
+        
+        # Check if student is required
+        if request.user.role in ['parent', 'student']:
+            student_id = request.POST.get('student_id')
+            if student_id:
+                try:
+                    student = Student.objects.get(id=student_id)
+                    if request.user.role == 'parent':
+                        parent = request.user.parent_profile
+                        if not parent.students.filter(id=student.id).exists():
+                            return JsonResponse({
+                                'success': False,
+                                'message': 'Student not associated with parent.'
+                            })
+                    cart.student = student
+                    cart.save()
+                except Student.DoesNotExist:
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Student not found.'
+                    })
+        
+        cart.add_item(product, quantity)
         
         return JsonResponse({
             'success': True,
             'message': f'{product.name} added to cart!',
-            'cart_total': float(cart_total),
-            'item_count': item_count,
-            'item_id': cart_item.id,
-            'item_quantity': cart_item.quantity,
-            'student_name': student.get_full_name() if student else 'For yourself'
+            'cart_count': cart.total_items,
+            'cart_total': f"₦{cart.total_amount:,.2f}"
         })
         
+    except Product.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Product not found.'})
     except Exception as e:
-        print(f"Add to cart error: {e}")
-        return JsonResponse({
-            'success': False,
-            'message': 'Failed to add item to cart'
-        }, status=500)
+        logger.error(f"Error adding to cart: {str(e)}")
+        return JsonResponse({'success': False, 'message': 'An error occurred.'})
 
 
-@require_POST
 @login_required
-def update_cart_view(request):
-    """Update cart quantities - AJAX endpoint"""
+@require_POST
+def update_cart_item(request, item_id):
+    """Update cart item quantity"""
     try:
-        data = json.loads(request.body)
-        cart_item_id = data.get('cart_item_id')
-        quantity = int(data.get('quantity', 1))
+        cart_item = CartItem.objects.get(id=item_id, cart__user=request.user)
+        quantity = int(request.POST.get('quantity', 1))
         
-        if quantity < 0:
-            return JsonResponse({
-                'success': False,
-                'message': 'Quantity cannot be negative'
-            }, status=400)
-        
-        # Get cart item
-        cart_item = get_object_or_404(CartItem, id=cart_item_id, cart__user=request.user)
-        
-        if quantity == 0:
-            # Remove item
-            product_name = cart_item.product.name
+        if quantity < 1:
             cart_item.delete()
-            message = f'{product_name} removed from cart'
+            message = 'Item removed from cart.'
         else:
-            # Check stock
-            if quantity > cart_item.product.stock:
+            if quantity > cart_item.product.stock_quantity:
                 return JsonResponse({
                     'success': False,
-                    'message': f'Only {cart_item.product.stock} units available in stock'
-                }, status=400)
-            
+                    'message': f'Only {cart_item.product.stock_quantity} items available.'
+                })
             cart_item.quantity = quantity
             cart_item.save()
-            message = 'Cart updated'
+            message = 'Cart updated successfully.'
         
-        # Get updated cart info
-        cart = get_or_create_cart(request)
-        cart_items = cart.items.all()
-        cart_total = sum(item.total_price for item in cart_items)
-        item_count = cart_items.count()
-        
+        cart = cart_item.cart
         return JsonResponse({
             'success': True,
             'message': message,
-            'cart_total': float(cart_total),
-            'item_count': item_count,
-            'item_quantity': quantity if quantity > 0 else 0,
-            'item_total': float(cart_item.total_price) if quantity > 0 else 0
+            'cart_count': cart.total_items,
+            'cart_total': f"₦{cart.total_amount:,.2f}",
+            'item_subtotal': f"₦{cart_item.subtotal:,.2f}"
         })
         
-    except Exception as e:
-        logger.error(f"Error updating cart: {e}")
-        return JsonResponse({
-            'success': False,
-            'message': 'Failed to update cart'
-        }, status=500)
-    
+    except CartItem.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Item not found in cart.'})
 
-@require_POST
-@login_required
-def remove_from_cart_view(request, cart_item_id):
-    """Remove item from cart - AJAX endpoint"""
-    try:
-        cart_item = get_object_or_404(CartItem, id=cart_item_id, cart__user=request.user)
-        product_name = cart_item.product.name
-        cart_item.delete()
-        
-        # Get updated cart info
-        cart = get_or_create_cart(request)
-        cart_items = cart.items.all()
-        cart_total = sum(item.total_price for item in cart_items)
-        item_count = cart_items.count()
-        
-        return JsonResponse({
-            'success': True,
-            'message': f'{product_name} removed from cart',
-            'cart_total': float(cart_total),
-            'item_count': item_count
-        })
-        
-    except Exception as e:
-        logger.error(f"Error removing from cart: {e}")
-        return JsonResponse({
-            'success': False,
-            'message': 'Failed to remove item from cart'
-        }, status=500)
-
-
-@require_POST
-@login_required
-def clear_cart_view(request):
-    """Clear entire cart"""
-    try:
-        cart = get_or_create_cart(request)
-        cart.items.all().delete()
-        
-        return JsonResponse({
-            'success': True,
-            'message': 'Cart cleared successfully',
-            'cart_total': 0,
-            'item_count': 0
-        })
-        
-    except Exception as e:
-        logger.error(f"Error clearing cart: {e}")
-        return JsonResponse({
-            'success': False,
-            'message': 'Failed to clear cart'
-        }, status=500)
-
-
-### FOR CART ONLY
-
-@login_required
-@require_POST
-def update_cart_item(request):
-    """Update cart item quantity via AJAX"""
-    try:
-        data = json.loads(request.body)
-        cart_item_id = data.get('cart_item_id')
-        quantity = int(data.get('quantity', 1))
-        
-        cart_item = CartItem.objects.get(id=cart_item_id, cart__user=request.user)
-        cart_item.quantity = quantity
-        cart_item.save()
-        
-        cart = cart_item.cart
-        cart_total = cart.total_amount
-        
-        return JsonResponse({
-            'success': True,
-            'item_total': float(cart_item.total_price),
-            'cart_total': float(cart_total),
-            'items_count': cart.items_count,
-            'message': 'Quantity updated successfully'
-        })
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'message': str(e)
-        })
 
 @login_required
 @require_POST
 def remove_cart_item(request, item_id):
-    """Remove cart item via AJAX"""
+    """Remove item from cart"""
     try:
         cart_item = CartItem.objects.get(id=item_id, cart__user=request.user)
         cart = cart_item.cart
         cart_item.delete()
         
-        cart_total = cart.total_amount
-        
         return JsonResponse({
             'success': True,
-            'cart_total': float(cart_total),
-            'items_count': cart.items_count,
-            'message': 'Item removed from cart'
+            'message': 'Item removed from cart.',
+            'cart_count': cart.total_items,
+            'cart_total': f"₦{cart.total_amount:,.2f}"
         })
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'message': str(e)
-        })
+        
+    except CartItem.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Item not found in cart.'})
+
 
 @login_required
-@require_POST
-def clear_cart(request):
-    """Clear entire cart via AJAX"""
-    try:
-        cart = Cart.objects.get(user=request.user)
-        cart.items.all().delete()
-        
-        return JsonResponse({
-            'success': True,
-            'cart_total': 0,
-            'items_count': 0,
-            'message': 'Cart cleared successfully'
-        })
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'message': str(e)
-        })
+def cart_count(request):
+    """Get cart item count (AJAX endpoint)"""
+    if request.user.is_authenticated:
+        cart_count = Cart.objects.filter(
+            user=request.user,
+            is_active=True
+        ).aggregate(
+            total=Sum('items__quantity')
+        )['total'] or 0
+    else:
+        cart_count = 0
     
-
-def increase_quantity(request, item_id):
-    item = get_object_or_404(CartItem, id=item_id)
-    item.quantity += 1
-    item.save()
-
-    cart = item.cart
-    return JsonResponse({
-        "qty": item.quantity,
-        "subtotal": float(item.subtotal()),
-        "cart_total": float(cart.total())
-    })
+    return JsonResponse({'count': cart_count})
 
 
-def decrease_quantity(request, item_id):
-    item = get_object_or_404(CartItem, id=item_id)
+# ==================== CHECKOUT & ORDER VIEWS ====================
 
-    if item.quantity > 1:
-        item.quantity -= 1
-        item.save()
-
-    cart = item.cart
-    return JsonResponse({
-        "qty": item.quantity,
-        "subtotal": float(item.subtotal()),
-        "cart_total": float(cart.total())
-    })
-
-# ====================== CHECKOUT & PAYMENT VIEWS ======================
-# @login_required
-# def checkout_view(request):
-#     """Checkout page - with student selection"""
-#     cart = get_or_create_cart(request)
-#     cart_items = cart.items.select_related('product').all()
-    
-#     if not cart_items:
-#         messages.warning(request, 'Your cart is empty')
-#         return redirect('store:cart_view')
-    
-#     # Calculate total
-#     cart_total = sum(item.total_price for item in cart_items)
-    
-#     # Get students/wards for this user
-#     students = []
-    
-#     # If user is a parent, get their children
-#     if hasattr(request.user, 'parent_profile'):
-#         students = request.user.children.all()
-#     # If user is staff/admin, they might be buying for students
-#     elif request.user.role in ['admin', 'superadmin', 'teacher']:
-#         # Get all active students (or implement your own logic)
-#         from users.models import User
-#         students = User.objects.filter(role='student', is_active=True)[:10]
-    
-#     return render(request, 'store/checkout.html', {
-#         'cart': cart,
-#         'cart_items': cart_items,
-#         'cart_total': cart_total,
-#         'students': students,
-#         'paystack_test_public_key': settings.PAYSTACK_TEST_PUBLIC_KEY,
-#         'item_count': len(cart_items),
-#     })
-
-# @require_POST
-# @login_required
-# @transaction.atomic
-# def create_order_view(request):
-#     """Create order with student selection"""
-#     try:
-#         data = json.loads(request.body)
-        
-#         # Validate required fields
-#         required_fields = ['customer_name', 'customer_email', 'customer_phone', 'shipping_address']
-#         for field in required_fields:
-#             if not data.get(field):
-#                 return JsonResponse({
-#                     'success': False,
-#                     'message': f'{field.replace("_", " ").title()} is required'
-#                 }, status=400)
-        
-#         cart = get_or_create_cart(request)
-#         cart_items = cart.items.select_related('product').all()
-        
-#         if not cart_items:
-#             return JsonResponse({
-#                 'success': False,
-#                 'message': 'Your cart is empty'
-#             }, status=400)
-        
-#         # Check stock
-#         for item in cart_items:
-#             if item.quantity > item.product.stock:
-#                 return JsonResponse({
-#                     'success': False,
-#                     'message': f'Not enough stock for {item.product.name}. Only {item.product.stock} available'
-#                 }, status=400)
-        
-#         # Calculate total
-#         total_amount = sum(item.total_price for item in cart_items)
-        
-#         # Create order
-#         order = Order.objects.create(
-#             user=request.user,
-#             total_amount=total_amount,
-#             customer_name=data['customer_name'],
-#             customer_email=data['customer_email'],
-#             customer_phone=data['customer_phone'],
-#             shipping_address=data['shipping_address'],
-#             shipping_notes=data.get('shipping_notes', ''),
-#             payment_reference=f"PAY_{uuid.uuid4().hex[:10].upper()}"
-#         )
-        
-#         # Get student ID if provided
-#         student_id = data.get('student_id')
-#         student = None
-#         if student_id and student_id != '0':
-#             try:
-#                 from users.models import User
-#                 student = User.objects.get(id=int(student_id), role='student')
-#             except User.DoesNotExist:
-#                 student = None
-        
-#         # Create order items with student reference
-#         order_items = []
-#         for cart_item in cart_items:
-#             order_items.append(OrderItem(
-#                 order=order,
-#                 product=cart_item.product,
-#                 quantity=cart_item.quantity,
-#                 price=cart_item.product.price,
-#                 student=student  # Assign student to order item
-#             ))
-        
-#         OrderItem.objects.bulk_create(order_items)
-        
-#         # Update cart items with student for record
-#         if student:
-#             cart_items.update(student=student)
-        
-#         # Create payment record
-#         payment = PaymentRecord.objects.create(
-#             order=order,
-#             user=request.user,
-#             reference=order.payment_reference,
-#             gateway_reference='',
-#             amount=total_amount,
-#             payment_method=data.get('payment_method', 'card')
-#         )
-        
-#         # Initialize Paystack payment
-#         try:
-#             # Convert to kobo
-#             amount_in_kobo = int(total_amount * 100)
-            
-#             response = Transaction.initialize(
-#                 amount=amount_in_kobo,
-#                 email=data['customer_email'],
-#                 reference=order.payment_reference,
-#                 callback_url=request.build_absolute_uri(
-#                     reverse('store:payment_verify', kwargs={'reference': order.payment_reference})
-#                 ),
-#                 metadata={
-#                     'student_id': student_id,
-#                     'parent_id': request.user.id
-#                 }
-#             )
-            
-#             if response['status']:
-#                 return JsonResponse({
-#                     'success': True,
-#                     'authorization_url': response['data']['authorization_url'],
-#                     'access_code': response['data']['access_code'],
-#                     'reference': order.payment_reference,
-#                     'order_number': order.order_number
-#                 })
-#             else:
-#                 order.delete()
-#                 return JsonResponse({
-#                     'success': False,
-#                     'message': 'Payment initialization failed'
-#                 }, status=500)
-                
-#         except Exception as e:
-#             order.delete()
-#             return JsonResponse({
-#                 'success': False,
-#                 'message': 'Payment service error'
-#             }, status=500)
-            
-#     except Exception as e:
-#         return JsonResponse({
-#             'success': False,
-#             'message': 'Failed to create order'
-#         }, status=500)
-
-
-# @login_required
-# def payment_verify_view(request, reference):
-#     """Verify payment callback from Paystack"""
-#     try:
-#         # Verify payment with Paystack
-#         verify_response = Transaction.verify(reference)
-        
-#         if verify_response['status'] and verify_response['data']['status'] == 'success':
-#             # Get payment record
-#             payment = PaymentRecord.objects.get(reference=reference)
-#             order = payment.order
-            
-#             # Verify user owns this order
-#             if order.user != request.user:
-#                 messages.error(request, 'Unauthorized access')
-#                 return redirect('store:product_list')
-            
-#             # Mark payment as successful
-#             payment.mark_as_successful(verify_response['data'])
-            
-#             # Update stock
-#             update_stock_after_payment(order)
-            
-#             # Clear cart
-#             cart = get_or_create_cart(request)
-#             cart.items.all().delete()
-            
-#             messages.success(request, f'Payment successful! Order #{order.order_number} has been placed.')
-#             return redirect('store:order_detail', order_number=order.order_number)
-            
-#         else:
-#             messages.error(request, 'Payment verification failed')
-#             return redirect('store:checkout')
-            
-#     except PaymentRecord.DoesNotExist:
-#         messages.error(request, 'Payment record not found')
-#         return redirect('store:product_list')
-#     except Exception as e:
-#         logger.error(f"Payment verification error: {e}")
-#         messages.error(request, 'Payment verification error')
-#         return redirect('store:checkout')
-
-
-# store/views.py
-from django.conf import settings
-from django.http import JsonResponse
-import json
-from django.views.decorators.csrf import csrf_exempt
-from django.utils import timezone
-import uuid
-from decimal import Decimal
-
-# store/views.py
 @login_required
-def checkout(request):
+def checkout_view(request):
     """Checkout page"""
-    try:
-        cart = Cart.get_cart_for_user(request.user)
-        cart_items = cart.items.select_related('product', 'product__category', 'student').all()
-        
-        if not cart_items:
-            messages.warning(request, "Your cart is empty")
-            return redirect('store:view_cart')
-        
-        # Get students for this user (if parent) - FIXED
-        # Method 1: If you have a parent-child relationship
-        students = []
-        
-        # Check if user has role 'parent' or 'guardian'
-        if hasattr(request.user, 'role') and request.user.role in ['parent', 'guardian']:
-            # Assuming you have a way to get linked students
-            # This depends on your User model structure
-            try:
-                # Option A: If you have a foreign key from User to User for parent
-                students = User.objects.filter(parent_namer=request.user, role='student', is_active=True)
-            except:
-                try:
-                    # Option B: If you have a ParentProfile model
-                    from users.models import Parent
-                    parent_profile = Parent.objects.get(user=request.user)
-                    students = parent_profile.students.all()
-                except:
-                    try:
-                        # Option C: If you have a ManyToMany field
-                        students = request.user.students.all()
-                    except:
-                        # Option D: Check for related name
-                        students = None #User.objects.filter(teacher=request.user, role='student', is_active=True)
-        
-        # If no specific student relationship found, show empty list
-        # User can still select "For Myself"
-        
-        # Calculate cart total
-        cart_total = cart.total_amount
-        
-        context = {
-            'cart_items': cart_items,
-            'cart_total': cart_total,
-            'students': students,
-            'cart_count': cart.items_count,
-            'paystack_public_key': settings.PAYSTACK_PUBLIC_KEY,
-        }
-        
-        return render(request, 'store/checkout.html', context)
-    except Exception as e:
-        print(f"Error in checkout view: {str(e)}")  # Debug print
-        messages.error(request, f"Error loading checkout: {str(e)}")
-        return redirect('store:cart_view')
+    cart = get_object_or_404(Cart, user=request.user, is_active=True)
     
+    if cart.total_items == 0:
+        messages.warning(request, 'Your cart is empty.')
+        return redirect('store:product_list')
+    
+    if request.method == 'POST':
+        form = CheckoutForm(request.POST, user=request.user)
+        if form.is_valid():
+            # Create order
+            order = Order.objects.create(
+                user=request.user,
+                student=cart.student,
+                subtotal=cart.total_amount,
+                total_amount=cart.total_amount,
+                shipping_address=form.cleaned_data.get('shipping_address', request.user.address),
+                delivery_date=form.cleaned_data.get('delivery_date'),
+                delivery_time=form.cleaned_data.get('delivery_time'),
+                payment_method=form.cleaned_data.get('payment_method', 'paystack'),
+                notes=form.cleaned_data.get('notes', '')
+            )
+            
+            # Create order items from cart
+            for cart_item in cart.items.all():
+                OrderItem.objects.create(
+                    order=order,
+                    product=cart_item.product,
+                    quantity=cart_item.quantity,
+                    price=cart_item.product.price
+                )
+                
+                # Update product stock
+                cart_item.product.decrease_stock(cart_item.quantity)
+                cart_item.product.update_sales(cart_item.quantity)
+            
+            # Clear cart
+            cart.clear()
+            cart.is_active = False
+            cart.save()
+            
+            # Redirect to payment
+            if order.payment_method == 'paystack':
+                return redirect('store:process_payment', order_id=order.id)
+            else:
+                messages.success(request, 'Order placed successfully!')
+                return redirect('store:order_detail', order_id=order.id)
+    else:
+        form = CheckoutForm(user=request.user)
+    
+    context = {
+        'cart': cart,
+        'form': form,
+        'items': cart.items.all(),
+        'total_amount': cart.total_amount
+    }
+    return render(request, 'store/checkout/checkout.html', context)
+
 
 @login_required
-@require_POST
-def create_order(request):
-    """Create order and generate Paystack reference"""
+def process_payment(request, order_id):
+    """Process Paystack payment"""
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    
+    # Initialize Paystack
+    paystack_secret_key = settings.PAYSTACK_SECRET_KEY
+    paystack_public_key = settings.PAYSTACK_PUBLIC_KEY
+    
+    if not paystack_secret_key or not paystack_public_key:
+        messages.error(request, 'Payment gateway not configured.')
+        return redirect('store:checkout')
+    
+    # Create payment record
+    payment = Payment.objects.create(
+        order=order,
+        amount=order.total_amount,
+        payment_method='paystack',
+        payer_email=request.user.email,
+        payer_name=request.user.get_full_name(),
+        payer_phone=request.user.phone
+    )
+    
+    # Initialize Paystack transaction
     try:
-        data = json.loads(request.body)
+        paystack_api = paystack.Paystack(secret_key=paystack_secret_key)
         
-        cart = Cart.get_cart_for_user(request.user)
-        cart_items = cart.items.all()
-        
-        if not cart_items:
-            return JsonResponse({
-                'success': False,
-                'message': 'Your cart is empty'
-            })
-        
-        # Create order number
-        order_number = f"BRP{timezone.now().strftime('%Y%m%d%H%M%S')}{uuid.uuid4().hex[:6].upper()}"
-        
-        # Create order
-        order = Order.objects.create(
-            order_number=order_number,
-            user=request.user,
-            total_amount=cart.total_amount,
-            customer_name=data.get('customer_name', request.user.get_full_name()),
-            customer_email=data.get('customer_email', request.user.email),
-            customer_phone=data.get('customer_phone', ''),
-            customer_address=data.get('shipping_address', ''),
-            shipping_address=data.get('shipping_address', ''),
-            payment_method='paystack',
-            payment_gateway='paystack',
-            payment_reference=f"PAY_{order_number}"
+        # Create transaction
+        transaction = paystack_api.transaction.initialize(
+            amount=int(order.total_amount * 100),  # Convert to kobo
+            email=request.user.email,
+            reference=payment.reference,
+            callback_url=request.build_absolute_uri(
+                reverse('store:payment_verify', args=[payment.reference])
+            ),
+            metadata={
+                'order_id': order.id,
+                'payment_id': payment.id,
+                'user_id': request.user.id,
+                'student_id': order.student.id if order.student else None
+            }
         )
         
-        # Create order items
-        for cart_item in cart_items:
-            OrderItem.objects.create(
-                order=order,
-                product=cart_item.product,
-                quantity=cart_item.quantity,
-                price=cart_item.product.price,
-                student=cart_item.student
-            )
-        
-        # Generate Paystack reference
-        paystack_ref = f"BRP_{uuid.uuid4().hex[:12].upper()}"
-        
-        # Save payment record
-        payment = PaymentRecord.objects.create(
-            order=order,
-            user=request.user,
-            reference=paystack_ref,
-            gateway_reference='',
-            amount=order.total_amount,
-            payment_status='pending'
-        )
-        
-        return JsonResponse({
-            'success': True,
-            'order_id': order.id,
-            'order_number': order.order_number,
-            'reference': paystack_ref,
-            'amount': float(order.total_amount),
-            'customer_email': order.customer_email,
-            'customer_name': order.customer_name,
-            'message': 'Order created successfully'
-        })
-        
+        if transaction['status']:
+            payment.paystack_access_code = transaction['data']['access_code']
+            payment.paystack_reference = transaction['data']['reference']
+            payment.save()
+            
+            # Redirect to Paystack payment page
+            return redirect(transaction['data']['authorization_url'])
+        else:
+            messages.error(request, 'Failed to initialize payment.')
+            return redirect('store:checkout')
+            
     except Exception as e:
-        print(f"Error creating order: {str(e)}")
-        return JsonResponse({
-            'success': False,
-            'message': f'Error creating order: {str(e)}'
-        })
+        logger.error(f"Paystack error: {str(e)}")
+        messages.error(request, 'Payment processing error.')
+        return redirect('store:checkout')
+
 
 @login_required
 def payment_verify(request, reference):
     """Verify Paystack payment"""
-    try:
-        # Get payment record
-        payment = PaymentRecord.objects.get(reference=reference, user=request.user)
-        order = payment.order
-        
-        # In production, you would verify with Paystack API
-        # For now, we'll simulate successful payment
-        context = {
-            'payment': payment,
-            'order': order,
-            'success': True,
-            'reference': reference,
-        }
-        
-        return render(request, 'store/payment_verify.html', context)
-        
-    except PaymentRecord.DoesNotExist:
-        messages.error(request, "Payment not found")
-        return redirect('store:view_cart')
+    payment = get_object_or_404(Payment, reference=reference)
+    order = payment.order
     
-
-@csrf_exempt
-def paystack_webhook(request):
-    """Paystack webhook for payment verification"""
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            event = data.get('event')
-            
-            if event == 'charge.success':
-                reference = data.get('data', {}).get('reference')
-                
-                try:
-                    payment = PaymentRecord.objects.get(reference=reference)
-                    
-                    # Update payment status
-                    payment.payment_status = 'success'
-                    payment.gateway_response = data
-                    payment.paid_at = timezone.now()
-                    payment.amount_paid = Decimal(str(data.get('data', {}).get('amount', 0))) / 100
-                    payment.save()
-                    
-                    # Update order status
-                    order = payment.order
-                    order.payment_status = 'completed'
-                    order.status = 'paid'
-                    order.save()
-                    
-                    # Clear cart
-                    cart = Cart.get_cart_for_user(order.user)
-                    cart.items.all().delete()
-                    
-                    print(f"Payment {reference} verified successfully")
-                    
-                except PaymentRecord.DoesNotExist:
-                    print(f"Payment {reference} not found")
-                    
-            return JsonResponse({'status': 'success'})
-            
-        except Exception as e:
-            print(f"Webhook error: {str(e)}")
-            return JsonResponse({'status': 'error', 'message': str(e)})
+    # Verify with Paystack
+    paystack_api = paystack.Paystack(secret_key=settings.PAYSTACK_SECRET_KEY)
     
-    return JsonResponse({'status': 'error', 'message': 'Invalid request'})
-
-def update_stock_after_payment(order):
-    """Update product stock after successful payment"""
     try:
-        for order_item in order.items.all():
-            product = order_item.product
-            product.stock -= order_item.quantity
-            product.save()
+        verification = paystack_api.transaction.verify(reference)
         
-        # Mark payment as stock updated
-        payment = order.payment
-        payment.update_stock_status(True)
-        
+        if verification['status'] and verification['data']['status'] == 'success':
+            # Payment successful
+            payment.mark_as_completed(verification)
+            messages.success(request, 'Payment successful! Your order has been confirmed.')
+            
+            # Send notification email
+            send_order_confirmation_email(order)
+            
+            return redirect('store:order_detail', order_id=order.id)
+        else:
+            # Payment failed
+            payment.mark_as_failed('Payment verification failed')
+            messages.error(request, 'Payment verification failed. Please try again.')
+            return redirect('store:checkout')
+            
     except Exception as e:
-        logger.error(f"Stock update error: {e}")
+        logger.error(f"Payment verification error: {str(e)}")
+        messages.error(request, 'Payment verification error.')
+        return redirect('store:checkout')
+
 
 @login_required
-def order_detail_view(request, order_number):
-    """View order details"""
-    order = get_object_or_404(Order, order_number=order_number, user=request.user)
-    
-    return render(request, 'store/order_detail.html', {
-        'order': order,
-        'order_items': order.items.all(),
-        'payment': getattr(order, 'payment', None)
-    })
-
-@login_required
-def order_list_view(request):
-    """List user's orders"""
+def order_list(request):
+    """User's order history"""
     orders = Order.objects.filter(user=request.user).order_by('-created_at')
     
-    return render(request, 'store/order_list.html', {
-        'orders': orders
-    })
-
-# ====================== AJAX HELPER VIEWS ======================
-@require_GET
-def get_cart_count_view(request):
-    """Get cart item count - AJAX endpoint"""
-    if request.user.is_authenticated:
-        try:
-            cart = get_or_create_cart(request)
-            count = cart.items.count()
-            total = sum(item.total_price for item in cart.items.all())
-        except:
-            count = 0
-            total = 0
-    else:
-        count = 0
-        total = 0
+    # Pagination
+    paginator = Paginator(orders, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
     
-    return JsonResponse({
-        'count': count,
-        'total': float(total) if total else 0
-    })
+    context = {
+        'orders': page_obj,
+        'page_obj': page_obj
+    }
+    return render(request, 'store/orders/list.html', context)
 
 
+@login_required
+def order_detail(request, order_id):
+    """Order detail view"""
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    
+    context = {
+        'order': order,
+        'items': order.items.all(),
+        'payment': order.payments.first()
+    }
+    return render(request, 'store/orders/detail.html', context)
 
-# ====================== ADMIN VIEWS ======================
-# store/views/admin_views.py (or store/views.py)
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.contrib import messages
-from django.db.models import Sum, Count, Avg, F, Q
-from django.db.models.functions import TruncDay, TruncMonth
-from django.utils import timezone
-from datetime import datetime, timedelta
-import json
-from decimal import Decimal
-from django.http import JsonResponse
-from django.core.paginator import Paginator
 
-# Import settings and get_user_model
-from django.conf import settings
-from django.contrib.auth import get_user_model
+# ==================== FEE PAYMENT VIEWS ====================
 
-# Import your models
-from store.models import (
-    Product, Category, Order, OrderItem, 
-    PaymentRecord, ActivityLog
-)
+@login_required
+def fee_payment_view(request):
+    """School fee payment page"""
+    if request.user.role not in ['parent', 'student']:
+        messages.error(request, 'Access denied.')
+        return redirect('store:dashboard')
+    
+    if request.method == 'POST':
+        form = FeePaymentForm(request.POST, user=request.user)
+        if form.is_valid():
+            student = form.cleaned_data['student']
+            fee_structure = form.cleaned_data['fee_structure']
+            amount = form.cleaned_data['amount_paid']
+            payment_method = form.cleaned_data['payment_method']
+            
+            # Create fee payment record
+            fee_payment = FeePayment.objects.create(
+                student=student,
+                fee_structure=fee_structure,
+                amount_paid=amount,
+                payment_method=payment_method,
+                notes=form.cleaned_data.get('notes', '')
+            )
+            
+            # Process payment
+            if payment_method == 'paystack':
+                # Create payment record
+                payment = Payment.objects.create(
+                    fee_payment=fee_payment,
+                    amount=amount,
+                    payment_method='paystack',
+                    payer_email=request.user.email,
+                    payer_name=request.user.get_full_name(),
+                    payer_phone=request.user.phone
+                )
+                
+                # Initialize Paystack payment
+                return redirect('store:process_fee_payment', payment_id=payment.id)
+            else:
+                # For other payment methods (cash, transfer)
+                fee_payment.mark_as_paid(f'MANUAL-{timezone.now().timestamp()}')
+                fee_payment.issue_receipt(request.user)
+                
+                messages.success(request, 'Fee payment recorded successfully!')
+                return redirect('store:fee_payment_history')
+    
+    else:
+        form = FeePaymentForm(user=request.user)
+    
+    # Get student's unpaid fees
+    unpaid_fees = []
+    if request.user.role == 'parent':
+        try:
+            parent = request.user.parent_profile
+            for student in parent.students.all():
+                unpaid_fees.extend(student.get_unpaid_fees())
+        except Parent.DoesNotExist:
+            pass
+    elif request.user.role == 'student':
+        try:
+            student = request.user.student
+            unpaid_fees = student.get_unpaid_fees()
+        except Student.DoesNotExist:
+            pass
+    
+    context = {
+        'form': form,
+        'unpaid_fees': unpaid_fees,
+        'total_unpaid': sum(fee['balance'] for fee in unpaid_fees) if unpaid_fees else 0
+    }
+    return render(request, 'store/fees/payment.html', context)
 
-# Get the custom User model
-User = get_user_model()
 
-# Check if user is admin
-def is_admin(user):
-    return user.is_superuser or user.is_staff
+@login_required
+def process_fee_payment(request, payment_id):
+    """Process fee payment via Paystack"""
+    payment = get_object_or_404(Payment, id=payment_id, fee_payment__isnull=False)
+    
+    # Initialize Paystack
+    paystack_api = paystack.Paystack(secret_key=settings.PAYSTACK_SECRET_KEY)
+    
+    try:
+        transaction = paystack_api.transaction.initialize(
+            amount=int(payment.amount * 100),
+            email=request.user.email,
+            reference=payment.reference,
+            callback_url=request.build_absolute_uri(
+                reverse('store:fee_payment_verify', args=[payment.reference])
+            ),
+            metadata={
+                'payment_id': payment.id,
+                'fee_payment_id': payment.fee_payment.id,
+                'student_id': payment.fee_payment.student.id,
+                'user_id': request.user.id
+            }
+        )
+        
+        if transaction['status']:
+            payment.paystack_access_code = transaction['data']['access_code']
+            payment.paystack_reference = transaction['data']['reference']
+            payment.save()
+            
+            return redirect(transaction['data']['authorization_url'])
+        else:
+            messages.error(request, 'Failed to initialize payment.')
+            return redirect('store:fee_payment_view')
+            
+    except Exception as e:
+        logger.error(f"Paystack fee payment error: {str(e)}")
+        messages.error(request, 'Payment processing error.')
+        return redirect('store:fee_payment_view')
+
+
+@login_required
+def fee_payment_verify(request, reference):
+    """Verify fee payment"""
+    payment = get_object_or_404(Payment, reference=reference)
+    fee_payment = payment.fee_payment
+    
+    # Verify with Paystack
+    paystack_api = paystack.Paystack(secret_key=settings.PAYSTACK_SECRET_KEY)
+    
+    try:
+        verification = paystack_api.transaction.verify(reference)
+        
+        if verification['status'] and verification['data']['status'] == 'success':
+            # Payment successful
+            payment.mark_as_completed(verification)
+            fee_payment.issue_receipt(request.user)
+            
+            messages.success(request, 'Fee payment successful! Receipt generated.')
+            
+            # Send receipt email
+            send_fee_receipt_email(fee_payment)
+            
+            # Check if this enables exam access
+            if fee_payment.fee_structure.exam_fee > 0:
+                messages.info(request, 
+                    'Exam access has been enabled for the student. '
+                    'They can now take CBT exams.'
+                )
+            
+            return redirect('store:fee_payment_history')
+        else:
+            payment.mark_as_failed('Payment verification failed')
+            messages.error(request, 'Payment verification failed.')
+            return redirect('store:fee_payment_view')
+            
+    except Exception as e:
+        logger.error(f"Fee payment verification error: {str(e)}")
+        messages.error(request, 'Payment verification error.')
+        return redirect('store:fee_payment_view')
+
+
+@login_required
+def fee_payment_history(request):
+    """Fee payment history"""
+    fee_payments = FeePayment.objects.none()
+    
+    if request.user.role == 'parent':
+        try:
+            parent = request.user.parent_profile
+            student_ids = parent.students.values_list('id', flat=True)
+            fee_payments = FeePayment.objects.filter(
+                student_id__in=student_ids
+            ).order_by('-payment_date')
+        except Parent.DoesNotExist:
+            pass
+    elif request.user.role == 'student':
+        try:
+            student = request.user.student
+            fee_payments = FeePayment.objects.filter(
+                student=student
+            ).order_by('-payment_date')
+        except Student.DoesNotExist:
+            pass
+    elif is_admin(request.user):
+        fee_payments = FeePayment.objects.all().order_by('-payment_date')
+    
+    # Pagination
+    paginator = Paginator(fee_payments, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'fee_payments': page_obj,
+        'page_obj': page_obj
+    }
+    return render(request, 'store/fees/history.html', context)
+
+
+@login_required
+def fee_receipt(request, receipt_number):
+    """Generate fee receipt PDF"""
+    fee_payment = get_object_or_404(FeePayment, receipt_number=receipt_number)
+    
+    # Check permission
+    if request.user.role == 'parent':
+        parent = request.user.parent_profile
+        if not parent.students.filter(id=fee_payment.student.id).exists():
+            messages.error(request, 'Access denied.')
+            return redirect('store:fee_payment_history')
+    elif request.user.role == 'student':
+        if fee_payment.student.user != request.user:
+            messages.error(request, 'Access denied.')
+            return redirect('store:fee_payment_history')
+    
+    context = {
+        'fee_payment': fee_payment,
+        'student': fee_payment.student,
+        'fee_structure': fee_payment.fee_structure,
+        'payment': fee_payment.payment_record
+    }
+    return render(request, 'store/fees/receipt.html', context)
+
+
+# ==================== DASHBOARD VIEWS ====================
+
+@login_required
+def dashboard(request):
+    """User dashboard"""
+    context = {}
+    
+    if request.user.role == 'parent':
+        try:
+            parent = request.user.parent_profile
+            students = parent.students.all()
+            
+            # Get recent orders
+            recent_orders = Order.objects.filter(
+                user=request.user
+            ).order_by('-created_at')[:5]
+            
+            # Get fee payments
+            recent_fee_payments = FeePayment.objects.filter(
+                student__in=students
+            ).order_by('-payment_date')[:5]
+            
+            # Get total spending
+            total_spent = Order.objects.filter(
+                user=request.user,
+                payment_status='completed'
+            ).aggregate(total=Sum('total_amount'))['total'] or 0
+            
+            # Get unpaid fees
+            unpaid_fees = []
+            for student in students:
+                unpaid_fees.extend(student.get_unpaid_fees())
+            
+            context.update({
+                'parent': parent,
+                'students': students,
+                'recent_orders': recent_orders,
+                'recent_fee_payments': recent_fee_payments,
+                'total_spent': total_spent,
+                'unpaid_fees': unpaid_fees,
+                'total_unpaid': sum(fee['balance'] for fee in unpaid_fees) if unpaid_fees else 0
+            })
+            
+        except Parent.DoesNotExist:
+            pass
+            
+    elif request.user.role == 'student':
+        try:
+            student = request.user.student
+            
+            # Get recent orders
+            recent_orders = Order.objects.filter(
+                student=student
+            ).order_by('-created_at')[:5]
+            
+            # Get fee payments
+            recent_fee_payments = FeePayment.objects.filter(
+                student=student
+            ).order_by('-payment_date')[:5]
+            
+            # Get unpaid fees
+            unpaid_fees = student.get_unpaid_fees()
+            
+            context.update({
+                'student': student,
+                'recent_orders': recent_orders,
+                'recent_fee_payments': recent_fee_payments,
+                'unpaid_fees': unpaid_fees,
+                'total_unpaid': sum(fee['balance'] for fee in unpaid_fees) if unpaid_fees else 0
+            })
+            
+        except Student.DoesNotExist:
+            pass
+    
+    elif is_admin(request.user):
+        # Admin dashboard
+        today = timezone.now().date()
+        
+        # Sales stats
+        today_sales = Order.objects.filter(
+            payment_status='completed',
+            created_at__date=today
+        ).aggregate(total=Sum('total_amount'))['total'] or 0
+        
+        monthly_sales = Order.objects.filter(
+            payment_status='completed',
+            created_at__month=today.month,
+            created_at__year=today.year
+        ).aggregate(total=Sum('total_amount'))['total'] or 0
+        
+        total_orders = Order.objects.count()
+        pending_orders = Order.objects.filter(status='pending').count()
+        
+        # Fee collection
+        fee_collection = FeePayment.objects.filter(
+            is_verified=True,
+            payment_date__month=today.month,
+            payment_date__year=today.year
+        ).aggregate(total=Sum('amount_paid'))['total'] or 0
+        
+        # Low stock products
+        low_stock_products = Product.objects.filter(
+            stock_quantity__lte=F('low_stock_threshold')
+        )[:5]
+        
+        # Recent orders
+        recent_orders = Order.objects.all().order_by('-created_at')[:5]
+        
+        context.update({
+            'today_sales': today_sales,
+            'monthly_sales': monthly_sales,
+            'total_orders': total_orders,
+            'pending_orders': pending_orders,
+            'fee_collection': fee_collection,
+            'low_stock_products': low_stock_products,
+            'recent_orders': recent_orders
+        })
+    
+    return render(request, 'store/dashboard/dashboard.html', context)
+
+
+# ==================== ADMIN VIEWS ====================
 
 @login_required
 @user_passes_test(is_admin)
 def admin_dashboard(request):
-    """Main admin dashboard with analytics"""
-    # Date range filter
-    days = int(request.GET.get('days', 30))
-    end_date = timezone.now()
-    start_date = end_date - timedelta(days=days)
+    """Admin dashboard"""
+    today = timezone.now().date()
     
-    # Calculate metrics
-    total_revenue = PaymentRecord.objects.filter(
-        payment_status='success',
-        paid_at__range=[start_date, end_date]
-    ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
-    
-    total_orders = Order.objects.filter(
-        created_at__range=[start_date, end_date]
-    ).count()
-    
-    total_customers = User.objects.filter(
-        date_joined__range=[start_date, end_date]
-    ).count()
-    
-    avg_order_value = Decimal('0')
-    if total_orders > 0 and total_revenue:
-        avg_order_value = total_revenue / total_orders
-    
-    # Sales data for chart
-    sales_data = []
-    dates = []
-    
-    # Generate last 7 days data
-    for i in range(6, -1, -1):
-        date = end_date - timedelta(days=i)
-        day_start = date.replace(hour=0, minute=0, second=0, microsecond=0)
-        day_end = date.replace(hour=23, minute=59, second=59, microsecond=999999)
-        
-        day_sales = PaymentRecord.objects.filter(
-            payment_status='success',
-            paid_at__range=[day_start, day_end]
-        ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
-        
-        sales_data.append(float(day_sales))
-        dates.append(date.strftime("%a"))
-    
-    # Recent orders
-    recent_orders = Order.objects.select_related('user').order_by('-created_at')[:5]
+    # Sales analytics
+    sales_data = Order.objects.filter(
+        payment_status='completed',
+        created_at__date__gte=today - timedelta(days=30)
+    ).annotate(
+        day=TruncDay('created_at')
+    ).values('day').annotate(
+        total=Sum('total_amount'),
+        count=Count('id')
+    ).order_by('day')
     
     # Top products
     top_products = Product.objects.annotate(
-        total_sold=Sum('orderitem__quantity'),
-        total_revenue=Sum(F('orderitem__quantity') * F('orderitem__price'))
-    ).filter(total_sold__gt=0).order_by('-total_sold')[:5]
+        total_sales=Sum('order_items__quantity')
+    ).filter(
+        total_sales__gt=0
+    ).order_by('-total_sales')[:10]
     
-    # Order status counts
-    pending_orders = Order.objects.filter(status='pending').count()
-    delivered_orders = Order.objects.filter(status='delivered').count()
-    
-    # Low stock products (stock < 10)
-    low_stock_products = Product.objects.filter(stock__lt=10, is_active=True).count()
-    
-    # New customers today
-    today = timezone.now().date()
-    new_customers_today = User.objects.filter(
-        date_joined__date=today
-    ).count()
-    
-    # Recent activity
-    recent_activity = ActivityLog.objects.select_related('user').order_by('-created_at')[:5]
+    # Fee collection by class
+    fee_collection = FeePayment.objects.filter(
+        is_verified=True,
+        payment_date__month=today.month
+    ).values(
+        'student__current_class'
+    ).annotate(
+        total=Sum('amount_paid'),
+        count=Count('id')
+    ).order_by('student__current_class')
     
     context = {
-        'total_revenue': total_revenue,
-        'total_orders': total_orders,
-        'total_customers': total_customers,
-        'avg_order_value': avg_order_value,
-        'sales_data': json.dumps(sales_data),
-        'dates': json.dumps(dates),
-        'recent_orders': recent_orders,
+        'sales_data': list(sales_data),
         'top_products': top_products,
-        'pending_orders': pending_orders,
-        'delivered_orders': delivered_orders,
-        'low_stock_products': low_stock_products,
-        'new_customers_today': new_customers_today,
-        'recent_activity': recent_activity,
-        'days_filter': days,
+        'fee_collection': fee_collection,
+        'total_students': Student.objects.count(),
+        'total_parents': Parent.objects.count(),
+        'total_products': Product.objects.count(),
+        'active_orders': Order.objects.filter(status='processing').count()
     }
-    
-    return render(request, 'store/admin/admin_dashboard.html', context)
+    return render(request, 'store/admin/dashboard.html', context)
 
 
 @login_required
 @user_passes_test(is_admin)
 def admin_products(request):
-    """Product management page"""
-    products = Product.objects.select_related('category').all().order_by('-created_at')
+    """Admin product management"""
+    products = Product.objects.all().order_by('-created_at')
     
-    # Search functionality
+    # Search and filter
     search_query = request.GET.get('q', '')
     if search_query:
         products = products.filter(
             Q(name__icontains=search_query) |
-            Q(description__icontains=search_query) |
-            Q(category__name__icontains=search_query)
+            Q(sku__icontains=search_query) |
+            Q(description__icontains=search_query)
         )
     
-    # Filter by category
-    category_filter = request.GET.get('category', '')
-    if category_filter:
-        products = products.filter(category_id=category_filter)
-    
-    # Filter by status
     status_filter = request.GET.get('status', '')
     if status_filter == 'active':
         products = products.filter(is_active=True)
     elif status_filter == 'inactive':
         products = products.filter(is_active=False)
     elif status_filter == 'low_stock':
-        products = products.filter(stock__lt=10, is_active=True)
+        products = products.filter(stock_quantity__lte=F('low_stock_threshold'))
     
     # Pagination
     paginator = Paginator(products, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
-    categories = Category.objects.all()
-    
     context = {
         'products': page_obj,
-        'categories': categories,
-        'search_query': search_query,
-        'category_filter': category_filter,
-        'status_filter': status_filter,
         'page_obj': page_obj,
+        'search_query': search_query,
+        'status_filter': status_filter
     }
-    
-    return render(request, 'store/admin/products.html', context)
+    return render(request, 'store/admin/products/list.html', context)
+
 
 @login_required
 @user_passes_test(is_admin)
-def add_product(request):
-    """Add new product"""
-    categories = Category.objects.all()
-    
+def admin_product_create(request):
+    """Create new product"""
     if request.method == 'POST':
-        try:
-            name = request.POST.get('name')
-            description = request.POST.get('description')
-            price = request.POST.get('price')
-            category_id = request.POST.get('category')
-            stock = request.POST.get('stock', 0)
-            is_active = request.POST.get('is_active') == 'on'
-            
-            # Basic validation
-            if not all([name, description, price, category_id]):
-                messages.error(request, 'Please fill in all required fields.')
-                return redirect('store:admin_products')
-            
-            # Create product
-            product = Product(
-                name=name,
-                description=description,
-                price=Decimal(price),
-                category_id=category_id,
-                stock=int(stock),
-                is_active=is_active
-            )
-            
-            # Handle image upload
-            if 'image' in request.FILES:
-                product.image = request.FILES['image']
-            
-            product.save()
-            
-            # Log activity
-            ActivityLog.objects.create(
-                user=request.user,
-                activity_type='product',
-                description=f'Added product: {product.name}',
-                ip_address=request.META.get('REMOTE_ADDR')
-            )
-            
-            messages.success(request, f'Product "{product.name}" added successfully!')
+        form = ProductForm(request.POST, request.FILES)
+        if form.is_valid():
+            product = form.save()
+            messages.success(request, f'Product "{product.name}" created successfully.')
             return redirect('store:admin_products')
-            
-        except Exception as e:
-            messages.error(request, f'Error adding product: {str(e)}')
+    else:
+        form = ProductForm()
     
-    return render(request, 'store/admin/add_product.html', {'categories': categories})
+    context = {'form': form, 'title': 'Create Product'}
+    return render(request, 'store/admin/products/form.html', context)
+
 
 @login_required
 @user_passes_test(is_admin)
-def edit_product(request, product_id):
-    """Edit existing product"""
+def admin_product_edit(request, product_id):
+    """Edit product"""
     product = get_object_or_404(Product, id=product_id)
-    categories = Category.objects.all()
     
     if request.method == 'POST':
-        try:
-            product.name = request.POST.get('name', product.name)
-            product.description = request.POST.get('description', product.description)
-            product.price = Decimal(request.POST.get('price', product.price))
-            product.category_id = request.POST.get('category', product.category_id)
-            product.stock = int(request.POST.get('stock', product.stock))
-            product.is_active = request.POST.get('is_active') == 'on'
-            
-            # Handle image upload
-            if 'image' in request.FILES:
-                product.image = request.FILES['image']
-            
-            product.save()
-            
-            # Log activity
-            ActivityLog.objects.create(
-                user=request.user,
-                activity_type='product',
-                description=f'Updated product: {product.name}',
-                ip_address=request.META.get('REMOTE_ADDR')
-            )
-            
-            messages.success(request, f'Product "{product.name}" updated successfully!')
+        form = ProductForm(request.POST, request.FILES, instance=product)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Product "{product.name}" updated successfully.')
             return redirect('store:admin_products')
-            
-        except Exception as e:
-            messages.error(request, f'Error updating product: {str(e)}')
-    
-    context = {
-        'product': product,
-        'categories': categories,
-    }
-    
-    return render(request, 'store/admin/edit_product.html', context)
-
-@login_required
-@user_passes_test(is_admin)
-def delete_product(request, product_id):
-    """Delete product"""
-    if request.method == 'POST':
-        try:
-            product = get_object_or_404(Product, id=product_id)
-            product_name = product.name
-            product.delete()
-            
-            # Log activity
-            ActivityLog.objects.create(
-                user=request.user,
-                activity_type='product',
-                description=f'Deleted product: {product_name}',
-                ip_address=request.META.get('REMOTE_ADDR')
-            )
-            
-            messages.success(request, f'Product "{product_name}" deleted successfully!')
-            
-        except Exception as e:
-            messages.error(request, f'Error deleting product: {str(e)}')
-    
-    return redirect('store:admin_products')
-
-@login_required
-@user_passes_test(is_admin)
-def toggle_product_status(request, product_id):
-    """Toggle product active status"""
-    if request.method == 'POST':
-        try:
-            product = get_object_or_404(Product, id=product_id)
-            product.is_active = not product.is_active
-            product.save()
-            
-            status = "activated" if product.is_active else "deactivated"
-            
-            # Log activity
-            ActivityLog.objects.create(
-                user=request.user,
-                activity_type='product',
-                description=f'{status.title()} product: {product.name}',
-                ip_address=request.META.get('REMOTE_ADDR')
-            )
-            
-            messages.success(request, f'Product "{product.name}" {status} successfully!')
-            
-        except Exception as e:
-            messages.error(request, f'Error updating product status: {str(e)}')
-    
-    return redirect('store:admin_products')
-
-@login_required
-@user_passes_test(is_admin)
-def category_management(request):
-    """Category management"""
-    categories = Category.objects.all().order_by('-created_at')
-    
-    if request.method == 'POST':
-        action = request.POST.get('action')
-        
-        if action == 'add':
-            name = request.POST.get('name')
-            description = request.POST.get('description', '')
-            
-            if name:
-                category = Category.objects.create(
-                    name=name,
-                    description=description
-                )
-                
-                ActivityLog.objects.create(
-                    user=request.user,
-                    activity_type='product',
-                    description=f'Added category: {category.name}',
-                    ip_address=request.META.get('REMOTE_ADDR')
-                )
-                
-                messages.success(request, f'Category "{category.name}" added successfully!')
-        
-        elif action == 'edit':
-            category_id = request.POST.get('category_id')
-            name = request.POST.get('name')
-            description = request.POST.get('description', '')
-            
-            if category_id and name:
-                category = get_object_or_404(Category, id=category_id)
-                category.name = name
-                category.description = description
-                category.save()
-                
-                ActivityLog.objects.create(
-                    user=request.user,
-                    activity_type='product',
-                    description=f'Updated category: {category.name}',
-                    ip_address=request.META.get('REMOTE_ADDR')
-                )
-                
-                messages.success(request, f'Category "{category.name}" updated successfully!')
-        
-        elif action == 'delete':
-            category_id = request.POST.get('category_id')
-            
-            if category_id:
-                category = get_object_or_404(Category, id=category_id)
-                category_name = category.name
-                
-                # Check if category has products
-                if category.product_set.exists():
-                    messages.error(request, f'Cannot delete category "{category_name}" because it has products.')
-                else:
-                    category.delete()
-                    
-                    ActivityLog.objects.create(
-                        user=request.user,
-                        activity_type='product',
-                        description=f'Deleted category: {category_name}',
-                        ip_address=request.META.get('REMOTE_ADDR')
-                    )
-                    
-                    messages.success(request, f'Category "{category_name}" deleted successfully!')
-        
-        return redirect('store:category_management')
-    
-    return render(request, 'store/admin/categories.html', {'categories': categories})
-
-@login_required
-@user_passes_test(is_admin)
-def sales_analytics(request):
-    """Sales analytics with charts"""
-    # Date range parameters
-    period = request.GET.get('period', 'month')  # day, week, month, year
-    start_date_str = request.GET.get('start_date')
-    end_date_str = request.GET.get('end_date')
-    
-    now = timezone.now()
-    
-    if start_date_str and end_date_str:
-        try:
-            start_date = timezone.make_aware(datetime.strptime(start_date_str, '%Y-%m-%d'))
-            end_date = timezone.make_aware(datetime.strptime(end_date_str, '%Y-%m-%d'))
-            end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
-        except:
-            start_date = now - timedelta(days=30)
-            end_date = now
     else:
-        # Default based on period
-        if period == 'day':
-            start_date = now - timedelta(days=1)
-        elif period == 'week':
-            start_date = now - timedelta(days=7)
-        elif period == 'year':
-            start_date = now - timedelta(days=365)
-        else:  # month
-            start_date = now - timedelta(days=30)
-        end_date = now
+        form = ProductForm(instance=product)
     
-    # Get successful payments in date range
-    payments = PaymentRecord.objects.filter(
-        payment_status='success',
-        paid_at__range=[start_date, end_date]
-    ).select_related('order', 'order__user')
-    
-    # Calculate metrics
-    total_sales = payments.aggregate(total=Sum('amount'))['total'] or Decimal('0')
-    total_orders = Order.objects.filter(
-        created_at__range=[start_date, end_date]
-    ).count()
-    total_customers = payments.values('user').distinct().count()
-    avg_order_value = total_sales / total_orders if total_orders > 0 else Decimal('0')
-    
-    # Sales by day for chart
-    sales_by_day = []
-    dates = []
-    
-    if period == 'day':
-        # Hourly data for day view
-        for hour in range(24):
-            hour_start = start_date.replace(hour=hour, minute=0, second=0, microsecond=0)
-            hour_end = hour_start + timedelta(hours=1)
-            
-            hour_sales = payments.filter(
-                paid_at__range=[hour_start, hour_end]
-            ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
-            
-            sales_by_day.append(float(hour_sales))
-            dates.append(f'{hour:02d}:00')
-    else:
-        # Daily data for week/month/year
-        current = start_date
-        while current <= end_date:
-            day_end = current.replace(hour=23, minute=59, second=59, microsecond=999999)
-            
-            day_sales = payments.filter(
-                paid_at__range=[current, day_end]
-            ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
-            
-            sales_by_day.append(float(day_sales))
-            
-            if period == 'week':
-                dates.append(current.strftime('%a'))
-            elif period == 'month':
-                dates.append(current.strftime('%b %d'))
-            else:  # year
-                dates.append(current.strftime('%b'))
-            
-            current = current + timedelta(days=1)
-    
-    # Top products by revenue
-    top_products = Product.objects.annotate(
-        total_sold=Sum('orderitem__quantity'),
-        total_revenue=Sum(F('orderitem__quantity') * F('orderitem__price'))
-    ).filter(
-        orderitem__order__created_at__range=[start_date, end_date]
-    ).order_by('-total_revenue')[:10]
-    
-    # Sales by category
-    sales_by_category = {}
-    for product in Product.objects.filter(is_active=True):
-        category_sales = OrderItem.objects.filter(
-            product=product,
-            order__created_at__range=[start_date, end_date]
-        ).aggregate(total=Sum(F('quantity') * F('price')))['total'] or Decimal('0')
-        
-        if category_sales > 0:
-            cat_name = product.category.name
-            if cat_name in sales_by_category:
-                sales_by_category[cat_name] += float(category_sales)
-            else:
-                sales_by_category[cat_name] = float(category_sales)
-    
-    # Payment methods distribution
-    payment_methods = payments.values('payment_method').annotate(
-        total=Sum('amount'),
-        count=Count('id')
-    ).order_by('-total')
-    
-    context = {
-        'total_sales': total_sales,
-        'total_orders': total_orders,
-        'total_customers': total_customers,
-        'avg_order_value': avg_order_value,
-        'sales_data': json.dumps(sales_by_day),
-        'dates': json.dumps(dates),
-        'sales_by_category': json.dumps(list(sales_by_category.items())),
-        'top_products': top_products,
-        'payment_methods': payment_methods,
-        'period': period,
-        'start_date': start_date.strftime('%Y-%m-%d') if start_date else '',
-        'end_date': end_date.strftime('%Y-%m-%d') if end_date else '',
-        'today': now.strftime('%Y-%m-%d'),
-    }
-    
-    return render(request, 'store/admin/sales_analytics.html', context)
+    context = {'form': form, 'title': 'Edit Product', 'product': product}
+    return render(request, 'store/admin/products/form.html', context)
+
 
 @login_required
 @user_passes_test(is_admin)
-def order_management(request):
-    """Order management page"""
-    orders = Order.objects.select_related('user').all().order_by('-created_at')
+def admin_orders(request):
+    """Admin order management"""
+    orders = Order.objects.all().order_by('-created_at')
     
-    # Filters
+    # Filter
     status_filter = request.GET.get('status', '')
     if status_filter:
         orders = orders.filter(status=status_filter)
@@ -1425,26 +1005,15 @@ def order_management(request):
     if payment_filter:
         orders = orders.filter(payment_status=payment_filter)
     
-    search_query = request.GET.get('q', '')
-    if search_query:
-        orders = orders.filter(
-            Q(order_number__icontains=search_query) |
-            Q(customer_name__icontains=search_query) |
-            Q(customer_email__icontains=search_query) |
-            Q(customer_phone__icontains=search_query)
-        )
-    
-    # Date filter
     date_from = request.GET.get('date_from', '')
     date_to = request.GET.get('date_to', '')
-    
     if date_from:
         orders = orders.filter(created_at__date__gte=date_from)
     if date_to:
         orders = orders.filter(created_at__date__lte=date_to)
     
     # Pagination
-    paginator = Paginator(orders, 50)
+    paginator = Paginator(orders, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
@@ -1453,159 +1022,559 @@ def order_management(request):
         'page_obj': page_obj,
         'status_filter': status_filter,
         'payment_filter': payment_filter,
-        'search_query': search_query,
+        'date_from': date_from,
+        'date_to': date_to
+    }
+    return render(request, 'store/admin/orders/list.html', context)
+
+
+@login_required
+@user_passes_test(is_admin)
+def admin_order_detail(request, order_id):
+    """Admin order detail"""
+    order = get_object_or_404(Order, id=order_id)
+    
+    if request.method == 'POST':
+        form = OrderStatusUpdateForm(request.POST, instance=order)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Order #{order.order_number} updated successfully.')
+            return redirect('store:admin_order_detail', order_id=order.id)
+    else:
+        form = OrderStatusUpdateForm(instance=order)
+    
+    context = {
+        'order': order,
+        'form': form,
+        'items': order.items.all(),
+        'payment': order.payments.first()
+    }
+    return render(request, 'store/admin/orders/detail.html', context)
+
+
+@login_required
+@user_passes_test(is_admin)
+def admin_fee_management(request):
+    """Fee structure management"""
+    fee_structures = FeeStructure.objects.all().order_by('-academic_year', 'class_level', 'term')
+    
+    if request.method == 'POST':
+        # Handle bulk fee payment
+        form = BulkFeePaymentForm(request.POST)
+        if form.is_valid():
+            # Process bulk fee payment
+            pass
+    else:
+        form = BulkFeePaymentForm()
+    
+    context = {
+        'fee_structures': fee_structures,
+        'form': form
+    }
+    return render(request, 'store/admin/fees/management.html', context)
+
+
+@login_required
+@user_passes_test(is_admin)
+def admin_sales_analytics(request):
+    """Sales analytics dashboard"""
+    # Date range
+    date_from = request.GET.get('date_from', (timezone.now() - timedelta(days=30)).date())
+    date_to = request.GET.get('date_to', timezone.now().date())
+    
+    # Sales data
+    sales_data = Order.objects.filter(
+        payment_status='completed',
+        created_at__date__range=[date_from, date_to]
+    ).annotate(
+        period=TruncDay('created_at')
+    ).values('period').annotate(
+        total_sales=Sum('total_amount'),
+        order_count=Count('id')
+    ).order_by('period')
+    
+    # Top products
+    top_products = Product.objects.filter(
+        order_items__order__payment_status='completed',
+        order_items__order__created_at__date__range=[date_from, date_to]
+    ).annotate(
+        quantity_sold=Sum('order_items__quantity'),
+        revenue=Sum(F('order_items__quantity') * F('order_items__price'), output_field=DecimalField())
+    ).order_by('-revenue')[:10]
+    
+    # Sales by category
+    sales_by_category = Category.objects.filter(
+        products__order_items__order__payment_status='completed',
+        products__order_items__order__created_at__date__range=[date_from, date_to]
+    ).annotate(
+        revenue=Sum(F('products__order_items__quantity') * F('products__order_items__price'), output_field=DecimalField())
+    ).values('name', 'revenue').order_by('-revenue')
+    
+    context = {
+        'sales_data': list(sales_data),
+        'top_products': top_products,
+        'sales_by_category': sales_by_category,
         'date_from': date_from,
         'date_to': date_to,
+        'total_sales': sum(item['total_sales'] or 0 for item in sales_data),
+        'total_orders': sum(item['order_count'] or 0 for item in sales_data)
     }
-    
-    return render(request, 'store/admin/orders.html', context)
+    return render(request, 'store/admin/analytics/sales.html', context)
+
+
+# ==================== STUDENT PICKUP VIEWS ====================
 
 @login_required
-@user_passes_test(is_admin)
-def update_order_status(request, order_id):
-    """Update order status"""
-    if request.method == 'POST':
+def pickup_dashboard(request):
+    """Student pickup dashboard"""
+    if request.user.role not in ['parent', 'admin', 'staff']:
+        messages.error(request, 'Access denied.')
+        return redirect('store:dashboard')
+    
+    context = {}
+    
+    if request.user.role == 'parent':
         try:
-            order = get_object_or_404(Order, id=order_id)
-            new_status = request.POST.get('status')
-            notes = request.POST.get('notes', '')
+            parent = request.user.parent_profile
+            student_parents = StudentParent.objects.filter(parent=parent)
             
-            if new_status in dict(Order.STATUS_CHOICES):
-                order.status = new_status
-                order.save()
-                
-                # Log activity
-                ActivityLog.objects.create(
-                    user=request.user,
-                    activity_type='order',
-                    description=f'Updated order #{order.order_number} status to {new_status}',
-                    metadata={'order_id': order.id, 'new_status': new_status, 'notes': notes},
-                    ip_address=request.META.get('REMOTE_ADDR')
-                )
-                
-                messages.success(request, f'Order #{order.order_number} status updated to {new_status}')
-            else:
-                messages.error(request, 'Invalid status')
-                
-        except Exception as e:
-            messages.error(request, f'Error updating order: {str(e)}')
+            context.update({
+                'parent': parent,
+                'student_parents': student_parents,
+                'today_pickups': Attendance.objects.filter(
+                    student__parents=parent,
+                    date=timezone.now().date(),
+                    status='present'
+                ).select_related('student')
+            })
+            
+        except Parent.DoesNotExist:
+            pass
     
-    return redirect('store:order_management')
+    elif is_admin(request.user) or request.user.role == 'staff':
+        # Today's pickups
+        today_pickups = Attendance.objects.filter(
+            date=timezone.now().date(),
+            status='present'
+        ).select_related('student')
+        
+        # Parents with pickup authorization
+        parents = Parent.objects.filter(
+            studentparent__can_pickup=True
+        ).distinct()
+        
+        context.update({
+            'today_pickups': today_pickups,
+            'parents': parents
+        })
+    
+    return render(request, 'store/pickup/dashboard.html', context)
+
 
 @login_required
-@user_passes_test(is_admin)
-def get_chart_data(request):
-    """API endpoint for chart data"""
-    chart_type = request.GET.get('type', 'sales')
-    period = request.GET.get('period', 'week')
+@require_POST
+def generate_pickup_code(request, student_parent_id):
+    """Generate pickup code for student"""
+    student_parent = get_object_or_404(StudentParent, id=student_parent_id)
     
-    now = timezone.now()
+    # Check permission
+    if request.user.role == 'parent' and student_parent.parent.user != request.user:
+        messages.error(request, 'Access denied.')
+        return redirect('store:pickup_dashboard')
     
-    if period == 'day':
-        start_date = now - timedelta(days=1)
-        interval = 'hour'
-    elif period == 'week':
-        start_date = now - timedelta(days=7)
-        interval = 'day'
-    elif period == 'month':
-        start_date = now - timedelta(days=30)
-        interval = 'day'
-    else:  # year
-        start_date = now - timedelta(days=365)
-        interval = 'month'
-    
-    data = []
-    labels = []
-    
-    if chart_type == 'sales':
-        payments = PaymentRecord.objects.filter(
-            payment_status='success',
-            paid_at__range=[start_date, now]
-        )
-        
-        if interval == 'hour':
-            for hour in range(24):
-                hour_start = now.replace(hour=hour, minute=0, second=0, microsecond=0)
-                hour_end = hour_start + timedelta(hours=1)
-                
-                amount = payments.filter(
-                    paid_at__range=[hour_start, hour_end]
-                ).aggregate(total=Sum('amount'))['total'] or 0
-                
-                data.append(float(amount))
-                labels.append(f'{hour:02d}:00')
-                
-        elif interval == 'day':
-            for i in range(7):
-                date = now - timedelta(days=i)
-                day_start = date.replace(hour=0, minute=0, second=0, microsecond=0)
-                day_end = date.replace(hour=23, minute=59, second=59, microsecond=999999)
-                
-                amount = payments.filter(
-                    paid_at__range=[day_start, day_end]
-                ).aggregate(total=Sum('amount'))['total'] or 0
-                
-                data.insert(0, float(amount))
-                labels.insert(0, date.strftime('%a'))
-                
-        elif interval == 'month':
-            for i in range(12):
-                date = now - timedelta(days=30*i)
-                month_start = date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-                month_end = (month_start + timedelta(days=32)).replace(day=1) - timedelta(seconds=1)
-                
-                amount = payments.filter(
-                    paid_at__range=[month_start, month_end]
-                ).aggregate(total=Sum('amount'))['total'] or 0
-                
-                data.insert(0, float(amount))
-                labels.insert(0, date.strftime('%b'))
+    code = student_parent.generate_pickup_code()
     
     return JsonResponse({
-        'labels': labels,
-        'data': data,
-        'chart_type': chart_type,
-        'period': period
+        'success': True,
+        'code': code,
+        'message': 'Pickup code generated successfully.'
     })
 
 
 @login_required
-def admin_order_detail_view(request, order_number):
-    if not request.user.is_staff:
-        return HttpResponseForbidden()
+def verify_pickup_code(request):
+    """Verify pickup code (for staff/admin)"""
+    if request.user.role not in ['admin', 'staff']:
+        messages.error(request, 'Access denied.')
+        return redirect('store:dashboard')
     
-    order = get_object_or_404(Order, order_number=order_number)
+    if request.method == 'POST':
+        code = request.POST.get('code', '').strip().upper()
+        
+        try:
+            student_parent = StudentParent.objects.get(pickup_code=code)
+            student = student_parent.student
+            
+            # Mark student as picked up
+            attendance, created = Attendance.objects.get_or_create(
+                student=student,
+                date=timezone.now().date(),
+                defaults={
+                    'status': 'present',
+                    'check_out': timezone.now().time()
+                }
+            )
+            
+            if not created:
+                attendance.check_out = timezone.now().time()
+                attendance.save()
+            
+            # Clear pickup code
+            student_parent.pickup_code = ''
+            student_parent.save()
+            
+            messages.success(request, 
+                f'Pickup verified for {student.get_full_name()}. '
+                f'Parent: {student_parent.parent.user.get_full_name()}'
+            )
+            
+            return redirect('store:pickup_dashboard')
+            
+        except StudentParent.DoesNotExist:
+            messages.error(request, 'Invalid pickup code.')
     
-    return render(request, 'store/admin/order_detail.html', {
-        'order': order,
-        'order_items': order.items.all(),
-        'payment': getattr(order, 'payment', None)
+    return render(request, 'store/pickup/verify.html')
+
+
+# ==================== CBT EXAM INTEGRATION VIEWS ====================
+
+@login_required
+def exam_access_view(request):
+    """Check exam access based on fee payments"""
+    if request.user.role not in ['parent', 'student']:
+        messages.error(request, 'Access denied.')
+        return redirect('store:dashboard')
+    
+    accessible_exams = []
+    pending_exams = []
+    
+    if request.user.role == 'parent':
+        try:
+            parent = request.user.parent_profile
+            for student in parent.students.all():
+                # Check fee payments with exam fee
+                fee_payments = FeePayment.objects.filter(
+                    student=student,
+                    fee_structure__exam_fee__gt=0,
+                    is_verified=True
+                )
+                
+                for payment in fee_payments:
+                    accessible_exams.append({
+                        'student': student,
+                        'fee_payment': payment,
+                        'subject': payment.fee_structure.name,
+                        'term': payment.fee_structure.get_term_display(),
+                        'academic_year': payment.fee_structure.academic_year
+                    })
+                
+                # Check pending payments
+                unpaid_exam_fees = FeeStructure.objects.filter(
+                    class_level=student.class_level,
+                    exam_fee__gt=0,
+                    is_active=True
+                ).exclude(
+                    payments__student=student,
+                    payments__is_verified=True
+                )
+                
+                for fee in unpaid_exam_fees:
+                    pending_exams.append({
+                        'student': student,
+                        'fee_structure': fee,
+                        'amount': fee.exam_fee
+                    })
+                    
+        except Parent.DoesNotExist:
+            pass
+    
+    elif request.user.role == 'student':
+        try:
+            student = request.user.student
+            
+            # Get accessible exams
+            fee_payments = FeePayment.objects.filter(
+                student=student,
+                fee_structure__exam_fee__gt=0,
+                is_verified=True
+            )
+            
+            for payment in fee_payments:
+                accessible_exams.append({
+                    'student': student,
+                    'fee_payment': payment,
+                    'subject': payment.fee_structure.name,
+                    'term': payment.fee_structure.get_term_display(),
+                    'academic_year': payment.fee_structure.academic_year
+                })
+            
+            # Check pending payments
+            unpaid_exam_fees = FeeStructure.objects.filter(
+                class_level=student.class_level,
+                exam_fee__gt=0,
+                is_active=True
+            ).exclude(
+                payments__student=student,
+                payments__is_verified=True
+            )
+            
+            for fee in unpaid_exam_fees:
+                pending_exams.append({
+                    'student': student,
+                    'fee_structure': fee,
+                    'amount': fee.exam_fee
+                })
+                
+        except Student.DoesNotExist:
+            pass
+    
+    context = {
+        'accessible_exams': accessible_exams,
+        'pending_exams': pending_exams
+    }
+    return render(request, 'store/exams/access.html', context)
+
+
+@login_required
+def exam_payment_verification(request):
+    """Verify exam payment before granting access"""
+    if request.method == 'POST':
+        form = ExamPaymentVerificationForm(request.POST)
+        if form.is_valid():
+            payment = form.cleaned_data['payment']
+            student = form.cleaned_data['student']
+            fee_payment = form.cleaned_data['fee_payment']
+            
+            # Grant exam access
+            messages.success(request, 
+                f'Exam access granted for {student.get_full_name()}. '
+                f'Payment reference: {payment.reference}'
+            )
+            
+            # You would typically create an ExamAccess record here
+            # ExamAccess.objects.create(
+            #     student=student,
+            #     fee_payment=fee_payment,
+            #     granted_by=request.user,
+            #     expires_at=timezone.now() + timedelta(days=30)
+            # )
+            
+            return redirect('store:exam_access_view')
+    else:
+        form = ExamPaymentVerificationForm()
+    
+    context = {'form': form}
+    return render(request, 'store/exams/verify_payment.html', context)
+
+
+##################### AJAX VIEWS ################################
+
+
+@login_required
+def ajax_product_stock(request, product_id):
+    """Check product stock (AJAX)"""
+    product = get_object_or_404(Product, id=product_id)
+    
+    return JsonResponse({
+        'stock': product.stock_quantity,
+        'in_stock': product.in_stock,
+        'is_low_stock': product.is_low_stock
     })
 
 
-# users/views.py
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.contrib import messages
-from django.db.models import Sum, Count
-from django.conf import settings
-from django.contrib.auth import get_user_model
-from store.models import Order, ActivityLog
-from django.contrib.auth.hashers import make_password
+@csrf_exempt
+def paystack_webhook(request):
+    """Paystack webhook for payment notifications"""
+    if request.method != 'POST':
+        return HttpResponse(status=400)
+    
+    try:
+        # Verify Paystack signature
+        paystack_secret = settings.PAYSTACK_SECRET_KEY
+        signature = request.headers.get('X-Paystack-Signature', '')
+        
+        # Validate signature (you should implement proper validation)
+        # For now, we'll trust the webhook
+        
+        payload = json.loads(request.body)
+        event = payload.get('event', '')
+        data = payload.get('data', {})
+        
+        if event == 'charge.success':
+            reference = data.get('reference', '')
+            
+            try:
+                payment = Payment.objects.get(reference=reference)
+                payment.mark_as_completed(data)
+                
+                logger.info(f"Payment {reference} completed via webhook")
+                
+            except Payment.DoesNotExist:
+                logger.error(f"Payment not found: {reference}")
+        
+        return HttpResponse(status=200)
+        
+    except Exception as e:
+        logger.error(f"Webhook error: {str(e)}")
+        return HttpResponse(status=500)
 
-# Get the custom User model
-User = get_user_model()
 
-def is_admin(user):
-    return user.is_superuser or user.is_staff
+# ==================== CATEGORY VIEW ====================
+
+class CategoryDetailView(DetailView):
+    """Category detail page"""
+    model = Category
+    template_name = 'store/categories/detail.html'
+    context_object_name = 'category'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        category = self.get_object()
+        context['products'] = Product.objects.filter(
+            category=category,
+            is_active=True
+        )
+        context['subcategories'] = category.children.filter(is_active=True)
+        return context
+
+
+# ==================== ORDER RECEIPT ====================
+
+@login_required
+def order_receipt(request, order_id):
+    """Generate order receipt PDF"""
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    
+    context = {
+        'order': order,
+        'items': order.items.all(),
+        'payment': order.payments.first(),
+        'school_name': settings.SCHOOL_NAME,
+        'school_address': settings.SCHOOL_ADDRESS,
+        'school_phone': settings.SCHOOL_PHONE
+    }
+    
+    # For PDF generation (you'd use a library like ReportLab or WeasyPrint)
+    # return render_to_pdf('store/orders/receipt_pdf.html', context)
+    
+    # For now, return HTML
+    return render(request, 'store/orders/receipt.html', context)
+
+
+# ==================== ADMIN VIEWS ====================
 
 @login_required
 @user_passes_test(is_admin)
-def user_list_view(request):
-    """List all users"""
+def admin_product_delete(request, product_id):
+    """Delete product (soft delete)"""
+    product = get_object_or_404(Product, id=product_id)
+    
+    if request.method == 'POST':
+        product.is_active = False
+        product.save()
+        messages.success(request, f'Product "{product.name}" has been deactivated.')
+        return redirect('store:admin_products')
+    
+    context = {'product': product}
+    return render(request, 'store/admin/products/delete.html', context)
+
+
+@login_required
+@user_passes_test(is_admin)
+def admin_fee_create(request):
+    """Create new fee structure"""
+    if request.method == 'POST':
+        form = FeeStructureForm(request.POST)
+        if form.is_valid():
+            fee = form.save()
+            messages.success(request, f'Fee structure "{fee.name}" created successfully.')
+            return redirect('store:admin_fee_management')
+    else:
+        form = FeeStructureForm()
+    
+    context = {'form': form, 'title': 'Create Fee Structure'}
+    return render(request, 'store/admin/fees/form.html', context)
+
+
+@login_required
+@user_passes_test(is_admin)
+def admin_fee_edit(request, fee_id):
+    """Edit fee structure"""
+    fee = get_object_or_404(FeeStructure, id=fee_id)
+    
+    if request.method == 'POST':
+        form = FeeStructureForm(request.POST, instance=fee)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Fee structure "{fee.name}" updated successfully.')
+            return redirect('store:admin_fee_management')
+    else:
+        form = FeeStructureForm(instance=fee)
+    
+    context = {'form': form, 'title': 'Edit Fee Structure', 'fee': fee}
+    return render(request, 'store/admin/fees/form.html', context)
+
+
+@login_required
+@user_passes_test(is_admin)
+def admin_fee_analytics(request):
+    """Fee collection analytics"""
+    # Date range
+    date_from = request.GET.get('date_from', (timezone.now() - timedelta(days=30)).date())
+    date_to = request.GET.get('date_to', timezone.now().date())
+    
+    # Fee collection data
+    fee_data = FeePayment.objects.filter(
+        is_verified=True,
+        payment_date__date__range=[date_from, date_to]
+    ).annotate(
+        period=TruncDay('payment_date')
+    ).values('period').annotate(
+        total_collected=Sum('amount_paid'),
+        payment_count=Count('id')
+    ).order_by('period')
+    
+    # Collection by class
+    collection_by_class = FeePayment.objects.filter(
+        is_verified=True,
+        payment_date__date__range=[date_from, date_to]
+    ).values(
+        'student__current_class'
+    ).annotate(
+        total=Sum('amount_paid'),
+        count=Count('id')
+    ).order_by('-total')
+    
+    # Collection by term
+    collection_by_term = FeePayment.objects.filter(
+        is_verified=True,
+        payment_date__date__range=[date_from, date_to]
+    ).values(
+        'fee_structure__term'
+    ).annotate(
+        total=Sum('amount_paid'),
+        count=Count('id')
+    )
+    
+    context = {
+        'fee_data': list(fee_data),
+        'collection_by_class': collection_by_class,
+        'collection_by_term': collection_by_term,
+        'date_from': date_from,
+        'date_to': date_to,
+        'total_collected': sum(item['total_collected'] or 0 for item in fee_data),
+        'total_payments': sum(item['payment_count'] or 0 for item in fee_data)
+    }
+    return render(request, 'store/admin/analytics/fees.html', context)
+
+
+@login_required
+@user_passes_test(is_admin)
+def admin_user_management(request):
+    """User management"""
     users = User.objects.all().order_by('-date_joined')
     
-    # Search functionality
+    # Search
     search_query = request.GET.get('q', '')
     if search_query:
         users = users.filter(
@@ -1617,23 +1586,11 @@ def user_list_view(request):
     
     # Filter by role
     role_filter = request.GET.get('role', '')
-    if role_filter == 'admin':
-        users = users.filter(is_superuser=True)
-    elif role_filter == 'staff':
-        users = users.filter(is_staff=True, is_superuser=False)
-    elif role_filter == 'customer':
-        users = users.filter(is_staff=False, is_superuser=False)
-    
-    # Filter by status
-    status_filter = request.GET.get('status', '')
-    if status_filter == 'active':
-        users = users.filter(is_active=True)
-    elif status_filter == 'inactive':
-        users = users.filter(is_active=False)
+    if role_filter:
+        users = users.filter(role=role_filter)
     
     # Pagination
-    from django.core.paginator import Paginator
-    paginator = Paginator(users, 25)
+    paginator = Paginator(users, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
@@ -1641,465 +1598,127 @@ def user_list_view(request):
         'users': page_obj,
         'page_obj': page_obj,
         'search_query': search_query,
-        'role_filter': role_filter,
-        'status_filter': status_filter,
+        'role_filter': role_filter
     }
-    
-    return render(request, 'store/admin/user_list.html', context)
+    return render(request, 'store/admin/users/list.html', context)
+
 
 @login_required
 @user_passes_test(is_admin)
-def edit_user(request, user_id):
-    """Edit user details"""
-    user_obj = get_object_or_404(User, id=user_id)
-    
-    # Get user stats
-    order_count = Order.objects.filter(user=user_obj).count()
-    total_spent = Order.objects.filter(
-        user=user_obj,
-        payment_status='completed'
-    ).aggregate(total=Sum('total_amount'))['total'] or 0
-    
-    # Get recent activity
-    recent_activity = ActivityLog.objects.filter(user=user_obj).order_by('-created_at')[:10]
-    
-    if request.method == 'POST':
-        try:
-            # Update basic info
-            user_obj.first_name = request.POST.get('first_name', '')
-            user_obj.last_name = request.POST.get('last_name', '')
-            user_obj.email = request.POST.get('email', '')
-            user_obj.is_active = request.POST.get('is_active') == 'on'
-            
-            # Check if email_verified field exists (for custom user model)
-            if hasattr(user_obj, 'email_verified'):
-                user_obj.email_verified = request.POST.get('email_verified') == 'on'
-            
-            # Update role
-            role = request.POST.get('role', 'customer')
-            if role == 'admin':
-                user_obj.is_staff = True
-                user_obj.is_superuser = True
-            elif role == 'staff':
-                user_obj.is_staff = True
-                user_obj.is_superuser = False
-            else:  # customer
-                user_obj.is_staff = False
-                user_obj.is_superuser = False
-            
-            # Update password if provided
-            password1 = request.POST.get('password1')
-            password2 = request.POST.get('password2')
-            if password1 and password2 and password1 == password2:
-                user_obj.set_password(password1)
-            
-            user_obj.save()
-            
-            # Log activity
-            ActivityLog.objects.create(
-                user=request.user,
-                activity_type='user',
-                description=f'Updated user: {user_obj.get_full_name()}',
-                ip_address=request.META.get('REMOTE_ADDR')
-            )
-            
-            messages.success(request, f'User "{user_obj.get_full_name()}" updated successfully!')
-            return redirect('users:user_list')
-            
-        except Exception as e:
-            messages.error(request, f'Error updating user: {str(e)}')
-    
-    context = {
-        'user_obj': user_obj,
-        'order_count': order_count,
-        'total_spent': total_spent,
-        'recent_activity': recent_activity,
-    }
-    
-    return render(request, 'users/edit_user.html', context)
-
-@login_required
-@user_passes_test(is_admin)
-def delete_user(request, user_id):
-    """Delete user"""
-    if request.method == 'POST':
-        try:
-            user_obj = get_object_or_404(User, id=user_id)
-            user_name = user_obj.get_full_name() or user_obj.username
-            
-            # Prevent deleting yourself
-            if user_obj == request.user:
-                messages.error(request, 'You cannot delete your own account!')
-                return redirect('users:user_list')
-            
-            user_obj.delete()
-            
-            # Log activity
-            ActivityLog.objects.create(
-                user=request.user,
-                activity_type='user',
-                description=f'Deleted user: {user_name}',
-                ip_address=request.META.get('REMOTE_ADDR')
-            )
-            
-            messages.success(request, f'User "{user_name}" deleted successfully!')
-            
-        except Exception as e:
-            messages.error(request, f'Error deleting user: {str(e)}')
-    
-    return redirect('users:user_list')
-
-
-#### User mmanagement ended
-
-#############################################################################
-
-
-@require_POST
-@login_required
-def update_order_status_view(request, order_number):
-    if not request.user.is_staff:
-        return JsonResponse({'success': False, 'message': 'Unauthorized'}, status=403)
-    
-    try:
-        data = json.loads(request.body)
-        order = get_object_or_404(Order, order_number=order_number)
-        
-        order.status = data.get('status', order.status)
-        order.save()
-        
-        return JsonResponse({
-            'success': True,
-            'message': 'Order status updated',
-            'status': order.get_status_display()
-        })
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'message': str(e)
-        }, status=400)
-    
- #######################################################################
-def sales_reports(request):
-    # Get date parameters with proper validation
-    start_date_str = request.GET.get('start_date')
-    end_date_str = request.GET.get('end_date')
-    
-    start_date = None
-    end_date = None
-    
-    # Validate and parse dates
-    if start_date_str:
-        try:
-            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-        except (ValueError, TypeError):
-            messages.error(request, 'Invalid start date format. Use YYYY-MM-DD.')
-    
-    if end_date_str:
-        try:
-            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
-        except (ValueError, TypeError):
-            messages.error(request, 'Invalid end date format. Use YYYY-MM-DD.')
-    
-    # Set default dates if not provided
-    if not start_date:
-        start_date = datetime.now().date() - datetime.timedelta(days=30)  # Last 30 days
-    
-    if not end_date:
-        end_date = datetime.now().date()
-    
-    # Ensure end_date is not before start_date
-    if end_date < start_date:
-        end_date = start_date
-    
-    # Your existing sales report logic here
-    orders = Order.objects.filter(created_at__date__range=[start_date, end_date])
-    
-    context = {
-        'start_date': start_date.strftime('%Y-%m-%d'),
-        'end_date': end_date.strftime('%Y-%m-%d'),
-        'orders': orders,
-        # ... other context data
-    }
-    
-    return render(request, 'store/sales_reports.html', context)
-
-
-# store/views.py - Add these views
-@login_required
-def order_history_view(request):
-    """Main order history page"""
-    # Get filter parameters
-    status_filter = request.GET.get('status', 'all')
-    date_from = request.GET.get('date_from')
-    date_to = request.GET.get('date_to')
+def admin_user_detail(request, user_id):
+    """User detail view"""
+    user = get_object_or_404(User, id=user_id)
     
     # Get user's orders
-    orders = Order.objects.filter(user=request.user).order_by('-created_at')
+    orders = Order.objects.filter(user=user).order_by('-created_at')[:10]
     
-    # Apply filters
-    if status_filter != 'all':
-        orders = orders.filter(status=status_filter)
+    # Get fee payments if applicable
+    fee_payments = None
+    if user.role == 'parent':
+        try:
+            parent = user.parent_profile
+            student_ids = parent.students.values_list('id', flat=True)
+            fee_payments = FeePayment.objects.filter(
+                student_id__in=student_ids
+            ).order_by('-payment_date')[:10]
+        except Parent.DoesNotExist:
+            pass
+    elif user.role == 'student':
+        try:
+            student = user.student
+            fee_payments = FeePayment.objects.filter(
+                student=student
+            ).order_by('-payment_date')[:10]
+        except Student.DoesNotExist:
+            pass
     
-    if date_from:
-        orders = orders.filter(created_at__date__gte=date_from)
-    
-    if date_to:
-        orders = orders.filter(created_at__date__lte=date_to)
-    
-    # Get status counts for filter
-    status_counts = {
-        'all': Order.objects.filter(user=request.user).count(),
-        'pending': Order.objects.filter(user=request.user, status='pending').count(),
-        'paid': Order.objects.filter(user=request.user, status='paid').count(),
-        'delivered': Order.objects.filter(user=request.user, status='delivered').count(),
-        'cancelled': Order.objects.filter(user=request.user, status='cancelled').count(),
+    context = {
+        'profile_user': user,
+        'orders': orders,
+        'fee_payments': fee_payments,
+        'student': getattr(user, 'student', None),
+        'parent': getattr(user, 'parent_profile', None),
+        'teacher': getattr(user, 'teacher_profile', None),
+        'staff': getattr(user, 'staff_profile', None)
     }
-    
-    # Format orders for template
-    orders_data = []
-    for order in orders:
-        orders_data.append({
-            'id': order.id,
-            'order_number': order.order_number,
-            'date': order.formatted_date,
-            'time': order.formatted_time,
-            'total': order.total_amount,
-            'status': order.display_status,
-            'payment_status': order.display_payment_status,
-            'item_count': order.items.count(),
-            'items_list': order.items_list,
-            'can_cancel': order.status in ['pending', 'paid'],
-            'can_reorder': order.status in ['delivered', 'cancelled'],
-        })
-    
-    return render(request, 'store/order_history.html', {
-        'orders': orders_data,
-        'status_counts': status_counts,
-        'current_filter': status_filter,
-        'date_from': date_from,
-        'date_to': date_to,
-        'total_orders': status_counts['all'],
-        'total_spent': sum(order.total_amount for order in orders),
-    })
+    return render(request, 'store/admin/users/detail.html', context)
+
+
+
+# ==================== AJAX VIEWS ====================
 
 @login_required
-def order_detail_history_view(request, order_number):
-    """Order detail view for history"""
-    order = get_object_or_404(Order, order_number=order_number, user=request.user)
+def ajax_cart_summary(request):
+    """Get cart summary (AJAX)"""
+    cart = Cart.objects.filter(user=request.user, is_active=True).first()
     
-    # Get order items with product details
-    order_items = []
-    for item in order.items.all():
-        order_items.append({
-            'id': item.id,
-            'product_id': item.product.id,
-            'name': item.product.name,
-            'image': item.product.image_url,
-            'quantity': item.quantity,
-            'price': item.price,
-            'subtotal': item.subtotal,
-            'category': item.product.category.name,
-        })
-    
-    # Get payment details if exists
-    payment = None
-    try:
-        payment = PaymentRecord.objects.get(order=order)
-    except PaymentRecord.DoesNotExist:
-        pass
-    
-    return render(request, 'store/order_detail_history.html', {
-        'order': order,
-        'order_items': order_items,
-        'payment': payment,
-        'timeline': get_order_timeline(order),
-    })
-
-
-@require_POST
-@login_required
-def cancel_order_view(request, order_number):
-    """Cancel an order"""
-    order = get_object_or_404(Order, order_number=order_number, user=request.user)
-    
-    # Check if order can be cancelled
-    if order.status not in ['pending', 'paid']:
-        return JsonResponse({
-            'success': False,
-            'message': f'Order cannot be cancelled in {order.get_status_display()} status'
-        })
-    
-    # Update order status
-    order.status = 'cancelled'
-    order.save()
-    
-    # If payment was made, initiate refund
-    try:
-        payment = PaymentRecord.objects.get(order=order)
-        if payment.is_successful:
-            # Mark for refund (in real app, call Paystack refund API)
-            payment.payment_status = 'refunded'
-            payment.save()
-    except PaymentRecord.DoesNotExist:
-        pass
-    
-    messages.success(request, f'Order #{order_number} has been cancelled.')
-    
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        return JsonResponse({
-            'success': True,
-            'message': 'Order cancelled successfully',
-            'status': order.get_status_display()
-        })
+    if cart:
+        data = {
+            'item_count': cart.total_items,
+            'total_amount': str(cart.total_amount),
+            'items': list(cart.items.values(
+                'id', 'product__name', 'quantity', 'product__price'
+            ))
+        }
     else:
-        return redirect('order_detail_history', order_number=order_number)
+        data = {
+            'item_count': 0,
+            'total_amount': '0.00',
+            'items': []
+        }
     
+    return JsonResponse(data)
 
+
+# ==================== ADDITIONAL VIEWS ====================
+
+@login_required
 @require_POST
-@login_required
-def reorder_view(request, order_number):
-    """Reorder all items from a previous order"""
-    try:
-        order = get_object_or_404(Order, order_number=order_number, user=request.user)
-        
-        # Get user's cart
-        cart, created = Cart.objects.get_or_create(user=request.user)
-        
-        # Add all items from order to cart
-        added_items = []
-        skipped_items = []
-        
-        for order_item in order.items.all():
-            # Check if product is still available
-            if order_item.product.is_active and order_item.product.stock > 0:
-                # Check if already in cart
-                cart_item, item_created = CartItem.objects.get_or_create(
-                    cart=cart,
-                    product=order_item.product,
-                    defaults={'quantity': order_item.quantity}
-                )
-                
-                if not item_created:
-                    # Add to existing quantity
-                    cart_item.quantity += order_item.quantity
-                    cart_item.save()
-                
-                added_items.append(order_item.product.name)
-            else:
-                skipped_items.append(order_item.product.name)
-        
-        # Prepare messages
-        messages_list = []
-        if added_items:
-            messages_list.append(f"Added {len(added_items)} items to cart")
-        
-        if skipped_items:
-            messages_list.append(f"{len(skipped_items)} items unavailable")
-        
-        return JsonResponse({
-            'success': True,
-            'message': ' | '.join(messages_list),
-            'added_count': len(added_items),
-            'skipped_count': len(skipped_items),
-            'cart_url': reverse('cart_view')
-        })
-        
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'message': f'Error: {str(e)}'
-        })
-
-def get_order_timeline(order):
-    """Get order timeline events"""
-    timeline = []
-    
-    # Order placed
-    timeline.append({
-        'event': 'Order Placed',
-        'date': order.created_at,
-        'description': 'Your order has been received',
-        'icon': 'fas fa-shopping-cart',
-        'color': 'primary',
-        'completed': True
-    })
-    
-    # Payment processed
-    if order.payment_status == 'completed':
-        payment = PaymentRecord.objects.filter(order=order).first()
-        if payment and payment.paid_at:
-            timeline.append({
-                'event': 'Payment Confirmed',
-                'date': payment.paid_at,
-                'description': f'Payment of ₦{order.total_amount:,.2f} confirmed',
-                'icon': 'fas fa-credit-card',
-                'color': 'success',
-                'completed': True
-            })
-    
-    # Status-based events
-    status_events = {
-        'paid': {'event': 'Order Processing', 'description': 'Preparing your order for shipment'},
-        'shipped': {'event': 'Shipped', 'description': 'Your order is on the way'},
-        'delivered': {'event': 'Delivered', 'description': 'Order delivered successfully'},
-        'cancelled': {'event': 'Cancelled', 'description': 'Order has been cancelled'}
-    }
-    
-    if order.status in status_events:
-        event_data = status_events[order.status]
-        timeline.append({
-            'event': event_data['event'],
-            'date': order.updated_at,
-            'description': event_data['description'],
-            'icon': 'fas fa-box',
-            'color': 'info' if order.status != 'cancelled' else 'danger',
-            'completed': True
-        })
-    
-    # Sort by date
-    timeline.sort(key=lambda x: x['date'])
-    return timeline
-
+def clear_cart(request):
+    """Clear entire cart"""
+    cart = Cart.objects.filter(user=request.user, is_active=True).first()
+    if cart:
+        cart.clear()
+        return JsonResponse({'success': True, 'message': 'Cart cleared successfully.'})
+    return JsonResponse({'success': False, 'message': 'Cart not found.'})
 
 @login_required
-def test_paystack_view(request):
-    """Test Paystack connection"""
-    from paystackapi.transaction import Transaction
+@require_POST
+def cancel_order(request, order_id):
+    """Cancel order"""
+    order = get_object_or_404(Order, id=order_id, user=request.user)
     
-    try:
-        # Test with a small amount (100 kobo = ₦1)
-        response = Transaction.initialize(
-            amount=100,  # 100 kobo = ₦1
-            email=request.user.email,
-            reference=f"TEST_{uuid.uuid4().hex[:8]}",
-            callback_url=request.build_absolute_uri(reverse('product_list'))
-        )
+    if order.can_cancel:
+        order.status = 'cancelled'
+        order.save()
         
-        return JsonResponse({
-            'success': response['status'],
-            'message': response.get('message', ''),
-            'data': response.get('data', {})
-        })
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'message': str(e)
-        }, status=500)
-    
+        # Process refund if payment was made
+        if order.payment_status == 'completed':
+            payment = order.payments.first()
+            if payment:
+                payment.process_refund(reason='Order cancelled by customer')
+        
+        messages.success(request, f'Order #{order.order_number} has been cancelled.')
+        return redirect('store:order_detail', order_id=order.id)
+    else:
+        messages.error(request, 'This order cannot be cancelled.')
+        return redirect('store:order_detail', order_id=order.id)
 
-# Create a logging utility
-from .models import ActivityLog
 
-def log_activity(user, activity_type, description, **kwargs):
-    """Log admin activity"""
-    try:
-        ActivityLog.objects.create(
-            user=user,
-            activity_type=activity_type,
-            description=description,
-            metadata=kwargs,
-            ip_address=user.last_login_ip if hasattr(user, 'last_login_ip') else None
-        )
-    except Exception as e:
-        print(f"Failed to log activity: {e}")
+# ==================== ERROR VIEWS ====================
+
+def handler404(request, exception):
+    """Custom 404 page"""
+    return render(request, 'store/errors/404.html', status=404)
+
+def handler500(request):
+    """Custom 500 page"""
+    return render(request, 'store/errors/500.html', status=500)
+
+def handler403(request, exception):
+    """Custom 403 page"""
+    return render(request, 'store/errors/403.html', status=403)
+
+def handler400(request, exception):
+    """Custom 400 page"""
+    return render(request, 'store/errors/400.html', status=400)

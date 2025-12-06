@@ -1,0 +1,359 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Checkout - BrillsPay{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'store:landing' %}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'store:cart_view' %}">Cart</a></li>
+                    <li class="breadcrumb-item active">Checkout</li>
+                </ol>
+            </nav>
+            <h1 class="h2 fw-bold">Checkout</h1>
+            <p class="text-muted">Complete your purchase securely</p>
+        </div>
+    </div>
+    
+    <form method="post" id="checkoutForm">
+        {% csrf_token %}
+        
+        <div class="row">
+            <!-- Left Column: Shipping & Payment -->
+            <div class="col-lg-8 mb-4">
+                <!-- Student Information -->
+                {% if cart.student %}
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">
+                            <i class="fas fa-user-graduate me-2 text-primary"></i>Student Information
+                        </h5>
+                        <div class="alert alert-info">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar bg-primary bg-opacity-10 text-primary rounded-circle me-3" 
+                                     style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-user-graduate fa-lg"></i>
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold mb-1">{{ cart.student.get_full_name }}</h6>
+                                    <p class="mb-0 small">
+                                        {{ cart.student.admission_number }} • {{ cart.student.current_class }}
+                                        {% if user.role == 'parent' %}
+                                        <br>
+                                        <span class="text-muted">Parent: {{ user.get_full_name }}</span>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Shipping Information -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">
+                            <i class="fas fa-truck me-2 text-primary"></i>Delivery Information
+                        </h5>
+                        
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label for="shipping_address" class="form-label">Shipping Address</label>
+                                {{ form.shipping_address }}
+                                {% if form.shipping_address.errors %}
+                                <div class="text-danger small mt-1">{{ form.shipping_address.errors }}</div>
+                                {% endif %}
+                                <div class="form-text">
+                                    Leave empty to use your profile address: {{ user.address|default:"Not set" }}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="delivery_date" class="form-label">Preferred Delivery Date</label>
+                                {{ form.delivery_date }}
+                                {% if form.delivery_date.errors %}
+                                <div class="text-danger small mt-1">{{ form.delivery_date.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="delivery_time" class="form-label">Preferred Time</label>
+                                {{ form.delivery_time }}
+                                {% if form.delivery_time.errors %}
+                                <div class="text-danger small mt-1">{{ form.delivery_time.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Payment Method -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">
+                            <i class="fas fa-credit-card me-2 text-primary"></i>Payment Method
+                        </h5>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="form-check card border p-3 {% if form.payment_method.value == 'paystack' or not form.payment_method.value %}border-primary{% endif %}" 
+                                     onclick="document.getElementById('paystack').click()">
+                                    <input class="form-check-input" type="radio" name="payment_method" 
+                                           id="paystack" value="paystack" 
+                                           {% if form.payment_method.value == 'paystack' or not form.payment_method.value %}checked{% endif %}>
+                                    <label class="form-check-label w-100" for="paystack">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-credit-card fa-2x text-primary me-3"></i>
+                                            <div>
+                                                <h6 class="fw-bold mb-1">Paystack</h6>
+                                                <p class="text-muted small mb-0">Card & Bank Transfer</p>
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-check card border p-3 {% if form.payment_method.value == 'bank_transfer' %}border-primary{% endif %}" 
+                                     onclick="document.getElementById('bank_transfer').click()">
+                                    <input class="form-check-input" type="radio" name="payment_method" 
+                                           id="bank_transfer" value="bank_transfer"
+                                           {% if form.payment_method.value == 'bank_transfer' %}checked{% endif %}>
+                                    <label class="form-check-label w-100" for="bank_transfer">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-university fa-2x text-success me-3"></i>
+                                            <div>
+                                                <h6 class="fw-bold mb-1">Bank Transfer</h6>
+                                                <p class="text-muted small mb-0">Manual Transfer</p>
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Payment Method Details -->
+                        <div id="paystackDetails" class="mt-4" style="display: {% if form.payment_method.value == 'paystack' or not form.payment_method.value %}block{% else %}none{% endif %};">
+                            <div class="alert alert-info">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-shield-alt fa-lg me-3"></i>
+                                    <div>
+                                        <h6 class="fw-bold mb-1">Secure Payment</h6>
+                                        <p class="mb-0 small">
+                                            You will be redirected to Paystack's secure payment page to complete your transaction.
+                                            All card details are encrypted and processed by Paystack.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="bankTransferDetails" class="mt-4" style="display: {% if form.payment_method.value == 'bank_transfer' %}block{% else %}none{% endif %};">
+                            <div class="alert alert-warning">
+                                <h6 class="fw-bold mb-3">Bank Transfer Instructions</h6>
+                                <div class="bg-light p-3 rounded mb-3">
+                                    <p class="mb-2"><strong>Bank:</strong> Access Bank</p>
+                                    <p class="mb-2"><strong>Account Name:</strong> The Brills School</p>
+                                    <p class="mb-2"><strong>Account Number:</strong> 0123456789</p>
+                                    <p class="mb-0"><strong>Reference:</strong> ORDER-{{ cart.id }}</p>
+                                </div>
+                                <p class="mb-0 small">
+                                    After making the transfer, please send proof of payment to 
+                                    <strong>accounts@thebrillsschool.com</strong> for order confirmation.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Additional Notes -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">
+                            <i class="fas fa-sticky-note me-2 text-primary"></i>Additional Information
+                        </h5>
+                        
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Order Notes (Optional)</label>
+                            {{ form.notes }}
+                            <div class="form-text">
+                                Special instructions for delivery, gift messages, etc.
+                            </div>
+                        </div>
+                        
+                        <!-- Terms -->
+                        <div class="form-check">
+                            {{ form.terms_accepted }}
+                            <label class="form-check-label" for="terms_accepted">
+                                I agree to the <a href="#" target="_blank">Terms & Conditions</a> and 
+                                <a href="#" target="_blank">Return Policy</a>.
+                            </label>
+                            {% if form.terms_accepted.errors %}
+                            <div class="text-danger small mt-1">{{ form.terms_accepted.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Column: Order Summary -->
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm sticky-top" style="top: 100px;">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">
+                            <i class="fas fa-shopping-bag me-2 text-primary"></i>Order Summary
+                        </h5>
+                        
+                        <!-- Order Items -->
+                        <div class="mb-4">
+                            {% for item in items %}
+                            <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
+                                <div>
+                                    <h6 class="fw-bold mb-1">{{ item.product.name|truncatechars:30 }}</h6>
+                                    <p class="text-muted small mb-0">
+                                        ₦{{ item.product.price|floatformat:2 }} × {{ item.quantity }}
+                                    </p>
+                                </div>
+                                <span class="fw-bold">₦{{ item.subtotal|floatformat:2 }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Order Totals -->
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">Subtotal</span>
+                                <span>₦{{ cart.total_amount|floatformat:2 }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">Shipping</span>
+                                <span class="text-success">Free</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-3">
+                                <span class="text-muted">Tax</span>
+                                <span>₦0.00</span>
+                            </div>
+                            <hr>
+                            <div class="d-flex justify-content-between fw-bold fs-5">
+                                <span>Total</span>
+                                <span class="text-primary">₦{{ cart.total_amount|floatformat:2 }}</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Student Info -->
+                        {% if cart.student %}
+                        <div class="alert alert-info mb-4">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-user-graduate me-2"></i>
+                                <div>
+                                    <h6 class="fw-bold mb-1">For Student</h6>
+                                    <p class="small mb-0">{{ cart.student.get_full_name }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Submit Button -->
+                        <button type="submit" class="btn btn-primary btn-lg w-100 mb-3" id="submitOrder">
+                            <i class="fas fa-lock me-2"></i>
+                            <span id="submitText">
+                                {% if form.payment_method.value == 'paystack' or not form.payment_method.value %}
+                                Pay with Paystack
+                                {% elif form.payment_method.value == 'bank_transfer' %}
+                                Confirm Bank Transfer
+                                {% else %}
+                                Place Order
+                                {% endif %}
+                            </span>
+                        </button>
+                        
+                        <!-- Security Badge -->
+                        <div class="text-center">
+                            <p class="text-muted small mb-2">
+                                <i class="fas fa-shield-alt text-success me-1"></i>
+                                100% Secure Checkout
+                            </p>
+                            <div class="d-flex justify-content-center gap-2">
+                                <i class="fab fa-cc-visa fa-2x text-primary"></i>
+                                <i class="fab fa-cc-mastercard fa-2x text-danger"></i>
+                                <i class="fab fa-cc-paypal fa-2x text-info"></i>
+                                <i class="fab fa-cc-amazon-pay fa-2x text-warning"></i>
+                            </div>
+                        </div>
+                        
+                        <!-- Return to Cart -->
+                        <div class="text-center mt-4">
+                            <a href="{% url 'store:cart_view' %}" class="text-decoration-none">
+                                <i class="fas fa-arrow-left me-1"></i> Return to Cart
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Payment method toggle
+    document.querySelectorAll('input[name="payment_method"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            // Hide all details
+            document.getElementById('paystackDetails').style.display = 'none';
+            document.getElementById('bankTransferDetails').style.display = 'none';
+            
+            // Show selected details
+            if (this.value === 'paystack') {
+                document.getElementById('paystackDetails').style.display = 'block';
+                document.getElementById('submitText').textContent = 'Pay with Paystack';
+            } else if (this.value === 'bank_transfer') {
+                document.getElementById('bankTransferDetails').style.display = 'block';
+                document.getElementById('submitText').textContent = 'Confirm Bank Transfer';
+            }
+            
+            // Update card borders
+            document.querySelectorAll('.form-check.card').forEach(card => {
+                card.classList.remove('border-primary');
+            });
+            this.closest('.form-check.card').classList.add('border-primary');
+        });
+    });
+    
+    // Form submission
+    document.getElementById('checkoutForm').addEventListener('submit', function(e) {
+        const submitBtn = document.getElementById('submitOrder');
+        const originalText = submitBtn.innerHTML;
+        
+        // Show loading
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Processing...';
+        submitBtn.disabled = true;
+        
+        // Validate terms
+        const terms = document.getElementById('terms_accepted');
+        if (!terms.checked) {
+            e.preventDefault();
+            showToast('Please accept the terms and conditions', 'error');
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }
+    });
+    
+    // Date picker min date (tomorrow)
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const dateInput = document.getElementById('delivery_date');
+    if (dateInput) {
+        dateInput.min = tomorrow.toISOString().split('T')[0];
+    }
+</script>
+{% endblock %}

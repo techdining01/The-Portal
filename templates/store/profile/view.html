@@ -1,0 +1,441 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Profile - BrillsPay{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'store:dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item active">My Profile</li>
+                </ol>
+            </nav>
+            
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 fw-bold">My Profile</h1>
+                    <p class="text-muted mb-0">
+                        Manage your account information and preferences
+                    </p>
+                </div>
+                <div>
+                    <a href="{% url 'store:profile_edit' %}" class="btn btn-primary">
+                        <i class="fas fa-edit me-2"></i> Edit Profile
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Profile Sidebar -->
+        <div class="col-lg-4 mb-4">
+            <div class="card border-0 shadow-sm sticky-top" style="top: 100px;">
+                <div class="card-body text-center">
+                    <!-- Profile Picture -->
+                    <div class="position-relative mx-auto mb-4" style="width: 150px;">
+                        <img src="{{ user.profile_picture.url|default:'/static/images/default-avatar.png' }}" 
+                             alt="{{ user.get_full_name }}"
+                             class="rounded-circle img-thumbnail"
+                             style="width: 150px; height: 150px; object-fit: cover;">
+                        <div class="position-absolute bottom-0 end-0">
+                            <span class="badge bg-primary rounded-pill">
+                                {{ user.get_role_display }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- User Info -->
+                    <h4 class="fw-bold mb-2">{{ user.get_full_name }}</h4>
+                    <p class="text-muted mb-3">{{ user.email }}</p>
+                    
+                    <!-- Role Badge -->
+                    <div class="mb-4">
+                        {% if user.role == 'parent' %}
+                        <span class="parent-badge">Parent/Guardian</span>
+                        {% elif user.role == 'student' %}
+                        <span class="student-badge">Student</span>
+                        {% elif user.role == 'teacher' %}
+                        <span class="badge bg-info">Teacher</span>
+                        {% elif user.role == 'staff' %}
+                        <span class="badge bg-secondary">Staff</span>
+                        {% elif user.role == 'admin' %}
+                        <span class="brillspay-badge">Administrator</span>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Profile Stats -->
+                    <div class="row g-2 mb-4">
+                        <div class="col-6">
+                            <div class="p-3 border rounded">
+                                <h5 class="fw-bold mb-1">
+                                    {% if user.role == 'parent' %}
+                                    {{ parent.students.count|default:0 }}
+                                    {% elif user.role == 'student' %}
+                                    1
+                                    {% else %}
+                                    0
+                                    {% endif %}
+                                </h5>
+                                <p class="text-muted small mb-0">Students</p>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 border rounded">
+                                <h5 class="fw-bold mb-1">{{ user.orders.count|default:0 }}</h5>
+                                <p class="text-muted small mb-0">Orders</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Links -->
+                    <div class="list-group list-group-flush">
+                        <a href="{% url 'store:profile_edit' %}" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-user-edit me-3 text-primary"></i> Edit Profile
+                        </a>
+                        <a href="{% url 'store:change_password' %}" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-lock me-3 text-warning"></i> Change Password
+                        </a>
+                        <a href="{% url 'store:order_list' %}" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-shopping-cart me-3 text-success"></i> My Orders
+                        </a>
+                        {% if user.role in 'parent student' %}
+                        <a href="{% url 'store:fee_payment_history' %}" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-receipt me-3 text-info"></i> Fee Payments
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Profile Details -->
+        <div class="col-lg-8">
+            <!-- Personal Information -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">
+                        <i class="fas fa-user me-2 text-primary"></i>Personal Information
+                    </h5>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Full Name</label>
+                            <p class="fw-bold">{{ user.get_full_name|default:"Not set" }}</p>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Email</label>
+                            <p class="fw-bold">{{ user.email|default:"Not set" }}</p>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Phone</label>
+                            <p class="fw-bold">{{ user.phone|default:"Not set" }}</p>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Username</label>
+                            <p class="fw-bold">{{ user.username|default:"Not set" }}</p>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label fw-bold text-muted">Address</label>
+                            <p class="fw-bold">{{ user.address|default:"Not set" }}</p>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-muted">City</label>
+                            <p class="fw-bold">{{ user.city|default:"Not set" }}</p>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-muted">State</label>
+                            <p class="fw-bold">{{ user.state|default:"Not set" }}</p>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-muted">Country</label>
+                            <p class="fw-bold">{{ user.country|default:"Not set" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Role Specific Information -->
+            {% if user.role == 'parent' and parent %}
+            <!-- Parent Information -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">
+                        <i class="fas fa-users me-2 text-primary"></i>Parent Information
+                    </h5>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Occupation</label>
+                            <p class="fw-bold">{{ parent.occupation|default:"Not specified" }}</p>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Relationship</label>
+                            <p class="fw-bold">{{ parent.get_relationship_display|default:"Not specified" }}</p>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Employer</label>
+                            <p class="fw-bold">{{ parent.employer|default:"Not specified" }}</p>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Income Range</label>
+                            <p class="fw-bold">{{ parent.get_income_range_display|default:"Not specified" }}</p>
+                        </div>
+                        
+                        <!-- Children List -->
+                        <div class="col-12">
+                            <label class="form-label fw-bold text-muted">Children</label>
+                            <div class="row g-3">
+                                {% for student in parent.students.all %}
+                                <div class="col-md-6">
+                                    <div class="card border">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar bg-success bg-opacity-10 text-success rounded-circle me-3" 
+                                                     style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                                    <i class="fas fa-graduation-cap"></i>
+                                                </div>
+                                                <div>
+                                                    <h6 class="fw-bold mb-1">{{ student.get_full_name }}</h6>
+                                                    <p class="text-muted small mb-0">
+                                                        {{ student.admission_number }} • {{ student.current_class }}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div class="col-12">
+                                    <p class="text-muted">No children linked to your account</p>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% elif user.role == 'student' and student %}
+            <!-- Student Information -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">
+                        <i class="fas fa-graduation-cap me-2 text-primary"></i>Student Information
+                    </h5>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Admission Number</label>
+                            <p class="fw-bold">{{ student.admission_number|default:"Not set" }}</p>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Date of Birth</label>
+                            <p class="fw-bold">{{ student.date_of_birth|date:"F d, Y"|default:"Not set" }}</p>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Gender</label>
+                            <p class="fw-bold">{{ student.get_gender_display|default:"Not set" }}</p>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Age</label>
+                            <p class="fw-bold">{{ student.get_age }} years</p>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Current Class</label>
+                            <p class="fw-bold">{{ student.current_class|default:"Not set" }}</p>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Academic Year</label>
+                            <p class="fw-bold">{{ student.academic_year|default:"Not set" }}</p>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Enrollment Date</label>
+                            <p class="fw-bold">{{ student.enrollment_date|date:"F d, Y"|default:"Not set" }}</p>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Total Spent</label>
+                            <p class="fw-bold text-success">₦{{ student.total_spent|floatformat:2 }}</p>
+                        </div>
+                        
+                        <!-- Parents -->
+                        <div class="col-12">
+                            <label class="form-label fw-bold text-muted">Parents/Guardians</label>
+                            <div class="row g-3">
+                                {% for parent in student.parents.all %}
+                                <div class="col-md-6">
+                                    <div class="card border">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar bg-primary bg-opacity-10 text-primary rounded-circle me-3" 
+                                                     style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                                    <i class="fas fa-user"></i>
+                                                </div>
+                                                <div>
+                                                    <h6 class="fw-bold mb-1">{{ parent.user.get_full_name }}</h6>
+                                                    <p class="text-muted small mb-0">
+                                                        {{ parent.get_relationship_display }}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div class="col-12">
+                                    <p class="text-muted">No parents linked to your account</p>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% elif user.role == 'teacher' and teacher %}
+            <!-- Teacher Information -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">
+                        <i class="fas fa-chalkboard-teacher me-2 text-primary"></i>Teacher Information
+                    </h5>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Staff ID</label>
+                            <p class="fw-bold">{{ teacher.staff_id|default:"Not set" }}</p>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Subject</label>
+                            <p class="fw-bold">{{ teacher.subject|default:"Not set" }}</p>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Class Teacher Of</label>
+                            <p class="fw-bold">{{ teacher.class_teacher_of|default:"Not assigned" }}</p>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Years of Experience</label>
+                            <p class="fw-bold">{{ teacher.years_of_experience }} years</p>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Qualification</label>
+                            <p class="fw-bold">{{ teacher.qualification|default:"Not specified" }}</p>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Joining Date</label>
+                            <p class="fw-bold">{{ teacher.joining_date|date:"F d, Y"|default:"Not set" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% elif user.role == 'staff' and staff %}
+            <!-- Staff Information -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">
+                        <i class="fas fa-briefcase me-2 text-primary"></i>Staff Information
+                    </h5>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Staff ID</label>
+                            <p class="fw-bold">{{ staff.staff_id|default:"Not set" }}</p>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Department</label>
+                            <p class="fw-bold">{{ staff.get_department_display|default:"Not set" }}</p>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Position</label>
+                            <p class="fw-bold">{{ staff.position|default:"Not set" }}</p>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Qualification</label>
+                            <p class="fw-bold">{{ staff.qualification|default:"Not specified" }}</p>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Joining Date</label>
+                            <p class="fw-bold">{{ staff.joining_date|date:"F d, Y"|default:"Not set" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Account Information -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">
+                        <i class="fas fa-cog me-2 text-primary"></i>Account Information
+                    </h5>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Account Created</label>
+                            <p class="fw-bold">{{ user.date_joined|date:"F d, Y" }}</p>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Last Login</label>
+                            <p class="fw-bold">{{ user.last_login|date:"F d, Y h:i A"|default:"Never" }}</p>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Account Status</label>
+                            <p class="fw-bold">
+                                {% if user.is_active %}
+                                <span class="badge bg-success">Active</span>
+                                {% else %}
+                                <span class="badge bg-danger">Inactive</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Verification Status</label>
+                            <p class="fw-bold">
+                                {% if user.is_verified %}
+                                <span class="badge bg-success">Verified</span>
+                                {% else %}
+                                <span class="badge bg-warning">Pending Verification</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

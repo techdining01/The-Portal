@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-4">
+            <!-- Profile Picture Card -->
+            <div class="card">
+                <div class="card-body text-center">
+                    {% if profile.profile_picture %}
+                        <img src="{{ profile.profile_picture.url }}" 
+                             alt="{{ user.get_full_name }}"
+                             class="rounded-circle img-fluid mb-3"
+                             style="width: 200px; height: 200px; object-fit: cover;">
+                    {% else %}
+                        <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center mx-auto mb-3"
+                             style="width: 200px; height: 200px;">
+                            <span class="text-white display-4">{{ user.first_name|first|upper }}</span>
+                        </div>
+                    {% endif %}
+                    
+                    <h4>{{ user.get_full_name }}</h4>
+                    <p class="text-muted">{{ profile.get_role_display }}</p>
+                    <p class="text-muted">
+                        <i class="bi bi-person-badge"></i> 
+                        {{ profile.registration_number|default:"No registration number" }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <!-- Profile Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h4>Edit Profile</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <!-- Profile Picture Field -->
+                        <div class="mb-3">
+                            <label class="form-label">Profile Picture</label>
+                            {{ form.profile_picture }}
+                            {% if form.profile_picture.errors %}
+                            <div class="text-danger">{{ form.profile_picture.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Personal Information -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">First Name</label>
+                                {{ form.first_name }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Last Name</label>
+                                {{ form.last_name }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Surname</label>
+                                {{ form.surname }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Other Name</label>
+                                {{ form.other_name }}
+                            </div>
+                        </div>
+                        
+                        <!-- Contact Information -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Email</label>
+                                {{ form.email }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Phone Number</label>
+                                {{ form.phone_number }}
+                            </div>
+                        </div>
+                        
+                        <!-- Personal Details -->
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Gender</label>
+                                {{ form.gender }}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Date of Birth</label>
+                                {{ form.date_of_birth }}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Age</label>
+                                {{ form.age }}
+                            </div>
+                        </div>
+                        
+                        <!-- Address -->
+                        <div class="mb-3">
+                            <label class="form-label">Address</label>
+                            {{ form.address }}
+                        </div>
+                        
+                        <!-- Bio -->
+                        <div class="mb-3">
+                            <label class="form-label">Bio</label>
+                            {{ form.bio }}
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">Update Profile</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

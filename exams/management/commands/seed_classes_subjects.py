@@ -34,38 +34,38 @@ class Command(BaseCommand):
         """Create Nigerian school classes with level and order fields"""
         classes_data = [
             # Kindergarten - order 1-2
-            {'name': 'Kindergarten 1', 'level': 'kindergarten', 'order': 1},
-            {'name': 'Kindergarten 2', 'level': 'kindergarten', 'order': 2},
+            {'name': 'Kindergarten 1', 'grade_level': 'kindergarten', 'order': 1},
+            {'name': 'Kindergarten 2', 'grade_level': 'kindergarten', 'order': 2},
             
             # Nursery - order 3-5
-            {'name': 'Nursery 1', 'level': 'nursery', 'order': 3},
-            {'name': 'Nursery 2', 'level': 'nursery', 'order': 4},
-            {'name': 'Nursery 3', 'level': 'nursery', 'order': 5},
+            {'name': 'Nursery 1', 'grade_level': 'nursery', 'order': 3},
+            {'name': 'Nursery 2', 'grade_level': 'nursery', 'order': 4},
+            {'name': 'Nursery 3', 'grade_level': 'nursery', 'order': 5},
             
             # Primary - order 6-11
-            {'name': 'Primary 1', 'level': 'primary', 'order': 6},
-            {'name': 'Primary 2', 'level': 'primary', 'order': 7},
-            {'name': 'Primary 3', 'level': 'primary', 'order': 8},
-            {'name': 'Primary 4', 'level': 'primary', 'order': 9},
-            {'name': 'Primary 5', 'level': 'primary', 'order': 10},
-            {'name': 'Primary 6', 'level': 'primary', 'order': 11},
+            {'name': 'Primary 1', 'grade_level': 'primary', 'order': 6},
+            {'name': 'Primary 2', 'grade_level': 'primary', 'order': 7},
+            {'name': 'Primary 3', 'grade_level': 'primary', 'order': 8},
+            {'name': 'Primary 4', 'grade_level': 'primary', 'order': 9},
+            {'name': 'Primary 5', 'grade_level': 'primary', 'order': 10},
+            {'name': 'Primary 6', 'grade_level': 'primary', 'order': 11},
             
             # Junior Secondary - order 12-14
-            {'name': 'JSS 1', 'level': 'junior_secondary', 'order': 12},
-            {'name': 'JSS 2', 'level': 'junior_secondary', 'order': 13},
-            {'name': 'JSS 3', 'level': 'junior_secondary', 'order': 14},
+            {'name': 'JSS 1', 'grade_level': 'junior_secondary', 'order': 12},
+            {'name': 'JSS 2', 'grade_level': 'junior_secondary', 'order': 13},
+            {'name': 'JSS 3', 'grade_level': 'junior_secondary', 'order': 14},
             
             # Senior Secondary - order 15-17
-            {'name': 'SSS 1', 'level': 'senior_secondary', 'order': 15},
-            {'name': 'SSS 2', 'level': 'senior_secondary', 'order': 16},
-            {'name': 'SSS 3', 'level': 'senior_secondary', 'order': 17},
+            {'name': 'SSS 1', 'grade_level': 'senior_secondary', 'order': 15},
+            {'name': 'SSS 2', 'grade_level': 'senior_secondary', 'order': 16},
+            {'name': 'SSS 3', 'grade_level': 'senior_secondary', 'order': 17},
         ]
         
         classes = []
         for class_data in classes_data:
             class_obj = Class.objects.create(**class_data)
             classes.append(class_obj)
-            self.stdout.write(f'Created class: {class_obj.name} ({class_obj.level}) - Order: {class_obj.order}')
+            self.stdout.write(f'Created class: {class_obj.name} ({class_obj.grade_level}) - Order: {class_obj.order}')
         
         return classes
 

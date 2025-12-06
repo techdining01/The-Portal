@@ -1,6 +1,10 @@
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
+from django.core.validators import MinValueValidator, MaxValueValidator
+
+
+# User = get_user_model()
 
 
 
@@ -21,6 +25,97 @@ from django.utils import timezone
 #         return f"{self.name} ({self.school_class})"
 
 
+
+class Class(models.Model):
+    LEVEL_CHOICES = [
+        ('kindergarten', 'Kindergarten'),
+        ('nursery', 'Nursery'),
+        ('primary', 'Primary'),
+        ('junior_secondary', 'Junior Secondary'),
+        ('senior_secondary', 'Senior Secondary'),
+    ]
+    
+    name = models.CharField(max_length=100, unique=True)
+    grade_level = models.CharField(max_length=20, choices=LEVEL_CHOICES, default='Kindergarten')
+    arm = models.CharField(max_length=10, blank=True, null=True, help_text="e.g., A, B, C or Science, Arts")
+    description = models.TextField(blank=True)
+    order = models.PositiveIntegerField(help_text="For sorting classes in order")
+    is_active = models.BooleanField(default=True)
+    teacher = models.TextField(default='superadmin')
+    assistant_teacher = models.TextField(default='superadmin')
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name_plural = "Classes"
+        ordering = ['order', 'name']
+    
+    def __str__(self):
+        if self.arm:
+            return f"{self.name} {self.arm}"
+        return self.name
+
+class Subject(models.Model):
+    SUBJECT_CATEGORY_CHOICES = [
+        ('core', 'Core Subject'),
+        ('elective', 'Elective'),
+        ('language', 'Language'),
+        ('arts', 'Arts'),
+        ('sports', 'Sports'),
+        ('vocational', 'Vocational'),
+    ]
+    
+    LEVEL_CHOICES = [
+        ('basic', 'Basic'),
+        ('intermediate', 'Intermediate'),
+        ('advanced', 'Advanced'),
+        ('ap', 'Advanced Placement'),
+        ('honors', 'Honors'),
+    ]
+    
+    code = models.CharField(max_length=20, blank=True)
+    name = models.CharField(max_length=100)
+    school_class = models.ForeignKey(Class, on_delete=models.CASCADE, related_name="subjects")
+    description = models.TextField(blank=True)
+    category = models.CharField(max_length=20, choices=SUBJECT_CATEGORY_CHOICES, default='core')
+    # level = models.CharField(max_length=20, choices=LEVEL_CHOICES, default='basic')
+    credits = models.PositiveIntegerField(default=1)
+    department = models.CharField(max_length=100, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='created_subjects')
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['code', 'name']
+    
+    def __str__(self):
+        return f"{self.code} - {self.name} ({self.get_category_display()})"
+
+
+class ClassSubject(models.Model):
+    class_obj = models.ForeignKey(Class, on_delete=models.CASCADE)
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
+    is_compulsory = models.BooleanField(default=True)
+    periods_per_week = models.PositiveIntegerField(default=5)
+    
+    class Meta:
+        unique_together = ['class_obj', 'subject']
+        verbose_name_plural = "Class Subjects"
+    
+    def __str__(self):
+        return f"{self.class_obj.name} - {self.subject.name}"
+    
+
+class Department(models.Model):
+    name =  models.CharField(max_length=50, null=False, blank=False)
+    code =  models.CharField(max_length=50, null=True, blank=True)
+    head = models.CharField(max_length=50, null=True, blank=True)
+    description = models.TextField()
+    teacher_count = models.CharField(max_length=50, null=True, blank=True)
+    created_at = models.DateTimeField()
+
+    def __str__(self):
+        return self.name
+    
 
 class Quiz(models.Model):
     school_class = models.ForeignKey("Class", on_delete=models.CASCADE, related_name="quizzes")
@@ -176,61 +271,4 @@ class RetakeRequest(models.Model):
     def __str__(self):
         return f"{self.student.username} → {self.quiz.title} ({self.status})"
 
-
-
-class Class(models.Model):
-    LEVEL_CHOICES = [
-        ('kindergarten', 'Kindergarten'),
-        ('nursery', 'Nursery'),
-        ('primary', 'Primary'),
-        ('junior_secondary', 'Junior Secondary'),
-        ('senior_secondary', 'Senior Secondary'),
-    ]
-    
-    name = models.CharField(max_length=100, unique=True)
-    level = models.CharField(max_length=20, choices=LEVEL_CHOICES)
-    arm = models.CharField(max_length=10, blank=True, null=True, help_text="e.g., A, B, C or Science, Arts")
-    description = models.TextField(blank=True)
-    order = models.PositiveIntegerField(help_text="For sorting classes in order")
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    
-    class Meta:
-        verbose_name_plural = "Classes"
-        ordering = ['order', 'name']
-    
-    def __str__(self):
-        if self.arm:
-            return f"{self.name} {self.arm}"
-        return self.name
-
-class Subject(models.Model):
-    name = models.CharField(max_length=100)
-    school_class = models.ForeignKey(Class, on_delete=models.CASCADE, related_name="subjects")
-    Subject_code = models.CharField(max_length=20, unique=True, blank=True, null=True)
-    description = models.TextField(blank=True)
-    category = models.CharField(max_length=50, choices=[
-        ('core', 'Core Subject'),
-        ('elective', 'Elective Subject'),
-        ('vocational', 'Vocational Subject'),
-    ])
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    
-    def __str__(self):
-        return f"{self.name} ({self.Subject_code})"
-
-class ClassSubject(models.Model):
-    class_obj = models.ForeignKey(Class, on_delete=models.CASCADE)
-    subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
-    is_compulsory = models.BooleanField(default=True)
-    periods_per_week = models.PositiveIntegerField(default=5)
-    
-    class Meta:
-        unique_together = ['class_obj', 'subject']
-        verbose_name_plural = "Class Subjects"
-    
-    def __str__(self):
-        return f"{self.class_obj.name} - {self.subject.name}"
-    
 

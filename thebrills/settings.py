@@ -53,14 +53,20 @@ INSTALLED_APPS = [
     'store',
     'backup_db',
     'salary',
-    # 'ecommerce',
-
+    
 
     # Third party
     'crispy_forms',
     'crispy_bootstrap5',
     'django_tables2',
     'django_htmx',
+    'import_export',
+    'rangefilter',
+    'phonenumbers', 
+    'phonenumber_field',
+
+
+    
 ]
 
 # Messages config (optional but neat)
@@ -207,7 +213,7 @@ BACKUP_DIR = BASE_DIR / 'backups'
 FERNET_KEY = os.getenv('FERNET_KEY', b'your_generated_key_here')
 
 # Custom user model
-AUTH_USER_MODEL = 'users.UserProfile'
+AUTH_USER_MODEL = 'users.User'
 
 # Payment settings
 PAYSTACK_TEST_PUBLIC_KEY = os.getenv("PAYSTACK_TEST_PUBLIC_KEY")

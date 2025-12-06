@@ -1,0 +1,262 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Parent Registration - BrillsPay{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-lg">
+                <div class="card-body p-5">
+                    <!-- Registration Header -->
+                    <div class="text-center mb-5">
+                        <div class="icon-xl bg-primary bg-opacity-10 text-primary rounded-circle mb-4 mx-auto">
+                            <i class="fas fa-users fa-3x"></i>
+                        </div>
+                        <h1 class="h2 fw-bold">Parent Registration</h1>
+                        <p class="text-muted">
+                            Create an account to manage school payments and purchases for your children
+                        </p>
+                    </div>
+                    
+                    <!-- Registration Form -->
+                    <form method="post" id="parentRegistrationForm">
+                        {% csrf_token %}
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">First Name <span class="text-danger">*</span></label>
+                                {{ form.first_name }}
+                                {% if form.first_name.errors %}
+                                <div class="text-danger small mt-1">{{ form.first_name.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Last Name <span class="text-danger">*</span></label>
+                                {{ form.last_name }}
+                                {% if form.last_name.errors %}
+                                <div class="text-danger small mt-1">{{ form.last_name.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Email <span class="text-danger">*</span></label>
+                                {{ form.email }}
+                                {% if form.email.errors %}
+                                <div class="text-danger small mt-1">{{ form.email.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Phone <span class="text-danger">*</span></label>
+                                {{ form.phone }}
+                                {% if form.phone.errors %}
+                                <div class="text-danger small mt-1">{{ form.phone.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Username <span class="text-danger">*</span></label>
+                                {{ form.username }}
+                                {% if form.username.errors %}
+                                <div class="text-danger small mt-1">{{ form.username.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Relationship <span class="text-danger">*</span></label>
+                                {{ form.relationship }}
+                                {% if form.relationship.errors %}
+                                <div class="text-danger small mt-1">{{ form.relationship.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Student Selection -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-child me-2"></i>Select Your Children <span class="text-danger">*</span>
+                            </label>
+                            <div class="alert alert-info">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-info-circle me-3"></i>
+                                    <div>
+                                        <p class="mb-0 small">
+                                            Search for your children by name or admission number.
+                                            If your child is not listed, please contact the school administration.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            {{ form.student_ids }}
+                            {% if form.student_ids.errors %}
+                            <div class="text-danger small mt-1">{{ form.student_ids.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Passwords -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Password <span class="text-danger">*</span></label>
+                                {{ form.password1 }}
+                                {% if form.password1.errors %}
+                                <div class="text-danger small mt-1">{{ form.password1.errors }}</div>
+                                {% endif %}
+                                <div class="password-strength mt-2">
+                                    <small>Password strength: <span id="strengthText">None</span></small>
+                                    <div class="progress" style="height: 4px;">
+                                        <div class="progress-bar" id="strengthBar" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Confirm Password <span class="text-danger">*</span></label>
+                                {{ form.password2 }}
+                                {% if form.password2.errors %}
+                                <div class="text-danger small mt-1">{{ form.password2.errors }}</div>
+                                {% endif %}
+                                <div class="form-text">
+                                    Enter the same password as above for verification.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Terms -->
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" type="checkbox" id="terms" required>
+                            <label class="form-check-label" for="terms">
+                                I agree to the <a href="#" target="_blank">Terms of Service</a> and 
+                                <a href="#" target="_blank">Privacy Policy</a>
+                            </label>
+                        </div>
+                        
+                        <!-- Submit Button -->
+                        <div class="d-grid mb-4">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-user-plus me-2"></i> Create Account
+                            </button>
+                        </div>
+                        
+                        <!-- Login Link -->
+                        <div class="text-center">
+                            <p class="text-muted mb-0">
+                                Already have an account? 
+                                <a href="{% url 'store:login' %}" class="fw-bold text-decoration-none">
+                                    Sign In Here
+                                </a>
+                            </p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Benefits -->
+            <div class="row mt-4">
+                <div class="col-md-4">
+                    <div class="text-center p-3">
+                        <div class="icon-lg bg-primary bg-opacity-10 text-primary rounded-circle mb-3 mx-auto">
+                            <i class="fas fa-shield-alt fa-2x"></i>
+                        </div>
+                        <h6 class="fw-bold">Secure Payments</h6>
+                        <p class="text-muted small">Pay school fees securely with Paystack</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-center p-3">
+                        <div class="icon-lg bg-success bg-opacity-10 text-success rounded-circle mb-3 mx-auto">
+                            <i class="fas fa-shopping-cart fa-2x"></i>
+                        </div>
+                        <h6 class="fw-bold">School Store</h6>
+                        <p class="text-muted small">Purchase uniforms and supplies online</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-center p-3">
+                        <div class="icon-lg bg-warning bg-opacity-10 text-warning rounded-circle mb-3 mx-auto">
+                            <i class="fas fa-chart-line fa-2x"></i>
+                        </div>
+                        <h6 class="fw-bold">Track Spending</h6>
+                        <p class="text-muted small">Monitor all school-related expenses</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Password strength checker
+    document.getElementById('id_password1').addEventListener('input', function() {
+        const password = this.value;
+        const strengthText = document.getElementById('strengthText');
+        const strengthBar = document.getElementById('strengthBar');
+        
+        let strength = 0;
+        
+        // Length check
+        if (password.length >= 8) strength++;
+        if (password.length >= 12) strength++;
+        
+        // Complexity checks
+        if (/[A-Z]/.test(password)) strength++;
+        if (/[0-9]/.test(password)) strength++;
+        if (/[^A-Za-z0-9]/.test(password)) strength++;
+        
+        // Update display
+        if (password.length === 0) {
+            strengthText.textContent = 'None';
+            strengthBar.style.width = '0%';
+            strengthBar.className = 'progress-bar';
+        } else if (strength <= 2) {
+            strengthText.textContent = 'Weak';
+            strengthBar.style.width = '33%';
+            strengthBar.className = 'progress-bar bg-danger';
+        } else if (strength <= 4) {
+            strengthText.textContent = 'Medium';
+            strengthBar.style.width = '66%';
+            strengthBar.className = 'progress-bar bg-warning';
+        } else {
+            strengthText.textContent = 'Strong';
+            strengthBar.style.width = '100%';
+            strengthBar.className = 'progress-bar bg-success';
+        }
+    });
+    
+    // Form validation
+    document.getElementById('parentRegistrationForm').addEventListener('submit', function(e) {
+        const password1 = document.getElementById('id_password1').value;
+        const password2 = document.getElementById('id_password2').value;
+        const students = document.getElementById('id_student_ids');
+        
+        // Check password match
+        if (password1 !== password2) {
+            e.preventDefault();
+            showToast('Passwords do not match!', 'error');
+            return;
+        }
+        
+        // Check password strength
+        if (password1.length < 8) {
+            e.preventDefault();
+            showToast('Password must be at least 8 characters long', 'error');
+            return;
+        }
+        
+        // Check student selection
+        if (students && students.selectedOptions.length === 0) {
+            e.preventDefault();
+            showToast('Please select at least one student', 'error');
+            return;
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,212 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Student Registration - BrillsPay{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-lg">
+                <div class="card-body p-5">
+                    <!-- Registration Header -->
+                    <div class="text-center mb-5">
+                        <div class="icon-xl bg-primary bg-opacity-10 text-primary rounded-circle mb-4 mx-auto">
+                            <i class="fas fa-user-graduate fa-3x"></i>
+                        </div>
+                        <h1 class="h2 fw-bold">Student Registration</h1>
+                        <p class="text-muted">
+                            Create an account to access school services and make purchases
+                        </p>
+                    </div>
+                    
+                    <!-- Registration Form -->
+                    <form method="post" id="studentRegistrationForm">
+                        {% csrf_token %}
+                        
+                        <!-- Personal Information -->
+                        <h5 class="fw-bold mb-3">
+                            <i class="fas fa-user me-2"></i>Personal Information
+                        </h5>
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">First Name <span class="text-danger">*</span></label>
+                                {{ form.first_name }}
+                                {% if form.first_name.errors %}
+                                <div class="text-danger small mt-1">{{ form.first_name.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Last Name <span class="text-danger">*</span></label>
+                                {{ form.last_name }}
+                                {% if form.last_name.errors %}
+                                <div class="text-danger small mt-1">{{ form.last_name.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Date of Birth <span class="text-danger">*</span></label>
+                                {{ form.date_of_birth }}
+                                {% if form.date_of_birth.errors %}
+                                <div class="text-danger small mt-1">{{ form.date_of_birth.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Gender <span class="text-danger">*</span></label>
+                                {{ form.gender }}
+                                {% if form.gender.errors %}
+                                <div class="text-danger small mt-1">{{ form.gender.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Academic Information -->
+                        <h5 class="fw-bold mb-3 mt-5">
+                            <i class="fas fa-graduation-cap me-2"></i>Academic Information
+                        </h5>
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Admission Number <span class="text-danger">*</span></label>
+                                {{ form.admission_number }}
+                                {% if form.admission_number.errors %}
+                                <div class="text-danger small mt-1">{{ form.admission_number.errors }}</div>
+                                {% endif %}
+                                <div class="form-text">
+                                    Your official school admission number
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Current Class <span class="text-danger">*</span></label>
+                                {{ form.current_class }}
+                                {% if form.current_class.errors %}
+                                <div class="text-danger small mt-1">{{ form.current_class.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Account Information -->
+                        <h5 class="fw-bold mb-3 mt-5">
+                            <i class="fas fa-lock me-2"></i>Account Information
+                        </h5>
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Email <span class="text-danger">*</span></label>
+                                {{ form.email }}
+                                {% if form.email.errors %}
+                                <div class="text-danger small mt-1">{{ form.email.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Phone</label>
+                                {{ form.phone }}
+                                {% if form.phone.errors %}
+                                <div class="text-danger small mt-1">{{ form.phone.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Username <span class="text-danger">*</span></label>
+                                {{ form.username }}
+                                {% if form.username.errors %}
+                                <div class="text-danger small mt-1">{{ form.username.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Passwords -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Password <span class="text-danger">*</span></label>
+                                {{ form.password1 }}
+                                {% if form.password1.errors %}
+                                <div class="text-danger small mt-1">{{ form.password1.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Confirm Password <span class="text-danger">*</span></label>
+                                {{ form.password2 }}
+                                {% if form.password2.errors %}
+                                <div class="text-danger small mt-1">{{ form.password2.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Terms -->
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" type="checkbox" id="terms" required>
+                            <label class="form-check-label" for="terms">
+                                I agree to the <a href="#" target="_blank">Terms of Service</a> and 
+                                <a href="#" target="_blank">Student Code of Conduct</a>
+                            </label>
+                        </div>
+                        
+                        <!-- Submit Button -->
+                        <div class="d-grid mb-4">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-user-plus me-2"></i> Create Student Account
+                            </button>
+                        </div>
+                        
+                        <!-- Login Link -->
+                        <div class="text-center">
+                            <p class="text-muted mb-0">
+                                Already have an account? 
+                                <a href="{% url 'store:login' %}" class="fw-bold text-decoration-none">
+                                    Sign In Here
+                                </a>
+                            </p>
+                            <p class="text-muted small mt-2">
+                                Parents should <a href="{% url 'store:register_parent' %}" class="fw-bold">register as parents</a> 
+                                to manage multiple children.
+                            </p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Student Benefits -->
+            <div class="row mt-4">
+                <div class="col-md-4">
+                    <div class="text-center p-3">
+                        <div class="icon-lg bg-primary bg-opacity-10 text-primary rounded-circle mb-3 mx-auto">
+                            <i class="fas fa-book-open fa-2x"></i>
+                        </div>
+                        <h6 class="fw-bold">CBT Exam Access</h6>
+                        <p class="text-muted small">Access exams after fee payment</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-center p-3">
+                        <div class="icon-lg bg-success bg-opacity-10 text-success rounded-circle mb-3 mx-auto">
+                            <i class="fas fa-shopping-bag fa-2x"></i>
+                        </div>
+                        <h6 class="fw-bold">School Store</h6>
+                        <p class="text-muted small">Purchase supplies directly</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-center p-3">
+                        <div class="icon-lg bg-warning bg-opacity-10 text-warning rounded-circle mb-3 mx-auto">
+                            <i class="fas fa-history fa-2x"></i>
+                        </div>
+                        <h6 class="fw-bold">Payment History</h6>
+                        <p class="text-muted small">Track all your payments</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
