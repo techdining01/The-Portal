@@ -14,7 +14,7 @@ from .models import (
     User, Student, Parent
 )
 from store.models import FeePayment, Payment, Attendance
-widget
+
  
 # ==================== CUSTOM WIDGETS ====================
 
@@ -26,6 +26,36 @@ class DatePickerWidget(forms.DateInput):
         kwargs['attrs'].update({'class': 'form-control datepicker'})
         super().__init__(**kwargs)
 
+
+class PhoneNumberWidget(PhoneNumberPrefixWidget):
+    """
+    Safe wrapper for PhoneNumberPrefixWidget that supplies default widgets
+    and default attrs if not provided. This avoids MultiWidget.__init__
+    being called without the required `widgets` argument.
+    """
+    def __init__(self, widgets=None, attrs=None, *args, **kwargs):
+        # Ensure attrs exists and contains the form-control class
+        if attrs is None:
+            attrs = {'class': 'form-control phone-input'}
+        else:
+            attrs = dict(attrs)  # copy to avoid mutating caller dict
+            existing = attrs.get('class', '')
+            classes = (existing + ' form-control phone-input').strip()
+            attrs['class'] = classes
+
+        # If widgets not supplied, build defaults like SplitPhoneNumberField does
+        if widgets is None:
+            # Lazy import to avoid circular import at module import time
+            from phonenumber_field.formfields import PrefixChoiceField
+            from django.forms import CharField as DjangoCharField
+
+            prefix_widget = PrefixChoiceField().widget
+            number_widget = DjangoCharField().widget
+            widgets = (prefix_widget, number_widget)
+
+        # Call base MultiWidget constructor correctly (widgets first)
+        super().__init__(widgets, attrs=attrs)
+        
 
 class PhoneNumberWidget(PhoneNumberPrefixWidget):
     def __init__(self, *args, **kwargs):
