@@ -10,9 +10,9 @@ def pickup_default_expires():
     return timezone.now() + timedelta(days=2)
 
 class PickupAuthorization(models.Model):
-    prent = models.ForeignKey(User, on_delete=models.CASCADE, related_name="pickup_auths")
+    parent = models.ForeignKey(User, on_delete=models.CASCADE, related_name="pickup_auths")
     # store student registration number relation via to_field
-    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="pickup_for", to_field="registration_number")
+    student = models.ForeignKey('users.Student', on_delete=models.CASCADE, related_name="pickup_for")
     bearer_name = models.CharField(max_length=200)
     bearer_phone = models.CharField(max_length=20)
     code = models.CharField(max_length=12, unique=True, editable=False)

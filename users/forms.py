@@ -55,12 +55,9 @@ class PhoneNumberWidget(PhoneNumberPrefixWidget):
 
         # Call base MultiWidget constructor correctly (widgets first)
         super().__init__(widgets, attrs=attrs)
-        
 
-class PhoneNumberWidget(PhoneNumberPrefixWidget):
-    def __init__(self, *args, **kwargs):
-        kwargs.setdefault('attrs', {'class': 'form-control phone-input'})
-        super().__init__(*args, **kwargs)
+
+
 
 
 class MultipleStudentSelectWidget(forms.SelectMultiple):

@@ -4,28 +4,6 @@ from django.utils import timezone
 from django.core.validators import MinValueValidator, MaxValueValidator
 
 
-# User = get_user_model()
-
-
-
-# class Class(models.Model):
-
-#     name = models.CharField(max_length=50, unique=True)  # e.g. JSS1, JSS2
-#     is_active = models.BooleanField()
-
-#     def __str__(self):
-#         return self.name
-
-
-# class Subject(models.Model):
-#     name = models.CharField(max_length=100)
-#     school_class = models.ForeignKey(Class, on_delete=models.CASCADE, related_name="subjects")
-
-#     def __str__(self):
-#         return f"{self.name} ({self.school_class})"
-
-
-
 class Class(models.Model):
     LEVEL_CHOICES = [
         ('kindergarten', 'Kindergarten'),

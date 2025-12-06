@@ -16,8 +16,11 @@ from .models import (
     Supplier, PurchaseOrder, Attendance
 )
  
+from .models import PaymentRecord
 from users.models import User, Student, Parent
-
+from django.db.models import Q, Sum
+from django.db import models
+import datetime
 # ==================== CUSTOM WIDGETS ====================
 
 class DatePickerWidget(forms.DateInput):
@@ -58,10 +61,7 @@ class PhoneNumberWidget(PhoneNumberPrefixWidget):
         # Call base MultiWidget constructor correctly (widgets first)
         super().__init__(widgets, attrs=attrs)
 
-class PhoneNumberWidget(PhoneNumberPrefixWidget):
-    def __init__(self, *args, **kwargs):
-        kwargs.setdefault('attrs', {'class': 'form-control phone-input'})
-        super().__init__(*args, **kwargs)
+
 
 
 class MultipleStudentSelectWidget(forms.SelectMultiple):
@@ -1471,7 +1471,7 @@ class FeeCollectionReportForm(forms.Form):
         ],
         widget=forms.Select(attrs={'class': 'form-control'})
     )
-    class_level = forms.CharField(
+    grade_level = forms.CharField(
         max_length=50,
         required=False,
         widget=forms.TextInput(attrs={
@@ -1782,7 +1782,7 @@ def create_student_selector_form(user):
     return StudentSelectorForm
 
 
-class FeeStructure(forms.ModelForm):
+class FeeStructureForm(forms.ModelForm):
     """Fee structure form for admin"""
     amount = forms.DecimalField(
         max_digits=12,
@@ -1835,7 +1835,7 @@ class FeeStructure(forms.ModelForm):
     class Meta:
         model = FeeStructure
         fields = [
-            'name', 'description', 'academic_year', 'class_level', 'term',
+            'name', 'description', 'academic_year', 'student_class', 'term',
             'amount', 'due_date', 'late_fee', 'late_fee_date',
             'tuition_fee', 'development_levy', 'exam_fee', 
             'sports_fee', 'other_charges', 'is_active', 'is_compulsory', 'notes'
@@ -1854,7 +1854,7 @@ class FeeStructure(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': 'e.g., 2024/2025'
             }),
-            'class_level': forms.TextInput(attrs={
+            'student_class': forms.Select(attrs={
                 'class': 'form-control',
                 'placeholder': 'e.g., JSS 1, SSS 3'
             }),
@@ -1886,7 +1886,7 @@ class FeeStructure(forms.ModelForm):
                     Column('term', css_class='col-md-3'),
                 ),
                 Row(
-                    Column('class_level', css_class='col-md-6'),
+                    Column('student_class', css_class='col-md-6'),
                     Column('due_date', css_class='col-md-3'),
                     Column('late_fee_date', css_class='col-md-3'),
                 ),
@@ -1991,7 +1991,7 @@ class FeeStructureSearchForm(forms.Form):
             'placeholder': 'Academic Year'
         })
     )
-    class_level = forms.CharField(
+    student_class = forms.CharField(
         required=False,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
@@ -2012,241 +2012,6 @@ class FeeStructureSearchForm(forms.Form):
         ],
         widget=forms.Select(attrs={'class': 'form-control'})
     )
-
-class FeeStructure(forms.ModelForm):
-    """Fee structure form for admin"""
-    amount = forms.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        widget=PriceInput
-    )
-    tuition_fee = forms.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        required=False,
-        widget=PriceInput,
-        label="Tuition Fee"
-    )
-    development_levy = forms.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        required=False,
-        widget=PriceInput,
-        label="Development Levy"
-    )
-    exam_fee = forms.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        required=False,
-        widget=PriceInput,
-        label="Exam Fee"
-    )
-    sports_fee = forms.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        required=False,
-        widget=PriceInput,
-        label="Sports Fee"
-    )
-    other_charges = forms.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        required=False,
-        widget=PriceInput,
-        label="Other Charges"
-    )
-    late_fee = forms.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        required=False,
-        widget=PriceInput,
-        label="Late Fee"
-    )
-    
-    class Meta:
-        model = FeeStructure
-        fields = [
-            'name', 'description', 'academic_year', 'class_level', 'term',
-            'amount', 'due_date', 'late_fee', 'late_fee_date',
-            'tuition_fee', 'development_levy', 'exam_fee', 
-            'sports_fee', 'other_charges', 'is_active', 'is_compulsory', 'notes'
-        ]
-        widgets = {
-            'name': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'e.g., JSS 1 First Term Fees'
-            }),
-            'description': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 3,
-                'placeholder': 'Fee structure description'
-            }),
-            'academic_year': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'e.g., 2024/2025'
-            }),
-            'class_level': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'e.g., JSS 1, SSS 3'
-            }),
-            'term': forms.Select(attrs={'class': 'form-control'}),
-            'due_date': DatePickerWidget,
-            'late_fee_date': DatePickerWidget,
-            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'is_compulsory': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'notes': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 2,
-                'placeholder': 'Additional notes'
-            }),
-        }
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.helper = FormHelper()
-        self.helper.form_method = 'post'
-        self.helper.form_class = 'fee-structure-form'
-        
-        # Set up layout with crispy forms
-        self.helper.layout = Layout(
-            Fieldset(
-                'Basic Information',
-                Row(
-                    Column('name', css_class='col-md-6'),
-                    Column('academic_year', css_class='col-md-3'),
-                    Column('term', css_class='col-md-3'),
-                ),
-                Row(
-                    Column('class_level', css_class='col-md-6'),
-                    Column('due_date', css_class='col-md-3'),
-                    Column('late_fee_date', css_class='col-md-3'),
-                ),
-                'description',
-                css_class='mb-4'
-            ),
-            
-            Fieldset(
-                'Fee Breakdown',
-                HTML('<div class="alert alert-info">'
-                     '<i class="fas fa-info-circle me-2"></i>'
-                     'The total amount will be calculated automatically from the breakdown below.'
-                     '</div>'),
-                Row(
-                    Column('tuition_fee', css_class='col-md-6'),
-                    Column('development_levy', css_class='col-md-6'),
-                ),
-                Row(
-                    Column('exam_fee', css_class='col-md-6'),
-                    Column('sports_fee', css_class='col-md-6'),
-                ),
-                Row(
-                    Column('other_charges', css_class='col-md-6'),
-                    Column('late_fee', css_class='col-md-6'),
-                ),
-                Row(
-                    Column('amount', css_class='col-md-6'),
-                    Column(HTML('<div class="mt-4"><strong>Total:</strong> <span id="totalDisplay" class="h5 text-primary">₦0.00</span></div>'), 
-                           css_class='col-md-6'),
-                ),
-                css_class='mb-4'
-            ),
-            
-            Fieldset(
-                'Additional Settings',
-                Row(
-                    Column('is_active', css_class='col-md-6'),
-                    Column('is_compulsory', css_class='col-md-6'),
-                ),
-                'notes',
-                css_class='mb-4'
-            ),
-            
-            Submit('submit', 'Save Fee Structure', css_class='btn-primary w-100')
-        )
-    
-    def clean(self):
-        cleaned_data = super().clean()
-        
-        # Validate dates
-        due_date = cleaned_data.get('due_date')
-        late_fee_date = cleaned_data.get('late_fee_date')
-        
-        if due_date and late_fee_date and late_fee_date <= due_date:
-            raise ValidationError({
-                'late_fee_date': 'Late fee date must be after the due date.'
-            })
-        
-        # Calculate total from breakdown
-        tuition_fee = cleaned_data.get('tuition_fee') or 0
-        development_levy = cleaned_data.get('development_levy') or 0
-        exam_fee = cleaned_data.get('exam_fee') or 0
-        sports_fee = cleaned_data.get('sports_fee') or 0
-        other_charges = cleaned_data.get('other_charges') or 0
-        
-        calculated_total = tuition_fee + development_levy + exam_fee + sports_fee + other_charges
-        
-        # Update amount if breakdown is provided
-        if calculated_total > 0:
-            cleaned_data['amount'] = calculated_total
-        
-        # Validate amount
-        amount = cleaned_data.get('amount')
-        if amount and amount <= 0:
-            raise ValidationError({
-                'amount': 'Amount must be greater than zero.'
-            })
-        
-        return cleaned_data
-    
-    def save(self, commit=True):
-        instance = super().save(commit=False)
-        
-        # Ensure breakdown matches total
-        if instance.amount:
-            # If any breakdown field is empty but amount is set, distribute
-            if not instance.tuition_fee:
-                instance.tuition_fee = instance.amount
-        
-        if commit:
-            instance.save()
-        
-        return instance
-
-
-class FeeStructureSearchForm(forms.Form):
-    """Fee structure search form"""
-    academic_year = forms.CharField(
-        required=False,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Academic Year'
-        })
-    )
-    class_level = forms.CharField(
-        required=False,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Class Level'
-        })
-    )
-    term = forms.ChoiceField(
-        required=False,
-        choices=[('', 'All Terms')] + FeeStructure.TERM_CHOICES,
-        widget=forms.Select(attrs={'class': 'form-control'})
-    )
-    is_active = forms.ChoiceField(
-        required=False,
-        choices=[
-            ('', 'All Status'),
-            ('active', 'Active Only'),
-            ('inactive', 'Inactive Only'),
-        ],
-        widget=forms.Select(attrs={'class': 'form-control'})
-    )
-
-
-
-
 
 # Export forms for easy import
 __all__ = [
@@ -2311,3 +2076,369 @@ __all__ = [
     'create_student_selector_form',
 ] 
 
+class FeePaymentSearchForm(forms.Form):
+    """Form for searching fee payments"""
+    
+    # Basic search
+    search = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'placeholder': 'Search by student, receipt, transaction...',
+            'class': 'form-control',
+        })
+    )
+    
+    # Student filter
+    student = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'placeholder': 'Student name or ID',
+            'class': 'form-control',
+        })
+    )
+    
+    # Academic filters
+    academic_year = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'placeholder': 'e.g., 2024/2025',
+            'class': 'form-control',
+        })
+    )
+    
+    student_class = forms.Select()
+    
+    term = forms.ChoiceField(
+        required=False,
+        choices=[('', 'All Terms')] + FeeStructure.TERM_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    
+    # Payment details
+    payment_method = forms.ChoiceField(
+        required=False,
+        choices=[('', 'All Methods')] + Payment.PAYMENT_METHOD_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    
+    payment_status = forms.ChoiceField(
+        required=False,
+        choices=[('', 'All Statuses')] + Payment.STATUS_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    
+    # Amount range
+    min_amount = forms.DecimalField(
+        required=False,
+        max_digits=12,
+        decimal_places=2,
+        widget=forms.NumberInput(attrs={
+            'placeholder': 'Min Amount',
+            'class': 'form-control',
+            'step': '0.01'
+        })
+    )
+    
+    max_amount = forms.DecimalField(
+        required=False,
+        max_digits=12,
+        decimal_places=2,
+        widget=forms.NumberInput(attrs={
+            'placeholder': 'Max Amount',
+            'class': 'form-control',
+            'step': '0.01'
+        })
+    )
+    
+    # Date filters
+    payment_date_from = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={
+            'type': 'date',
+            'class': 'form-control',
+        })
+    )
+    
+    payment_date_to = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={
+            'type': 'date',
+            'class': 'form-control',
+        })
+    )
+    
+    # Verification filter
+    is_verified = forms.ChoiceField(
+        required=False,
+        choices=[
+            ('', 'All'),
+            ('verified', 'Verified Only'),
+            ('unverified', 'Unverified Only'),
+        ],
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    
+    receipt_issued = forms.ChoiceField(
+        required=False,
+        choices=[
+            ('', 'All'),
+            ('issued', 'Receipt Issued'),
+            ('not_issued', 'Receipt Not Issued'),
+        ],
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    
+    # Sort options
+    sort_by = forms.ChoiceField(
+        required=False,
+        choices=[
+            ('-payment_date', 'Newest Payments'),
+            ('payment_date', 'Oldest Payments'),
+            ('amount_paid', 'Amount Low-High'),
+            ('-amount_paid', 'Amount High-Low'),
+            ('student__last_name', 'Student A-Z'),
+            ('-student__last_name', 'Student Z-A'),
+        ],
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    
+    def search_queryset(self, queryset=None):
+        """Apply search filters to queryset"""
+        if queryset is None:
+            queryset = FeePayment.objects.all()
+        
+        data = self.cleaned_data
+        
+        # Text search
+        if data.get('search'):
+            search_term = data['search']
+            queryset = queryset.filter(
+                Q(search_text__icontains=search_term) |
+                Q(receipt_number__icontains=search_term) |
+                Q(transaction_code__icontains=search_term) |
+                Q(payment_reference__icontains=search_term) |
+                Q(student__first_name__icontains=search_term) |
+                Q(student__last_name__icontains=search_term) |
+                Q(student__admission_number__icontains=search_term)
+            )
+        
+        # Student filter
+        if data.get('student'):
+            student_term = data['student']
+            queryset = queryset.filter(
+                Q(student__first_name__icontains=student_term) |
+                Q(student__last_name__icontains=student_term) |
+                Q(student__admission_number__icontains=student_term)
+            )
+        
+        # Academic filters via fee_structure
+        if data.get('academic_year'):
+            queryset = queryset.filter(fee_structure__academic_year__icontains=data['academic_year'])
+        
+        if data.get('grade_class'):
+            queryset = queryset.filter(fee_structure__grade_class__icontains=data['grade_class'])
+        
+        if data.get('term'):
+            queryset = queryset.filter(fee_structure__term=data['term'])
+        
+        # Payment details
+        if data.get('payment_method'):
+            queryset = queryset.filter(payment_method=data['payment_method'])
+        
+        if data.get('payment_status'):
+            queryset = queryset.filter(payment_status=data['payment_status'])
+        
+        # Amount range
+        if data.get('min_amount'):
+            queryset = queryset.filter(amount_paid__gte=data['min_amount'])
+        
+        if data.get('max_amount'):
+            queryset = queryset.filter(amount_paid__lte=data['max_amount'])
+        
+        # Date filters
+        if data.get('payment_date_from'):
+            queryset = queryset.filter(payment_date__date__gte=data['payment_date_from'])
+        
+        if data.get('payment_date_to'):
+            queryset = queryset.filter(payment_date__date__lte=data['payment_date_to'])
+        
+        # Verification filter
+        if data.get('is_verified') == 'verified':
+            queryset = queryset.filter(is_verified=True)
+        elif data.get('is_verified') == 'unverified':
+            queryset = queryset.filter(is_verified=False)
+        
+        # Receipt filter
+        if data.get('receipt_issued') == 'issued':
+            queryset = queryset.filter(receipt_issued=True)
+        elif data.get('receipt_issued') == 'not_issued':
+            queryset = queryset.filter(receipt_issued=False)
+        
+        # Sorting
+        if data.get('sort_by'):
+            queryset = queryset.order_by(data['sort_by'])
+        else:
+            queryset = queryset.order_by('-payment_date')
+        
+        return queryset
+    
+    def get_summary_stats(self, queryset):
+        """Get summary statistics for the filtered payments"""
+        total_payments = queryset.count()
+        total_amount = queryset.aggregate(models.Sum('amount_paid'))['amount_paid__sum'] or 0
+        avg_amount = total_amount / total_payments if total_payments > 0 else 0
+        
+        # Count by status
+        status_counts = {}
+        for status_code, status_name in FeePayment.PAYMENT_STATUS_CHOICES:
+            count = queryset.filter(payment_status=status_code).count()
+            if count > 0:
+                status_counts[status_name] = count
+        
+        # Count by payment method
+        method_counts = {}
+        for method_code, method_name in FeePayment.PAYMENT_METHOD_CHOICES:
+            count = queryset.filter(payment_method=method_code).count()
+            if count > 0:
+                method_counts[method_name] = count
+        
+        return {
+            'total_payments': total_payments,
+            'total_amount': total_amount,
+            'average_amount': avg_amount,
+            'status_counts': status_counts,
+            'method_counts': method_counts,
+        }
+
+
+class PaymentRecordSearchForm(forms.Form):
+    """Simple search form for PaymentRecord"""
+    
+    # Search field
+    search = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'placeholder': 'Search by transaction ID, payer, amount...',
+            'class': 'form-control',
+        })
+    )
+    
+    # Payment method filter
+    payment_method = forms.ChoiceField(
+        required=False,
+        choices=[('', 'All Methods')] + PaymentRecord.PaymentMethod.choices,
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    
+    # Status filter
+    payment_status = forms.ChoiceField(
+        required=False,
+        choices=[('', 'All Statuses')] + PaymentRecord.PaymentStatus.choices,
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    
+    # Amount range
+    min_amount = forms.DecimalField(
+        required=False,
+        max_digits=12,
+        decimal_places=2,
+        widget=forms.NumberInput(attrs={
+            'placeholder': 'Min Amount (₦)',
+            'class': 'form-control',
+            'min': '0.01',
+            'step': '0.01'
+        })
+    )
+    
+    max_amount = forms.DecimalField(
+        required=False,
+        max_digits=12,
+        decimal_places=2,
+        widget=forms.NumberInput(attrs={
+            'placeholder': 'Max Amount (₦)',
+            'class': 'form-control',
+            'min': '0.01',
+            'step': '0.01'
+        })
+    )
+    
+    # Date range
+    start_date = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={
+            'type': 'date',
+            'class': 'form-control',
+        })
+    )
+    
+    end_date = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={
+            'type': 'date',
+            'class': 'form-control',
+        })
+    )
+    
+    def search_queryset(self):
+        """Apply search filters to PaymentRecord queryset"""
+        queryset = PaymentRecord.objects.all()
+        
+        if not hasattr(self, 'cleaned_data'):
+            return queryset
+        
+        data = self.cleaned_data
+        
+        # Text search
+        if data.get('search'):
+            search_term = data['search']
+            queryset = queryset.filter(
+                Q(transaction_id__icontains=search_term) |
+                Q(payer__username__icontains=search_term) |
+                Q(payer__email__icontains=search_term) |
+                Q(payer__first_name__icontains=search_term) |
+                Q(payer__last_name__icontains=search_term) |
+                Q(paystack_reference__icontains=search_term) |
+                Q(description__icontains=search_term)
+            )
+        
+        # Payment method filter
+        if data.get('payment_method'):
+            queryset = queryset.filter(payment_method=data['payment_method'])
+        
+        # Status filter
+        if data.get('payment_status'):
+            queryset = queryset.filter(payment_status=data['payment_status'])
+        
+        # Amount range
+        if data.get('min_amount'):
+            queryset = queryset.filter(amount__gte=data['min_amount'])
+        
+        if data.get('max_amount'):
+            queryset = queryset.filter(amount__lte=data['max_amount'])
+        
+        # Date range
+        if data.get('start_date'):
+            queryset = queryset.filter(payment_date__date__gte=data['start_date'])
+        
+        if data.get('end_date'):
+            queryset = queryset.filter(payment_date__date__lte=data['end_date'])
+        
+        # Order by latest first
+        queryset = queryset.order_by('-payment_date')
+        
+        return queryset
+    
+    def get_summary_stats(self, queryset):
+        """Get summary statistics"""
+        total_payments = queryset.count()
+        total_amount = queryset.aggregate(models.Sum('amount'))['amount__sum'] or Decimal('0.00')
+        successful_payments = queryset.filter(payment_status='successful').count()
+        pending_payments = queryset.filter(payment_status='pending').count()
+        
+        return {
+            'total_payments': total_payments,
+            'total_amount': total_amount,
+            'successful_payments': successful_payments,
+            'pending_payments': pending_payments,
+            'success_rate': (successful_payments / total_payments * 100) if total_payments > 0 else 0,
+        }

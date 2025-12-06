@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views, admin_views
+from . import views
 
 
 app_name = 'store'
@@ -69,7 +69,7 @@ urlpatterns = [
     # ==================== CBT EXAM INTEGRATION ====================
     path('exams/access/', views.exam_access_view, name='exam_access_view'),
     path('exams/verify/', views.exam_payment_verification, name='exam_payment_verification'),
-    path('exams/take/<int:exam_id>/', views.take_exam, name='take_exam'),
+    # path('exams/take/<int:exam_id>/', views.take_exam, name='take_exam'),
     
     # ==================== AJAX ENDPOINTS ====================
 

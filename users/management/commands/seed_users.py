@@ -1,6 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
-from users.models import Parent, Class
+from users.models import Parent
+from exams.models import Class
 import random
 from datetime import datetime, timedelta
 

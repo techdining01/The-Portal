@@ -15,20 +15,24 @@ import json
 import logging
 from decimal import Decimal
 from . import paystack
-from django.contrib.auth import get_user_model
 from django.conf import settings
-from users.models import Student
+from users.models import Student, User, Parent, StudentParent
 from .models import (
     Payment, Product, Order, OrderItem, Inventory, Cart,
-    CartItem, Category, FeePayment, Parent, PurchaseOrder, 
-    FeeStructure, StudentParent, Attendance
+    CartItem, Category, FeePayment, PurchaseOrder, 
+    FeeStructure, Attendance
 )
-from .forms import *
-from .forms import FeeStructureForm
+
+from .forms import (
+    AddToCartForm, ContactForm, ProductForm, ProductSearchForm,
+    create_student_selector_form, CheckoutForm, OrderStatusUpdateForm,
+    BulkFeePaymentForm, ExamPaymentVerificationForm,
+    FeePaymentForm, FeeStructureForm
+    )
+
 from .utils import *
 
 
-User = get_user_model()
 
 logger = logging.getLogger(__name__)
 

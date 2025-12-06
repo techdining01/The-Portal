@@ -13,11 +13,11 @@ from store.models import (
     Transaction, Supplier, PurchaseOrder, Attendance,
     ) 
 from users.models import User, Student, Parent, Teacher, Staff
-
+from django.utils import timezone
 
 # ==================== INLINE ADMIN CLASSES ====================
 class OrderItemInline(admin.TabularInline):
-    model = 'store.OrderItem'
+    model = OrderItem
     extra = 0
     readonly_fields = ('product', 'quantity', 'price', 'subtotal')
     can_delete = False
@@ -26,7 +26,7 @@ class OrderItemInline(admin.TabularInline):
         return False
 
 class CartItemInline(admin.TabularInline):
-    model = 'store.CartItem'
+    model = CartItem
     extra = 0
     fields = ('product', 'quantity', 'get_subtotal')
     readonly_fields = ('get_subtotal',)
@@ -203,16 +203,16 @@ class TransactionAdmin(admin.ModelAdmin):
 
 @admin.register(FeeStructure)
 class FeeStructureAdmin(admin.ModelAdmin):
-    list_display = ('name', 'academic_year', 'class_level', 'term', 
+    list_display = ('name', 'academic_year', 'student_class', 'term', 
                     'amount', 'due_date', 'is_active')
-    list_filter = ('academic_year', 'class_level', 'term', 'is_active')
+    list_filter = ('academic_year', 'student_class', 'term', 'is_active')
     search_fields = ('name', 'description')
     readonly_fields = ('created_at', 'updated_at')
     inlines = [FeePaymentInline]
     
     fieldsets = (
         ('Basic Information', {
-            'fields': ('name', 'description', 'academic_year', 'class_level', 'term')
+            'fields': ('name', 'description', 'academic_year', 'student_class', 'term')
         }),
         ('Fee Details', {
             'fields': ('amount', 'due_date', 'late_fee', 'late_fee_date')
@@ -356,7 +356,7 @@ class StudentResource(resources.ModelResource):
     class Meta:
         model = Student
         fields = ('id', 'admission_number', 'first_name', 'last_name', 
-                 'current_class', 'gender', 'date_of_birth', 'enrollment_date')
+                 'student_class', 'gender', 'date_of_birth', 'enrollment_date')
         export_order = fields
 
 
@@ -389,7 +389,7 @@ class StatusFilter(admin.SimpleListFilter):
 class StudentInline(admin.StackedInline):
     model = Student
     extra = 0
-    fields = ('admission_number', 'current_class', 'date_of_birth', 'gender')
+    fields = ('admission_number', 'student_class', 'date_of_birth', 'gender')
     readonly_fields = ('admission_number',)
 
 
@@ -465,13 +465,13 @@ class UserAdmin(BaseUserAdmin, ImportExportModelAdmin):
     def action_buttons(self, obj):
         links = []
         if obj.role == 'student':
-            url = reverse('admin:store_student_change', args=[obj.student.id])
+            url = reverse('store:store_student_change', args=[obj.student.id])
             links.append(f'<a href="{url}" class="button">View Student</a>')
         elif obj.role == 'parent':
-            url = reverse('admin:store_parent_change', args=[obj.parent.id])
+            url = reverse('store:store_parent_change', args=[obj.parent.id])
             links.append(f'<a href="{url}" class="button">View Parent</a>')
         
-        url = reverse('admin:auth_user_change', args=[obj.id])
+        url = reverse('store:auth_user_change', args=[obj.id])
         links.append(f'<a href="{url}" class="button">Edit</a>')
         
         return format_html(' '.join(links))
@@ -480,9 +480,9 @@ class UserAdmin(BaseUserAdmin, ImportExportModelAdmin):
 @admin.register(Student)
 class StudentAdmin(ImportExportModelAdmin):
     resource_class = StudentResource
-    list_display = ('admission_number', 'full_name', 'current_class', 
+    list_display = ('admission_number', 'full_name', 'student_class', 
                     'gender', 'enrollment_date', 'get_parents', 'is_active')
-    list_filter = ('current_class', 'gender', 'is_active', 
+    list_filter = ('student_class', 'gender', 'is_active', 
                    ('enrollment_date', DateRangeFilter))
     search_fields = ('admission_number', 'first_name', 'last_name', 
                      'user__email', 'user__phone')
@@ -493,7 +493,7 @@ class StudentAdmin(ImportExportModelAdmin):
                       'date_of_birth', 'gender')
         }),
         ('Academic Information', {
-            'fields': ('current_class', 'section', 'roll_number', 
+            'fields': ('student_class', 'section', 'roll_number', 
                       'academic_year', 'enrollment_date')
         }),
         ('Parent Information', {
@@ -533,7 +533,6 @@ class ParentAdmin(ImportExportModelAdmin):
     search_fields = ('user__username', 'user__email', 'user__first_name', 
                      'user__last_name', 'phone')
     readonly_fields = ('total_spent', 'last_purchase')
-    inlines = [StudentInline]
     fieldsets = (
         ('Personal Information', {
             'fields': ('user', 'phone', 'occupation', 'employer', 'income_range')
@@ -732,3 +731,136 @@ send_email_action.short_description = "Send email notification"
 print("BrillsPay Admin Site Initialized Successfully!")
 
  
+ # admin.py
+from django.contrib import admin
+from import_export.admin import ImportExportModelAdmin
+from import_export import resources, fields
+from .models import PaymentRecord
+
+class PaymentRecordResource(resources.ModelResource):
+    """Resource for importing/exporting PaymentRecord"""
+    
+    payer_email = fields.Field(
+        column_name='payer_email',
+        attribute='payer__email'
+    )
+    
+    payer_name = fields.Field(
+        column_name='payer_name',
+        attribute='payer__get_full_name'
+    )
+    
+    class Meta:
+        model = PaymentRecord
+        fields = (
+            'transaction_id',
+            'payer_email',
+            'payer_name',
+            'amount',
+            'payment_method',
+            'payment_status',
+            'payment_date',
+            'paystack_reference',
+            'description',
+        )
+        export_order = fields
+
+@admin.register(PaymentRecord)
+class PaymentRecordAdmin(ImportExportModelAdmin):
+    """Admin configuration for PaymentRecord"""
+    
+    resource_class = PaymentRecordResource
+    
+    list_display = (
+        'transaction_id',
+        'payer',
+        'amount_display',
+        'payment_method',
+        'payment_status_badge',
+        'payment_date',
+    )
+    
+    list_filter = (
+        'payment_method',
+        'payment_status',
+        'payment_date',
+    )
+    
+    search_fields = (
+        'transaction_id',
+        'payer__username',
+        'payer__email',
+        'payer__first_name',
+        'payer__last_name',
+        'paystack_reference',
+        'description',
+    )
+    
+    readonly_fields = (
+        'transaction_id',
+        'created_at',
+        'updated_at',
+    )
+    
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('transaction_id', 'payer', 'amount', 'currency', 'description')
+        }),
+        ('Payment Details', {
+            'fields': ('payment_method', 'payment_status', 'payment_date', 'processed_date')
+        }),
+        ('Payment Gateway Details', {
+            'fields': ('paystack_reference', 'bank_name', 'account_number', 'deposit_slip_number'),
+            'classes': ('collapse',)
+        }),
+        ('Technical Information', {
+            'fields': ('ip_address', 'user_agent', 'notes'),
+            'classes': ('collapse',)
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def amount_display(self, obj):
+        return f"₦{obj.amount:,.2f}"
+    amount_display.short_description = 'Amount'
+    amount_display.admin_order_field = 'amount'
+    
+    def payment_status_badge(self, obj):
+        status_colors = {
+            'successful': 'success',
+            'failed': 'danger',
+            'pending': 'warning',
+            'processing': 'info',
+            'cancelled': 'secondary',
+        }
+        color = status_colors.get(obj.payment_status, 'secondary')
+        return format_html(
+            '<span class="badge badge-{}">{}</span>',
+            color,
+            obj.get_payment_status_display()
+        )
+    payment_status_badge.short_description = 'Status'
+    payment_status_badge.admin_order_field = 'payment_status'
+    
+    actions = ['mark_as_successful', 'mark_as_failed']
+    
+    def mark_as_successful(self, request, queryset):
+        """Admin action to mark payments as successful"""
+        updated = queryset.update(
+            payment_status='successful',
+            processed_date=timezone.now()
+        )
+        self.message_user(request, f"{updated} payments marked as successful.")
+    mark_as_successful.short_description = "Mark selected payments as successful"
+    
+    def mark_as_failed(self, request, queryset):
+        """Admin action to mark payments as failed"""
+        updated = queryset.update(
+            payment_status='failed',
+            processed_date=timezone.now()
+        )
+        self.message_user(request, f"{updated} payments marked as failed.")
+    mark_as_failed.short_description = "Mark selected payments as failed"

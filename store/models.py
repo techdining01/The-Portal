@@ -1,4 +1,9 @@
+############### VERSION 2 ###################################
+
+import secrets
+from django.utils.crypto import get_random_string
 from django.db import models
+from django.db.models import Sum
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
@@ -9,8 +14,8 @@ import uuid
 import random
 import string
 from decimal import Decimal
+from PIL import Image
 from django.conf import settings
-from django.contrib.auth.models import User
 
 
  #==================== PRODUCT & STORE MODELS ====================
@@ -219,12 +224,12 @@ class Cart(models.Model):
     """Shopping cart model"""
     
     user = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='carts'
     )
     student = models.ForeignKey(
-        'usrs.Student',
+        'users.Student',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -388,7 +393,7 @@ class Order(models.Model):
     # Order identification
     order_number = models.CharField(max_length=20, unique=True)
     user = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='orders'
     )
@@ -433,7 +438,7 @@ class Order(models.Model):
     # Payment information
     payment_date = models.DateTimeField(null=True, blank=True)
     payment_verified_by = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -741,7 +746,7 @@ class Transaction(models.Model):
     ]
     
     user = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         related_name='transactions'
@@ -760,14 +765,14 @@ class Transaction(models.Model):
     
     # Related objects
     payment = models.ForeignKey(
-        Payment,
+        'store.Payment',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name='transactions'
     )
     order = models.ForeignKey(
-        Order,
+        'store.Order',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -825,7 +830,7 @@ class Refund(models.Model):
         default='pending'
     )
     processed_by = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True
@@ -863,7 +868,7 @@ class FeeStructure(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     academic_year = models.CharField(max_length=20)  # e.g., "2024/2025"
-    class_level = models.CharField(max_length=50)  # e.g., "JSS 1", "SSS 3"
+    student_class = models.ForeignKey('exams.Class', on_delete=models.CASCADE)  # e.g., "JSS 1", "SSS 3"
     term = models.CharField(max_length=20, choices=TERM_CHOICES)
     
     # Fee amounts
@@ -917,11 +922,11 @@ class FeeStructure(models.Model):
     class Meta:
         verbose_name = 'Fee Structure'
         verbose_name_plural = 'Fee Structures'
-        ordering = ['academic_year', 'class_level', 'term']
-        unique_together = ['academic_year', 'class_level', 'term', 'name']
+        ordering = ['academic_year', 'student_class', 'term']
+        unique_together = ['academic_year', 'student_class', 'term', 'name']
     
     def __str__(self):
-        return f"{self.name} - {self.class_level} ({self.get_term_display()})"
+        return f"{self.name} - {self.student_class} ({self.get_term_display()})"
     
     @property
     def is_overdue(self):
@@ -981,7 +986,7 @@ class FeePayment(models.Model):
     # Status
     is_verified = models.BooleanField(default=False)
     verified_by = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -993,7 +998,7 @@ class FeePayment(models.Model):
     receipt_number = models.CharField(max_length=50, blank=True)
     receipt_issued = models.BooleanField(default=False)
     receipt_issued_by = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -1196,7 +1201,7 @@ class PurchaseOrder(models.Model):
     
     # Approval
     approved_by = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -1282,7 +1287,7 @@ class Attendance(models.Model):
     
     # Recorded by
     recorded_by = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -1422,3 +1427,246 @@ __all__ = [
     'Inventory', 'Supplier', 'PurchaseOrder', 'Attendance',
      
 ]
+
+# models.py
+from django.db import models
+from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
+from django.core.validators import MinValueValidator
+from decimal import Decimal
+import random
+import string
+
+class PaymentRecord(models.Model):
+    """
+    Simplified payment record model for Brillspay.
+    Only supports Paystack, Bank, and Naira currency.
+    """
+    
+    class PaymentMethod(models.TextChoices):
+        PAYSTACK = 'paystack', _('Paystack')
+        BANK_TRANSFER = 'bank_transfer', _('Bank Transfer')
+        BANK_DEPOSIT = 'bank_deposit', _('Bank Deposit')
+    
+    class PaymentStatus(models.TextChoices):
+        PENDING = 'pending', _('Pending')
+        PROCESSING = 'processing', _('Processing')
+        SUCCESSFUL = 'successful', _('Successful')
+        FAILED = 'failed', _('Failed')
+        CANCELLED = 'cancelled', _('Cancelled')
+    
+    # Basic Information
+    transaction_id = models.CharField(
+        _("Transaction ID"),
+        max_length=50,
+        unique=True,
+        help_text="Unique transaction reference"
+    )
+    
+    payer = models.ForeignKey(
+        'users.User',
+        on_delete=models.CASCADE,
+        related_name='payment_records',
+        verbose_name=_("Payer")
+    )
+    
+    # Payment Details
+    amount = models.DecimalField(
+        _("Amount"),
+        max_digits=12,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'))],
+        help_text="Amount in Naira (₦)"
+    )
+    
+    payment_method = models.CharField(
+        _("Payment Method"),
+        max_length=20,
+        choices=PaymentMethod.choices,
+        default=PaymentMethod.PAYSTACK
+    )
+    
+    payment_status = models.CharField(
+        _("Payment Status"),
+        max_length=20,
+        choices=PaymentStatus.choices,
+        default=PaymentStatus.PENDING
+    )
+    
+    currency = models.CharField(
+        _("Currency"),
+        max_length=3,
+        default='NGN',
+        editable=False,
+        help_text="Currency code (NGN only)"
+    )
+    
+    # Paystack specific fields
+    paystack_reference = models.CharField(
+        _("Paystack Reference"),
+        max_length=100,
+        blank=True,
+        help_text="Reference from Paystack"
+    )
+    
+    # Bank specific fields
+    bank_name = models.CharField(
+        _("Bank Name"),
+        max_length=100,
+        blank=True,
+        help_text="Bank name for bank transfers/deposits"
+    )
+    
+    account_number = models.CharField(
+        _("Account Number"),
+        max_length=20,
+        blank=True,
+        help_text="Account number for bank transfers"
+    )
+    
+    deposit_slip_number = models.CharField(
+        _("Deposit Slip Number"),
+        max_length=50,
+        blank=True,
+        help_text="Deposit slip number for bank deposits"
+    )
+    
+    # Payment dates
+    payment_date = models.DateTimeField(
+        _("Payment Date"),
+        auto_now_add=True
+    )
+    
+    processed_date = models.DateTimeField(
+        _("Processed Date"),
+        null=True,
+        blank=True
+    )
+    
+    # Description
+    description = models.TextField(
+        _("Description"),
+        blank=True,
+        help_text="Payment description"
+    )
+    
+    # Metadata
+    ip_address = models.GenericIPAddressField(
+        _("IP Address"),
+        null=True,
+        blank=True
+    )
+    
+    user_agent = models.TextField(
+        _("User Agent"),
+        blank=True
+    )
+    
+    notes = models.TextField(
+        _("Admin Notes"),
+        blank=True,
+        help_text="Internal admin notes"
+    )
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = _('Payment Record')
+        verbose_name_plural = _('Payment Records')
+        ordering = ['-payment_date']
+        indexes = [
+            models.Index(fields=['transaction_id']),
+            models.Index(fields=['payer']),
+            models.Index(fields=['payment_status']),
+            models.Index(fields=['payment_method']),
+            models.Index(fields=['payment_date']),
+        ]
+    
+    def __str__(self):
+        return f"Payment {self.transaction_id} - ₦{self.amount:,.2f}"
+    
+    def save(self, *args, **kwargs):
+        if not self.transaction_id:
+            self.transaction_id = self.generate_transaction_id()
+        super().save(*args, **kwargs)
+    
+    def generate_transaction_id(self):
+        """Generate unique transaction ID"""
+        timestamp = timezone.now().strftime('%Y%m%d%H%M%S')
+        random_str = ''.join(random.choices(string.digits, k=6))
+        return f"BRP-{timestamp}-{random_str}"
+    
+    @property
+    def is_paystack(self):
+        """Check if payment is via Paystack"""
+        return self.payment_method == 'paystack'
+    
+    @property
+    def is_bank_transfer(self):
+        """Check if payment is via bank transfer"""
+        return self.payment_method == 'bank_transfer'
+    
+    @property
+    def is_bank_deposit(self):
+        """Check if payment is via bank deposit"""
+        return self.payment_method == 'bank_deposit'
+    
+    @property
+    def is_successful(self):
+        """Check if payment is successful"""
+        return self.payment_status == 'successful'
+    
+    @property
+    def is_failed(self):
+        """Check if payment failed"""
+        return self.payment_status == 'failed'
+    
+    @property
+    def is_pending(self):
+        """Check if payment is pending"""
+        return self.payment_status == 'pending'
+    
+    def mark_as_successful(self, reference=None):
+        """Mark payment as successful"""
+        self.payment_status = 'successful'
+        self.processed_date = timezone.now()
+        
+        if reference and self.is_paystack:
+            self.paystack_reference = reference
+        
+        self.save(update_fields=[
+            'payment_status', 
+            'processed_date', 
+            'paystack_reference',
+            'updated_at'
+        ])
+    
+    def mark_as_failed(self, notes=''):
+        """Mark payment as failed"""
+        self.payment_status = 'failed'
+        self.processed_date = timezone.now()
+        if notes:
+            self.notes = f"{self.notes}\nFailed: {notes}"
+        
+        self.save(update_fields=[
+            'payment_status', 
+            'processed_date', 
+            'notes',
+            'updated_at'
+        ])
+    
+    def get_payment_details(self):
+        """Get payment details as dictionary"""
+        return {
+            'transaction_id': self.transaction_id,
+            'payer': str(self.payer),
+            'amount': f"₦{self.amount:,.2f}",
+            'payment_method': self.get_payment_method_display(),
+            'payment_status': self.get_payment_status_display(),
+            'payment_date': self.payment_date.strftime('%Y-%m-%d %H:%M:%S'),
+            'description': self.description,
+            'is_successful': self.is_successful,
+            'is_pending': self.is_pending,
+        }

@@ -2,7 +2,6 @@
 
 import secrets
 from django.utils.crypto import get_random_string
-from exams.models import Class
 from django.db import models
 from django.db.models import Sum
 from django.contrib.auth.models import AbstractUser, BaseUserManager
@@ -68,7 +67,7 @@ class User(AbstractUser):
     email = models.EmailField(_('email address'), unique=True)
     phone = models.CharField(_('phone number'), max_length=15, unique=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='student')
-    
+    is_approved = models.BooleanField(default=False)
 
     # Profile fields
     profile_picture = models.ImageField(upload_to='profile_pics/', null=True, blank=True)
@@ -154,6 +153,18 @@ class User(AbstractUser):
     def save(self, *args, **kwargs):
         # Ensure email is lowercase
         self.email = self.email.lower()
+
+        #Resize profile picture
+        if self.profile_picture and hasattr(self.profile_picture, 'path'):
+            try:
+                img = Image.open(self.profile_picture.path)
+                if img.height > 300 or img.width > 300:
+                    output_size = (300, 300)
+                    img.thumbnail(output_size)
+                    img.save(self.profile_picture.path, optimize=True, quality=85)
+            except (FileNotFoundError, ValueError):
+                pass
+    
         super().save(*args, **kwargs)
 
 
@@ -184,7 +195,14 @@ class Student(models.Model):
     roll_number = models.IntegerField(null=True, blank=True)
     academic_year = models.CharField(max_length=20, default='2025/2026')
     enrollment_date = models.DateField(auto_now_add=True)
-    
+    registration_number = models.CharField(
+        max_length=20,
+        unique=True,
+        blank=True,
+        null=True,
+        help_text="Auto-generated Student Registration Number"
+    )
+
     # Parent/Guardian relationship
     parents = models.ManyToManyField(
         'Parent',
@@ -217,7 +235,7 @@ class Student(models.Model):
     class Meta:
         verbose_name = 'Student'
         verbose_name_plural = 'Students'
-        ordering = ['current_class', 'roll_number', 'first_name']
+        ordering = ['student_class', 'roll_number', 'first_name']
     
     def __str__(self):
         return f"{self.first_name} {self.last_name} - {self.admission_number}"
@@ -233,6 +251,37 @@ class Student(models.Model):
         if (today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day):
             age -= 1
         return age
+    
+    @staticmethod
+    def generate_unique_reg_no():
+        """
+        Generates a unique registration number in format:
+        TBS/2025/AB93K  (crypto-safe, collision-free)
+        """
+        year = timezone.now().year
+        random_part = get_random_string(length=5).upper()
+        return f"TBS/{year}/{random_part}"
+    
+    @classmethod
+    def create_unique_reg_no(cls):
+        """
+        Ensures the generated number is always unique.
+        """
+        reg_no = cls.generate_unique_reg_no()
+        while cls.objects.filter(registration_number=reg_no).exists():
+            reg_no = cls.generate_unique_reg_no()
+        return reg_no
+
+    def save(self, *args, **kwargs):
+        # Generate unique registration number for students only
+        if self.role == "student" and not self.registration_number:
+            self.registration_number =User.create_unique_reg_no()
+            
+        # Set username to email if not set
+        if not self.username and self.email:
+            self.username = self.email
+
+        super().save(*args, **kwargs)
     
     @property
     def class_level(self):

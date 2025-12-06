@@ -4,8 +4,9 @@ from django.urls import reverse
 from django.utils.html import format_html
 from users.models import User
 from django.db.models import Count, Q
+import datetime, csv 
 from django.http import HttpResponse
-import datetime, csv
+
 
 class ChoiceInline(admin.TabularInline):
     model = Choice
@@ -95,36 +96,17 @@ class ClassAdmin(admin.ModelAdmin):
         }),
     )
     
-    # def student_count(self, obj):
-    #     """Count students in class"""
-    #     count = User.objects.filter(student_class=obj, role='student').count()
-    #     return format_html(
-    #         '<a href="{}?student_class__id__exact={}">{}</a>',
-    #         reverse('users:auth_user_changelist'),
-    #         obj.id,
-    #         count
-    #     )
-    # student_count.short_description = 'Students'
-
-
-    def action_buttons(self, obj):
-        links = []
-        # If the user has a related student profile
-        if getattr(obj, 'student', None):
-            student = obj.student
-            url = reverse(f'admin:{student._meta.app_label}_{student._meta.model_name}_change', args=[student.id])
-            links.append(f'<a href="{url}" class="button">View Student</a>')
-        if getattr(obj, 'parent', None):
-            parent = obj.parent
-            url = reverse(f'admin:{parent._meta.app_label}_{parent._meta.model_name}_change', args=[parent.id])
-            links.append(f'<a href="{url}" class="button">View Parent</a>')
-
-        # link to edit this user in admin (dynamic app_label/model_name)
-        url = reverse(f'admin:{User._meta.app_label}_{User._meta.model_name}_change', args=[obj.id])
-        links.append(f'<a href="{url}" class="button">Edit</a>')
-
-        return format_html(' '.join(links))
-        
+    def student_count(self, obj):
+        """Count students in class"""
+        count = User.objects.filter(student_class=obj, role='student').count()
+        return format_html(
+            '<a href="{}?student_class__id__exact={}">{}</a>',
+            reverse('users:auth_user_changelist'),
+            obj.id,
+            count
+        )
+    student_count.short_description = 'Students'
+    
     def get_queryset(self, request):
         """Optimize queryset"""
         return super().get_queryset(request).select_related('teacher').annotate(
