@@ -75,7 +75,6 @@ class User(AbstractUser):
     city = models.CharField(max_length=100, blank=True)
     state = models.CharField(max_length=100, blank=True)
     country = models.CharField(max_length=100, default='Nigeria')
-    postal_code = models.CharField(max_length=20, blank=True)
     
     # School-related fields
     student = models.OneToOneField(
@@ -106,12 +105,7 @@ class User(AbstractUser):
         blank=True,
         related_name='user_account'
     )
-    
-    # Additional fields
-    is_verified = models.BooleanField(default=False)
-    verification_token = models.CharField(max_length=100, blank=True)
-    date_verified = models.DateTimeField(null=True, blank=True)
-    
+    date_joined = models.DateTimeField(auto_now_add=True)
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -184,6 +178,7 @@ class Student(models.Model):
         unique=True,
         verbose_name='Admission Number'
     )
+    username = models.CharField(max_length=50, blank=True, null=True)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     date_of_birth = models.DateField()
@@ -191,8 +186,7 @@ class Student(models.Model):
     
     # Academic information
     student_class = models.ForeignKey('exams.Class', on_delete=models.CASCADE, related_name='student_class')
-    section = models.CharField(max_length=50, blank=True)  # e.g., "A", "B"
-    roll_number = models.IntegerField(null=True, blank=True)
+    section = models.CharField(max_length=50, blank=True)  # e.g., "A", "B" or Science, Art
     academic_year = models.CharField(max_length=20, default='2025/2026')
     enrollment_date = models.DateField(auto_now_add=True)
     registration_number = models.CharField(
@@ -235,7 +229,7 @@ class Student(models.Model):
     class Meta:
         verbose_name = 'Student'
         verbose_name_plural = 'Students'
-        ordering = ['student_class', 'roll_number', 'first_name']
+        ordering = ['student_class', 'first_name']
     
     def __str__(self):
         return f"{self.first_name} {self.last_name} - {self.admission_number}"
@@ -277,9 +271,9 @@ class Student(models.Model):
         if self.role == "student" and not self.registration_number:
             self.registration_number =User.create_unique_reg_no()
             
-        # Set username to email if not set
-        if not self.username and self.email:
-            self.username = self.email
+        # Set username to reg_no if not set
+        if not self.username and self.registration_number:
+            self.username = self.registration_number
 
         super().save(*args, **kwargs)
     

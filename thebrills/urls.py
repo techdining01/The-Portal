@@ -23,12 +23,12 @@ from exams import views
 urlpatterns = [ 
     path('admin/', admin.site.urls),
     path('', include('school_portal.urls', namespace='school_portal')),
+    path('store/', include('store.urls', namespace='store')),
     path('users/', include('users.urls', namespace='users')),
     path('exams/', include('exams.urls', namespace='exams')),
     path('cores/', include('cores.urls', namespace='cores')),
-    path('store/', include('store.urls', namespace='store')),
-    # path('salary/', include('salary.urls', namespace='salary')),
     path('pickup/', include('pickup.urls', namespace='pickup')),
+    # path('salary/', include('salary.urls', namespace='salary')),
 
 ]
 

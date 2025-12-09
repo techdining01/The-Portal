@@ -16,8 +16,8 @@ class Class(models.Model):
     name = models.CharField(max_length=100, unique=True)
     grade_level = models.CharField(max_length=20, choices=LEVEL_CHOICES, default='Kindergarten')
     arm = models.CharField(max_length=10, blank=True, null=True, help_text="e.g., A, B, C or Science, Arts")
+    academic_year = models.DateField(auto_now_add=True)
     description = models.TextField(blank=True)
-    order = models.PositiveIntegerField(help_text="For sorting classes in order")
     is_active = models.BooleanField(default=True)
     teacher = models.TextField(default='superadmin')
     assistant_teacher = models.TextField(default='superadmin')
@@ -25,7 +25,7 @@ class Class(models.Model):
     
     class Meta:
         verbose_name_plural = "Classes"
-        ordering = ['order', 'name']
+        ordering = ['name', 'academic_year']
     
     def __str__(self):
         if self.arm:

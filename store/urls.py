@@ -8,12 +8,13 @@ app_name = 'store'
 urlpatterns = [
 
      # ==================== PUBLIC PAGES ====================
-    path('', views.LandingPageView.as_view(), name='landing'),
+    path('', views.LandingPageView.as_view(), name='front'),
     path('about/', views.AboutView.as_view(), name='about'),
     path('contact/', views.ContactView.as_view(), name='contact'),
     
       # ==================== PRODUCTS ====================
-    path('products/', views.ProductListView.as_view(), name='product_list'),
+    path('products/', views.ProductListView.as_view(
+          template_name = 'store/products/list.html'), name='product_list'),
     path('products/<slug:slug>/', views.ProductDetailView.as_view(), name='product_detail'),
     path('category/<slug:slug>/', views.CategoryDetailView.as_view(), name='category_detail'),
     

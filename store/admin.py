@@ -395,7 +395,7 @@ class StudentInline(admin.StackedInline):
 
 # ==================== MAIN ADMIN CLASSES ====================
 
-@admin.register(User)
+# @admin.register(User)
 class UserAdmin(BaseUserAdmin, ImportExportModelAdmin):
     resource_class = UserResource
     list_display = ('username', 'email', 'full_name', 'role', 'phone', 
@@ -477,7 +477,7 @@ class UserAdmin(BaseUserAdmin, ImportExportModelAdmin):
         return format_html(' '.join(links))
     action_buttons.short_description = 'Actions'
 
-@admin.register(Student)
+# @admin.register(Student)
 class StudentAdmin(ImportExportModelAdmin):
     resource_class = StudentResource
     list_display = ('admission_number', 'full_name', 'student_class', 
@@ -525,7 +525,7 @@ class StudentAdmin(ImportExportModelAdmin):
         return f"₦{total:,.2f}"
     total_spent.short_description = 'Total Spent'
 
-@admin.register(Parent)
+# @admin.register(Parent)
 class ParentAdmin(ImportExportModelAdmin):
     list_display = ('user', 'phone', 'occupation', 'get_students', 
                     'total_spent', 'last_purchase')
@@ -639,28 +639,28 @@ class ProductAdmin(ImportExportModelAdmin):
 
 # ==================== CUSTOM ADMIN VIEWS ====================
 
-@admin.register(Teacher)
+# @admin.register(Teacher)
 class TeacherAdmin(admin.ModelAdmin):
     list_display = ('user', 'staff_id', 'subject', 'class_teacher_of', 'is_active')
     search_fields = ('user__username', 'staff_id', 'subject')
     
-@admin.register(Staff)
+# @admin.register(Staff)
 class StaffAdmin(admin.ModelAdmin):
     list_display = ('user', 'staff_id', 'department', 'position', 'is_active')
     search_fields = ('user__username', 'staff_id', 'department')
 
-@admin.register(Supplier)
+# @admin.register(Supplier)
 class SupplierAdmin(admin.ModelAdmin):
     list_display = ('name', 'contact_person', 'phone', 'email', 'rating')
     search_fields = ('name', 'contact_person', 'phone', 'email')
 
-@admin.register(PurchaseOrder)
+# @admin.register(PurchaseOrder)
 class PurchaseOrderAdmin(admin.ModelAdmin):
     list_display = ('po_number', 'supplier', 'total_amount', 'status', 'order_date')
     list_filter = ('status', ('order_date', DateRangeFilter))
     search_fields = ('po_number', 'supplier__name')
 
-@admin.register(Attendance)
+# @admin.register(Attendance)
 class AttendanceAdmin(admin.ModelAdmin):
     list_display = ('student', 'date', 'status', 'check_in', 'check_out')
     list_filter = ('status', 'date')

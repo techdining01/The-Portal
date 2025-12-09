@@ -46,15 +46,23 @@ urlpatterns = [
    
     # ==================== AUTHENTICATION ====================
     path('login/', auth_views.LoginView.as_view(
-        template_name='store/auth/login.html',
+        template_name='users/registration/login.html',
         redirect_authenticated_user=True
     ), name='login'),
-    path('logout/', auth_views.LogoutView.as_view(next_page='store:landing'), name='logout'),
+
+    path('logout/', auth_views.LogoutView.as_view(next_page='school_portal:landing'), name='logout'),
+    
+    path('register/', views.RegisterView.as_view(
+        template_name= 'users/registration/register.html'
+    ), name='register'),
+    
     path('register/parent/', views.ParentRegistrationView.as_view(), name='register_parent'),
     path('register/student/', views.StudentRegistrationView.as_view(), name='register_student'),
       
     # ==================== AJAX ENDPOINTS ====================
     path('ajax/students/', views.ajax_student_list, name='ajax_student_list'),
+    path('api/students/', views.student_search_api, name='api_student_search'),
+    path('api/classes/', views.class_list_api, name='api_class_list'),
     
     # ==================== USER PROFILE ====================
     path('profile/', views.profile_view, name='profile'),
@@ -64,32 +72,32 @@ urlpatterns = [
     # ==================== PASSWORD RESET ====================
     path('password-reset/', 
          auth_views.PasswordResetView.as_view(
-             template_name='store/auth/password_reset.html',
-             email_template_name='store/auth/password_reset_email.html',
-             subject_template_name='store/auth/password_reset_subject.txt',
-             success_url=reverse_lazy('store:password_reset_done')
+             template_name='users/registration/password_reset.html',
+             email_template_name='users/registration/password_reset_email.html',
+             subject_template_name='users/registration/password_reset_subject.txt',
+             success_url=reverse_lazy('users:password_reset_done')
          ), 
          name='password_reset'),
     path('password-reset/done/', 
          auth_views.PasswordResetDoneView.as_view(
-             template_name='store/auth/password_reset_done.html'
+             template_name='users/auth/password_reset_done.html'
          ), 
          name='password_reset_done'),
     path('password-reset-confirm/<uidb64>/<token>/', 
          auth_views.PasswordResetConfirmView.as_view(
-             template_name='store/auth/password_reset_confirm.html',
-             success_url=reverse_lazy('store:password_reset_complete')
+             template_name='users/auth/password_reset_confirm.html',
+             success_url=reverse_lazy('users:password_reset_complete')
          ), 
          name='password_reset_confirm'),
     path('password-reset-complete/', 
          auth_views.PasswordResetCompleteView.as_view(
-             template_name='store/auth/password_reset_complete.html'
+             template_name='users/auth/password_reset_complete.html'
          ), 
          name='password_reset_complete'),
 ]
 
 # Error handlers
-handler404 = 'store.views.handler404'
-handler500 = 'store.views.handler500'
-handler403 = 'store.views.handler403'
-handler400 = 'store.views.handler400'
+handler404 = 'users.views.handler404'
+handler500 = 'users.views.handler500'
+handler403 = 'users.views.handler403'
+handler400 = 'users.views.handler400'

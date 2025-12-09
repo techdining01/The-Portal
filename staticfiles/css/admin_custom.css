@@ -1,0 +1,709 @@
+/* admin_custom.css - BrillsPay Admin Custom Styles */
+
+/* ==================== VARIABLES ==================== */
+:root {
+    --brillspay-primary: #1e3c72;
+    --brillspay-secondary: #2a5298;
+    --brillspay-accent: #f59e0b;
+    --brillspay-success: #10b981;
+    --brillspay-danger: #ef4444;
+    --brillspay-warning: #f59e0b;
+    --brillspay-info: #3b82f6;
+    --brillspay-light: #f8fafc;
+    --brillspay-dark: #1e293b;
+    --brillspay-border: #e2e8f0;
+    --brillspay-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+/* ==================== ADMIN HEADER ==================== */
+#header {
+    background: linear-gradient(135deg, var(--brillspay-primary) 0%, var(--brillspay-secondary) 100%) !important;
+    color: white !important;
+    border-bottom: none !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+#header h1 {
+    font-weight: 700;
+    font-size: 1.5rem;
+    background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+#header h1 a:link, #header h1 a:visited {
+    color: white !important;
+}
+
+#branding h1 {
+    padding-left: 10px;
+}
+
+#branding h1 img {
+    height: 32px;
+    width: auto;
+    margin-right: 10px;
+    vertical-align: middle;
+}
+
+/* ==================== SIDEBAR ==================== */
+#content-main {
+    background: var(--brillspay-light);
+}
+
+.module {
+    background: white;
+    border: 1px solid var(--brillspay-border);
+    border-radius: 10px;
+    box-shadow: var(--brillspay-shadow);
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.module h2, .module caption {
+    background: linear-gradient(135deg, var(--brillspay-primary) 0%, var(--brillspay-secondary) 100%);
+    color: white;
+    padding: 12px 15px;
+    font-weight: 600;
+    font-size: 14px;
+    border-bottom: none;
+}
+
+/* ==================== FORMS ==================== */
+input[type="text"], 
+input[type="password"], 
+input[type="email"], 
+input[type="number"],
+input[type="url"],
+select,
+textarea {
+    border: 2px solid var(--brillspay-border) !important;
+    border-radius: 8px !important;
+    padding: 10px 12px !important;
+    font-size: 14px !important;
+    transition: all 0.3s ease !important;
+}
+
+input[type="text"]:focus, 
+input[type="password"]:focus, 
+input[type="email"]:focus, 
+input[type="number"]:focus,
+input[type="url"]:focus,
+select:focus,
+textarea:focus {
+    border-color: var(--brillspay-primary) !important;
+    box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.1) !important;
+    outline: none !important;
+}
+
+.form-row {
+    padding: 15px !important;
+    border-bottom: 1px solid var(--brillspay-border);
+    margin: 0 !important;
+}
+
+.form-row:last-child {
+    border-bottom: none;
+}
+
+/* ==================== BUTTONS ==================== */
+input[type="submit"], 
+button, 
+.submit-row input, 
+a.button {
+    background: linear-gradient(135deg, var(--brillspay-primary) 0%, var(--brillspay-secondary) 100%) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 10px 20px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 2px 5px rgba(30, 60, 114, 0.2) !important;
+}
+
+input[type="submit"]:hover, 
+button:hover, 
+.submit-row input:hover, 
+a.button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 10px rgba(30, 60, 114, 0.3) !important;
+}
+
+.submit-row {
+    background: white !important;
+    border: 1px solid var(--brillspay-border);
+    border-radius: 10px;
+    padding: 15px !important;
+    margin: 20px 0 !important;
+    box-shadow: var(--brillspay-shadow);
+}
+
+/* ==================== TABLES ==================== */
+#changelist {
+    background: white;
+    border: 1px solid var(--brillspay-border);
+    border-radius: 10px;
+    box-shadow: var(--brillspay-shadow);
+    overflow: hidden;
+}
+
+#changelist .results {
+    margin: 0 !important;
+}
+
+#changelist table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+#changelist table thead th {
+    background: linear-gradient(135deg, var(--brillspay-primary) 0%, var(--brillspay-secondary) 100%);
+    color: white;
+    font-weight: 600;
+    padding: 15px !important;
+    border: none !important;
+}
+
+#changelist table thead th a:link, 
+#changelist table thead th a:visited {
+    color: white !important;
+}
+
+#changelist table tbody tr {
+    transition: all 0.3s ease;
+}
+
+#changelist table tbody tr:hover {
+    background-color: rgba(30, 60, 114, 0.05) !important;
+}
+
+#changelist table tbody td, 
+#changelist table tbody th {
+    padding: 12px 15px !important;
+    border-bottom: 1px solid var(--brillspay-border) !important;
+}
+
+/* ==================== DASHBOARD ==================== */
+.dashboard .module table td {
+    padding: 10px 15px !important;
+}
+
+.dashboard .module table tr:first-child td {
+    border-top: none !important;
+}
+
+/* ==================== OBJECT TOOLS ==================== */
+.object-tools {
+    margin-bottom: 15px !important;
+}
+
+.object-tools a {
+    background: var(--brillspay-success) !important;
+    border-radius: 8px !important;
+    padding: 8px 15px !important;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.object-tools a:hover {
+    background: var(--brillspay-success) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+}
+
+.object-tools a.addlink {
+    background: var(--brillspay-primary) !important;
+}
+
+.object-tools a.addlink:hover {
+    background: var(--brillspay-secondary) !important;
+}
+
+/* ==================== FILTERS ==================== */
+#changelist-filter {
+    background: white;
+    border: 1px solid var(--brillspay-border);
+    border-radius: 10px;
+    box-shadow: var(--brillspay-shadow);
+    padding: 15px !important;
+    margin-left: 20px !important;
+}
+
+#changelist-filter h2 {
+    background: linear-gradient(135deg, var(--brillspay-primary) 0%, var(--brillspay-secondary) 100%);
+    color: white;
+    padding: 12px 15px;
+    border-radius: 8px;
+    font-size: 14px;
+    margin: -15px -15px 15px -15px !important;
+}
+
+#changelist-filter h3 {
+    color: var(--brillspay-dark);
+    font-weight: 600;
+    margin-top: 15px;
+    padding-bottom: 5px;
+    border-bottom: 2px solid var(--brillspay-primary);
+}
+
+#changelist-filter li {
+    padding: 5px 0;
+}
+
+#changelist-filter li.selected {
+    background: rgba(30, 60, 114, 0.1);
+    border-radius: 5px;
+    padding-left: 10px;
+}
+
+#changelist-filter li.selected a {
+    color: var(--brillspay-primary) !important;
+    font-weight: 600;
+}
+
+/* ==================== MESSAGES ==================== */
+.messagelist {
+    margin: 20px 0 !important;
+}
+
+.messagelist li {
+    background: white;
+    border: 1px solid var(--brillspay-border);
+    border-radius: 10px;
+    padding: 15px 20px !important;
+    margin-bottom: 10px !important;
+    box-shadow: var(--brillspay-shadow);
+    border-left: 4px solid var(--brillspay-primary);
+}
+
+.messagelist li.success {
+    border-left-color: var(--brillspay-success);
+    background: rgba(16, 185, 129, 0.05);
+}
+
+.messagelist li.warning {
+    border-left-color: var(--brillspay-warning);
+    background: rgba(245, 158, 11, 0.05);
+}
+
+.messagelist li.error {
+    border-left-color: var(--brillspay-danger);
+    background: rgba(239, 68, 68, 0.05);
+}
+
+/* ==================== PAGINATION ==================== */
+.paginator {
+    background: white;
+    border: 1px solid var(--brillspay-border);
+    border-radius: 10px;
+    padding: 15px !important;
+    margin: 20px 0 !important;
+    box-shadow: var(--brillspay-shadow);
+}
+
+.paginator a:link, .paginator a:visited {
+    background: var(--brillspay-primary);
+    color: white !important;
+    border-radius: 5px;
+    padding: 8px 15px;
+    margin: 0 2px;
+    transition: all 0.3s ease;
+}
+
+.paginator a:hover {
+    background: var(--brillspay-secondary);
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(30, 60, 114, 0.3);
+}
+
+.paginator .this-page {
+    background: var(--brillspay-secondary);
+    color: white;
+    border-radius: 5px;
+    padding: 8px 15px;
+    font-weight: 600;
+}
+
+/* ==================== INLINE FORMS ==================== */
+.inline-group {
+    border: 1px solid var(--brillspay-border);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: var(--brillspay-shadow);
+}
+
+.inline-group h2 {
+    background: linear-gradient(135deg, var(--brillspay-primary) 0%, var(--brillspay-secondary) 100%);
+    color: white;
+    padding: 12px 15px;
+    margin: 0 !important;
+}
+
+.inline-related h3 {
+    background: rgba(30, 60, 114, 0.1);
+    border: 1px solid var(--brillspay-border);
+    padding: 10px 15px;
+    margin: 0 !important;
+}
+
+/* ==================== CALENDARS & CLOCKS ==================== */
+.calendar {
+    border: 1px solid var(--brillspay-border);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: var(--brillspay-shadow);
+}
+
+.calendar caption {
+    background: linear-gradient(135deg, var(--brillspay-primary) 0%, var(--brillspay-secondary) 100%);
+    color: white;
+    font-weight: 600;
+}
+
+.calendar td.selected a {
+    background: var(--brillspay-primary) !important;
+    color: white !important;
+    border-radius: 5px;
+}
+
+/* ==================== RELATED WIDGET WRAPPER ==================== */
+.related-widget-wrapper {
+    margin-bottom: 10px;
+}
+
+.select2-container {
+    border: 2px solid var(--brillspay-border) !important;
+    border-radius: 8px !important;
+}
+
+.select2-container--focus {
+    border-color: var(--brillspay-primary) !important;
+    box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.1) !important;
+}
+
+/* ==================== ACTION BUTTONS ==================== */
+.actions {
+    background: white;
+    border: 1px solid var(--brillspay-border);
+    border-radius: 10px;
+    padding: 15px !important;
+    margin: 20px 0 !important;
+    box-shadow: var(--brillspay-shadow);
+}
+
+.actions select {
+    border: 2px solid var(--brillspay-border) !important;
+    border-radius: 8px !important;
+    padding: 8px 12px !important;
+    margin-right: 10px;
+}
+
+.actions button {
+    background: var(--brillspay-primary) !important;
+    border-radius: 8px !important;
+    padding: 8px 20px !important;
+}
+
+.actions button:hover {
+    background: var(--brillspay-secondary) !important;
+}
+
+/* ==================== BREADCRUMBS ==================== */
+.breadcrumbs {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border: 1px solid var(--brillspay-border);
+    border-radius: 10px;
+    padding: 12px 20px !important;
+    margin: 20px 0 !important;
+    box-shadow: var(--brillspay-shadow);
+}
+
+/* ==================== HELP TEXT ==================== */
+.help {
+    background: rgba(30, 60, 114, 0.05);
+    border: 1px solid var(--brillspay-border);
+    border-radius: 8px;
+    padding: 10px 15px !important;
+    margin-top: 5px !important;
+    color: var(--brillspay-dark);
+}
+
+/* ==================== ERROR PAGES ==================== */
+.errornote {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid var(--brillspay-danger);
+    border-radius: 10px;
+    color: var(--brillspay-danger) !important;
+    padding: 15px 20px !important;
+    margin: 20px 0 !important;
+    border-left: 4px solid var(--brillspay-danger);
+}
+
+/* ==================== LOGIN PAGE ==================== */
+.login #header {
+    margin-bottom: 30px;
+}
+
+.login #content {
+    padding: 40px !important;
+}
+
+.login .form-row {
+    padding: 10px 0 !important;
+    border: none !important;
+}
+
+.login .submit-row {
+    padding: 20px 0 0 0 !important;
+    border: none !important;
+    background: none !important;
+    box-shadow: none !important;
+}
+
+/* ==================== STATUS BADGES ==================== */
+.status-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-active {
+    background: rgba(16, 185, 129, 0.1);
+    color: #065f46;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.status-inactive {
+    background: rgba(107, 114, 128, 0.1);
+    color: #374151;
+    border: 1px solid rgba(107, 114, 128, 0.3);
+}
+
+.status-pending {
+    background: rgba(245, 158, 11, 0.1);
+    color: #92400e;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.status-completed {
+    background: rgba(16, 185, 129, 0.1);
+    color: #065f46;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.status-cancelled {
+    background: rgba(239, 68, 68, 0.1);
+    color: #991b1b;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* ==================== CUSTOM ADMIN WIDGETS ==================== */
+.admin-stat-card {
+    background: white;
+    border: 1px solid var(--brillspay-border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: var(--brillspay-shadow);
+    transition: all 0.3s ease;
+}
+
+.admin-stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.admin-stat-card .stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--brillspay-primary);
+    margin-bottom: 5px;
+}
+
+.admin-stat-card .stat-label {
+    font-size: 0.875rem;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* ==================== RESPONSIVE DESIGN ==================== */
+@media (max-width: 767px) {
+    #header {
+        padding: 10px !important;
+    }
+    
+    #content {
+        padding: 15px !important;
+    }
+    
+    #changelist-filter {
+        margin-left: 0 !important;
+        margin-bottom: 20px;
+    }
+    
+    .submit-row {
+        text-align: center;
+    }
+    
+    .submit-row input {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+}
+
+/* ==================== ANIMATIONS ==================== */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.module, .dashboard .module, .admin-stat-card {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* ==================== CUSTOM SCROLLBAR ==================== */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* ==================== PRINT STYLES ==================== */
+@media print {
+    #header, #user-tools, .object-tools, .actions, .submit-row {
+        display: none !important;
+    }
+    
+    #content {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    
+    .module {
+        border: none !important;
+        box-shadow: none !important;
+    }
+}
+
+/* ==================== BRILISPAY BRANDING ==================== */
+.brillspay-brand {
+    color: var(--brillspay-primary);
+    font-weight: 700;
+}
+
+.brillspay-gradient {
+    background: linear-gradient(135deg, var(--brillspay-primary) 0%, var(--brillspay-secondary) 100%);
+}
+
+.brillspay-gradient-text {
+    background: linear-gradient(135deg, var(--brillspay-primary) 0%, var(--brillspay-secondary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ==================== CUSTOM ICONS ==================== */
+.icon-primary {
+    color: var(--brillspay-primary);
+}
+
+.icon-success {
+    color: var(--brillspay-success);
+}
+
+.icon-warning {
+    color: var(--brillspay-warning);
+}
+
+.icon-danger {
+    color: var(--brillspay-danger);
+}
+
+/* ==================== LOADING STATES ==================== */
+.loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid var(--brillspay-border);
+    border-top-color: var(--brillspay-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ==================== TOOLTIPS ==================== */
+[data-tooltip] {
+    position: relative;
+    cursor: help;
+}
+
+[data-tooltip]::before {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--brillspay-dark);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 1000;
+}
+
+[data-tooltip]::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--brillspay-dark);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 1000;
+}
+
+[data-tooltip]:hover::before,
+[data-tooltip]:hover::after {
+    opacity: 1;
+}

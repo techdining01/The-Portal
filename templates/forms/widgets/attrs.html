@@ -1,0 +1,31 @@
+{% for name, value in widget.attrs.items %}
+    {% if value is not False %}
+        {% if name == "class" %}
+            {% if "form-check-input" in value or "btn" in value %}
+                class="{{ value }}"
+            {% else %}
+                class="form-control {{ value }}"
+            {% endif %}
+        {% elif name == "placeholder" %}
+            placeholder="{{ value }}"
+        {% elif name == "aria-label" %}
+            aria-label="{{ value }}"
+        {% elif name == "aria-describedby" %}
+            aria-describedby="{{ value }}"
+        {% elif name|slice:":5" == "data-" %}
+            data-{{ name|slice:"5:" }}="{{ value }}"
+        {% elif name == "required" and value %}
+            required
+        {% elif name == "disabled" and value %}
+            disabled
+        {% elif name == "readonly" and value %}
+            readonly
+        {% elif name == "autofocus" and value %}
+            autofocus
+        {% elif name == "multiple" and value %}
+            multiple
+        {% elif name not in "type name value id" %}
+            {{ name }}="{{ value }}"
+        {% endif %}
+    {% endif %}
+{% endfor %}

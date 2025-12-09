@@ -1,599 +1,582 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+{% block title %}Register — BrillsPay Portal{% endblock %}
 {% load static %}
 
-{% block title %}Register - BrillsPay{% endblock %}
-
-{% block extra_head %}
+{% block content %}
 <style>
-    .auth-container {
-        max-width: 1000px;
-        margin: 2rem auto;
-    }
-
-    .auth-card {
-        border: none;
-        border-radius: 16px;
-        box-shadow: var(--shadow-lg);
-        overflow: hidden;
-        background: white;
-    }
-
-    .auth-header {
-        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-        color: white;
-        padding: 2rem;
-        text-align: center;
-    }
-
-    .auth-header h1 {
-        font-family: 'Poppins', sans-serif;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-    }
-
-    .auth-header p {
-        opacity: 0.9;
-    }
-
-    .auth-content {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        min-height: 500px;
-    }
-
-    .auth-info {
-        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-        padding: 2.5rem;
-        border-right: 1px solid var(--border);
-    }
-
-    .auth-form {
-        padding: 2.5rem;
-    }
-
-    .user-type-selector {
+    /* ==================== REGISTER PAGE STYLES ==================== */
+    .register-wrapper {
+        min-height: calc(100vh - 200px);
         display: flex;
-        gap: 1rem;
-        margin-bottom: 1.5rem;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 1rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     }
 
-    .user-type-btn {
-        flex: 1;
-        padding: 1rem;
-        border: 2px solid var(--border);
+    .register-container {
+        width: 100%;
+        max-width: 650px;
+    }
+
+    .register-box {
         background: white;
-        border-radius: 10px;
-        cursor: pointer;
-        transition: all 0.3s ease;
+        border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        overflow: hidden;
+        animation: slideUp__register 0.6s ease-out;
+    }
+
+    @keyframes slideUp__register {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .register-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 2.5rem 2rem;
         text-align: center;
-        font-weight: 500;
+        color: white;
     }
 
-    .user-type-btn:hover {
-        border-color: var(--primary);
-        transform: translateY(-2px);
+    .register-header h1 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin: 0.5rem 0;
+        letter-spacing: -0.5px;
     }
 
-    .user-type-btn.active {
-        border-color: var(--primary);
-        background: rgba(37, 99, 235, 0.05);
-        color: var(--primary);
+    .register-header p {
+        font-size: 0.95rem;
+        opacity: 0.95;
+        margin: 0;
     }
 
-    .user-type-btn i {
-        font-size: 1.5rem;
-        margin-bottom: 0.5rem;
-        display: block;
+    .register-body {
+        padding: 2.5rem 2rem;
     }
 
-    .form-section {
-        display: none;
-        animation: fadeIn 0.5s ease;
+    /* Role selector */
+    .role-selector {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 0.75rem;
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        background: #f8fafc;
+        border-radius: 12px;
+        border: 2px solid #e2e8f0;
     }
 
-    .form-section.active {
-        display: block;
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    .student-select {
+    .role-option {
         position: relative;
     }
 
-    .student-select i {
-        position: absolute;
-        left: 15px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: var(--primary);
-        z-index: 10;
+    .role-option input[type="radio"] {
+        display: none;
     }
 
-    .student-select select {
-        padding-left: 45px;
-    }
-
-    .password-strength {
-        margin-top: 0.5rem;
-        font-size: 0.875rem;
-    }
-
-    .strength-bar {
-        height: 4px;
-        background: #e2e8f0;
-        border-radius: 2px;
-        margin-top: 0.25rem;
-        overflow: hidden;
-    }
-
-    .strength-fill {
-        height: 100%;
-        width: 0%;
-        background: var(--danger);
-        transition: all 0.3s ease;
-    }
-
-    .strength-fill.weak { width: 33%; background: var(--danger); }
-    .strength-fill.medium { width: 66%; background: var(--warning); }
-    .strength-fill.strong { width: 100%; background: var(--success); }
-
-    .terms-check {
+    .role-label {
         display: flex;
-        align-items: flex-start;
-        gap: 0.75rem;
-        margin: 1.5rem 0;
-    }
-
-    .terms-check input {
-        margin-top: 0.25rem;
-    }
-
-    .terms-check label {
-        font-size: 0.9rem;
-        color: var(--secondary);
-    }
-
-    .terms-check a {
-        color: var(--primary);
-        text-decoration: none;
-    }
-
-    .terms-check a:hover {
-        text-decoration: underline;
-    }
-
-    .login-redirect {
-        text-align: center;
-        margin-top: 1.5rem;
-        color: var(--secondary);
-    }
-
-    .login-redirect a {
-        color: var(--primary);
-        font-weight: 600;
-        text-decoration: none;
-    }
-
-    .login-redirect a:hover {
-        text-decoration: underline;
-    }
-
-    .brillspay-features {
-        margin-top: 2rem;
-    }
-
-    .feature-item {
-        display: flex;
+        flex-direction: column;
         align-items: center;
-        gap: 1rem;
-        margin-bottom: 1rem;
-        padding: 0.75rem;
+        justify-content: center;
+        padding: 1rem;
+        border: 2px solid #e2e8f0;
         border-radius: 10px;
         background: white;
-        box-shadow: var(--shadow);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+        gap: 0.5rem;
     }
 
-    .feature-item i {
-        color: var(--primary);
-        font-size: 1.25rem;
-        width: 24px;
+    .role-label i {
+        font-size: 1.5rem;
+        color: #94a3b8;
+        transition: color 0.3s ease;
     }
 
-    @media (max-width: 768px) {
-        .auth-content {
+    .role-label span {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #475569;
+        transition: color 0.3s ease;
+    }
+
+    .role-option input[type="radio"]:checked + .role-label {
+        border-color: #667eea;
+        background: #eef2ff;
+    }
+
+    .role-option input[type="radio"]:checked + .role-label i {
+        color: #667eea;
+    }
+
+    .role-option input[type="radio"]:checked + .role-label span {
+        color: #667eea;
+    }
+
+    /* ==================== FORM STYLES ==================== */
+    .register-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+
+    .form-row.full {
+        grid-template-columns: 1fr;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: #1e293b;
+        font-size: 0.95rem;
+    }
+
+    .form-label .required {
+        color: #ef4444;
+    }
+
+    .form-control,
+    .form-select {
+        padding: 0.875rem 1rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        font-size: 1rem;
+        font-family: inherit;
+        transition: all 0.3s ease;
+        background: #f8fafc;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        outline: none;
+        border-color: #667eea;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .form-control::placeholder {
+        color: #94a3b8;
+    }
+
+    /* Input wrapper with icon */
+    .input-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 0;
+    }
+
+    .input-icon {
+        position: absolute;
+        left: 1rem;
+        color: #94a3b8;
+        font-size: 1.1rem;
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    .input-wrapper .form-control {
+        padding-left: 2.75rem;
+        width: 100%;
+    }
+
+    /* Error messages */
+    .error-box {
+        background: #fee2e2;
+        border: 1px solid #fecaca;
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        display: none;
+        font-size: 0.9rem;
+        color: #dc2626;
+    }
+
+    .error-box.show {
+        display: block;
+    }
+
+    .error-box ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .error-box li {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .error-box li:before {
+        content: "⚠";
+        font-weight: bold;
+    }
+
+    /* Help text */
+    .help-text {
+        font-size: 0.85rem;
+        color: #64748b;
+        margin-top: 0.25rem;
+    }
+
+    .password-help {
+        list-style: none;
+        padding: 0;
+        margin: 0.5rem 0 0 0;
+        font-size: 0.85rem;
+        color: #64748b;
+    }
+
+    .password-help li {
+        padding: 0.25rem 0;
+    }
+
+    .password-help li:before {
+        content: "✓ ";
+        color: #10b981;
+        font-weight: bold;
+        margin-right: 0.5rem;
+    }
+
+    /* Submit button */
+    .register-btn {
+        width: 100%;
+        padding: 1rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-top: 0.5rem;
+    }
+
+    .register-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .register-btn:active {
+        transform: translateY(0);
+    }
+
+    .register-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    /* Footer */
+    .register-footer {
+        text-align: center;
+        padding: 1.5rem 2rem;
+        border-top: 1px solid #e2e8f0;
+        background: #f8fafc;
+    }
+
+    .register-footer p {
+        margin: 0;
+        color: #475569;
+        font-size: 0.95rem;
+    }
+
+    .register-footer a {
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 600;
+        transition: color 0.2s ease;
+    }
+
+    .register-footer a:hover {
+        color: #764ba2;
+        text-decoration: underline;
+    }
+
+    /* Responsive */
+    @media (max-width: 576px) {
+        .register-wrapper {
+            padding: 1rem;
+        }
+
+        .register-header {
+            padding: 2rem 1.5rem;
+        }
+
+        .register-header h1 {
+            font-size: 1.5rem;
+        }
+
+        .register-body {
+            padding: 1.75rem 1.5rem;
+        }
+
+        .form-row {
             grid-template-columns: 1fr;
         }
-        
-        .auth-info {
-            border-right: none;
-            border-bottom: 1px solid var(--border);
+
+        .role-selector {
+            grid-template-columns: repeat(2, 1fr);
         }
-        
-        .user-type-selector {
-            flex-direction: column;
+
+        .register-footer {
+            padding: 1.25rem 1.5rem;
         }
     }
 </style>
-{% endblock %}
 
-{% block content %}
-<div class="auth-container fade-in-up">
-    <div class="auth-card">
-        <div class="auth-header">
-            <h1>Join BrillsPay</h1>
-            <p>Register to manage school payments and purchases for students</p>
-        </div>
-        
-        <div class="auth-content">
-            <!-- Info Panel -->
-            <div class="auth-info">
-                <h2 class="h4 mb-4">Why Register with BrillsPay?</h2>
-                <p class="mb-4">BrillsPay is integrated with {{ SCHOOL_NAME }}'s school management system to provide seamless payment solutions for:</p>
-                
-                <div class="brillspay-features">
-                    <div class="feature-item">
-                        <i class="fas fa-graduation-cap"></i>
-                        <div>
-                            <h6 class="mb-1">School Fee Payments</h6>
-                            <small>Pay tuition fees securely with Paystack integration</small>
-                        </div>
-                    </div>
-                    
-                    <div class="feature-item">
-                        <i class="fas fa-book"></i>
-                        <div>
-                            <h6 class="mb-1">Exam Access</h6>
-                            <small>Enable CBT exam access after fee payment</small>
-                        </div>
-                    </div>
-                    
-                    <div class="feature-item">
-                        <i class="fas fa-shopping-cart"></i>
-                        <div>
-                            <h6 class="mb-1">School Store</h6>
-                            <small>Purchase uniforms, books, and supplies</small>
-                        </div>
-                    </div>
-                    
-                    <div class="feature-item">
-                        <i class="fas fa-user-check"></i>
-                        <div>
-                            <h6 class="mb-1">Student Management</h6>
-                            <small>Link purchases to specific students</small>
-                        </div>
-                    </div>
-                    
-                    <div class="feature-item">
-                        <i class="fas fa-chart-line"></i>
-                        <div>
-                            <h6 class="mb-1">Payment History</h6>
-                            <small>Track all payments and purchases</small>
-                        </div>
-                    </div>
-                </div>
+<div class="register-wrapper">
+    <div class="register-container">
+        <div class="register-box">
+            <!-- Header -->
+            <div class="register-header">
+                <h1>Create Account</h1>
+                <p>Join BrillsPay Portal Today</p>
             </div>
-            
-            <!-- Form Panel -->
-            <div class="auth-form">
-                <form method="post" id="registerForm">
-                    {% csrf_token %}
-                    
-                    <!-- User Type Selection -->
-                    <div class="user-type-selector">
-                        <button type="button" class="user-type-btn active" data-user-type="parent">
-                            <i class="fas fa-users"></i>
-                            Parent/Guardian
-                        </button>
-                        <button type="button" class="user-type-btn" data-user-type="student">
-                            <i class="fas fa-user-graduate"></i>
-                            Student
-                        </button>
-                    </div>
-                    
-                    <!-- Parent/Guardian Form -->
-                    <div class="form-section active" id="parentForm">
-                        <h3 class="h5 mb-4">Parent/Guardian Registration</h3>
-                        
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label for="parentFirstName" class="form-label">First Name *</label>
-                                <input type="text" class="form-control" id="parentFirstName" name="parent_first_name" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="parentLastName" class="form-label">Last Name *</label>
-                                <input type="text" class="form-control" id="parentLastName" name="parent_last_name" required>
-                            </div>
-                        </div>
-                        
-                        <div class="row g-3 mt-3">
-                            <div class="col-md-6">
-                                <label for="parentEmail" class="form-label">Email Address *</label>
-                                <input type="email" class="form-control" id="parentEmail" name="parent_email" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="parentPhone" class="form-label">Phone Number *</label>
-                                <input type="tel" class="form-control" id="parentPhone" name="parent_phone" required>
-                            </div>
-                        </div>
-                        
-                        <div class="mt-3">
-                            <label for="relationship" class="form-label">Relationship to Student *</label>
-                            <select class="form-select" id="relationship" name="relationship" required>
-                                <option value="">Select Relationship</option>
-                                <option value="father">Father</option>
-                                <option value="mother">Mother</option>
-                                <option value="guardian">Guardian</option>
-                                <option value="other">Other</option>
-                            </select>
-                        </div>
-                        
-                        <div class="mt-3">
-                            <label class="form-label">Select Students *</label>
-                            <div class="student-select">
-                                <i class="fas fa-search"></i>
-                                <select class="form-select" name="students" multiple required data-placeholder="Search and select students...">
-                                    <option value="">Search for students...</option>
-                                    <!-- Students will be populated via AJAX -->
-                                </select>
-                            </div>
-                            <small class="text-muted">Hold Ctrl/Cmd to select multiple students</small>
-                        </div>
-                    </div>
-                    
-                    <!-- Student Form -->
-                    <div class="form-section" id="studentForm">
-                        <h3 class="h5 mb-4">Student Registration</h3>
-                        
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label for="studentFirstName" class="form-label">First Name *</label>
-                                <input type="text" class="form-control" id="studentFirstName" name="student_first_name">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="studentLastName" class="form-label">Last Name *</label>
-                                <input type="text" class="form-control" id="studentLastName" name="student_last_name">
-                            </div>
-                        </div>
-                        
-                        <div class="row g-3 mt-3">
-                            <div class="col-md-6">
-                                <label for="studentEmail" class="form-label">Email Address *</label>
-                                <input type="email" class="form-control" id="studentEmail" name="student_email">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="studentAdmission" class="form-label">Admission Number *</label>
-                                <input type="text" class="form-control" id="studentAdmission" name="admission_number">
-                            </div>
-                        </div>
-                        
-                        <div class="row g-3 mt-3">
-                            <div class="col-md-6">
-                                <label for="studentClass" class="form-label">Class *</label>
-                                <select class="form-select" id="studentClass" name="student_class">
-                                    <option value="">Select Class</option>
-                                    <!-- Classes will be populated -->
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="studentPhone" class="form-label">Phone Number</label>
-                                <input type="tel" class="form-control" id="studentPhone" name="student_phone">
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Common Fields -->
-                    <div class="mt-4">
-                        <h4 class="h6 mb-3">Account Security</h4>
-                        
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label for="password" class="form-label">Password *</label>
-                                <div class="input-group">
-                                    <input type="password" class="form-control" id="password" name="password" required>
-                                    <button class="btn btn-outline-secondary" type="button" id="togglePassword">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                </div>
-                                <div class="password-strength">
-                                    <small>Password strength: <span id="strengthText">None</span></small>
-                                    <div class="strength-bar">
-                                        <div class="strength-fill" id="strengthFill"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="confirmPassword" class="form-label">Confirm Password *</label>
-                                <div class="input-group">
-                                    <input type="password" class="form-control" id="confirmPassword" name="confirm_password" required>
-                                    <button class="btn btn-outline-secondary" type="button" id="toggleConfirmPassword">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Terms and Conditions -->
-                    <div class="terms-check">
-                        <input type="checkbox" class="form-check-input" id="terms" name="terms" required>
-                        <label for="terms">
-                            I agree to the <a href="#" target="_blank">Terms of Service</a> and 
-                            <a href="#" target="_blank">Privacy Policy</a>. I understand that all payments 
-                            are processed securely via Paystack and are non-refundable except as stated in 
-                            school policy.
-                        </label>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-primary w-100 py-3">
-                        <i class="fas fa-user-plus me-2"></i> Create Account
-                    </button>
-                </form>
-                
-                <div class="login-redirect">
-                    Already have an account? <a href="{% url 'users:login' %}">Sign In Here</a>
+
+            <!-- Body -->
+            <div class="register-body">
+                {% if form.non_field_errors %}
+                <div class="error-box show">
+                    <ul>
+                        {% for error in form.non_field_errors %}
+                        <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
                 </div>
+                {% endif %}
+
+                <form method="post" class="register-form" id="registerForm">
+                    {% csrf_token %}
+
+                    <!-- Role Selector -->
+                    <div class="form-group">
+                        <label class="form-label">Select Account Type <span class="required">*</span></label>
+                        <div class="role-selector">
+                            <div class="role-option">
+                                <input type="radio" id="role_student" name="role" value="student" required>
+                                <label for="role_student" class="role-label">
+                                    <i class="bi bi-mortarboard"></i>
+                                    <span>Student</span>
+                                </label>
+                            </div>
+                            <div class="role-option">
+                                <input type="radio" id="role_parent" name="role" value="parent" required>
+                                <label for="role_parent" class="role-label">
+                                    <i class="bi bi-people"></i>
+                                    <span>Parent</span>
+                                </label>
+                            </div>
+                            <div class="role-option">
+                                <input type="radio" id="role_teacher" name="role" value="teacher" required>
+                                <label for="role_teacher" class="role-label">
+                                    <i class="bi bi-easel"></i>
+                                    <span>Teacher</span>
+                                </label>
+                            </div>
+                            <div class="role-option">
+                                <input type="radio" id="role_staff" name="role" value="staff" required>
+                                <label for="role_staff" class="role-label">
+                                    <i class="bi bi-briefcase"></i>
+                                    <span>Staff</span>
+                                </label>
+                            </div>
+                        </div>
+                        {% if form.role.errors %}
+                        <div class="error-box show">
+                            <ul>{% for error in form.role.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- First Row: First Name & Last Name -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="{{ form.first_name.id_for_label }}" class="form-label">
+                                First Name <span class="required">*</span>
+                            </label>
+                            <div class="input-wrapper">
+                                <i class="input-icon bi bi-person"></i>
+                                {{ form.first_name }}
+                            </div>
+                            {% if form.first_name.errors %}
+                            <div class="error-box show">
+                                <ul>{% for error in form.first_name.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ form.last_name.id_for_label }}" class="form-label">
+                                Last Name <span class="required">*</span>
+                            </label>
+                            <div class="input-wrapper">
+                                <i class="input-icon bi bi-person"></i>
+                                {{ form.last_name }}
+                            </div>
+                            {% if form.last_name.errors %}
+                            <div class="error-box show">
+                                <ul>{% for error in form.last_name.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Username -->
+                    <div class="form-group">
+                        <label for="{{ form.username.id_for_label }}" class="form-label">
+                            Username <span class="required">*</span>
+                        </label>
+                        <div class="input-wrapper">
+                            <i class="input-icon bi bi-at"></i>
+                            {{ form.username }}
+                        </div>
+                        {% if form.username.errors %}
+                        <div class="error-box show">
+                            <ul>{% for error in form.username.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Email & Phone Row -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="{{ form.email.id_for_label }}" class="form-label">
+                                Email <span class="required">*</span>
+                            </label>
+                            <div class="input-wrapper">
+                                <i class="input-icon bi bi-envelope"></i>
+                                {{ form.email }}
+                            </div>
+                            {% if form.email.errors %}
+                            <div class="error-box show">
+                                <ul>{% for error in form.email.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ form.phone.id_for_label }}" class="form-label">
+                                Phone <span class="required">*</span>
+                            </label>
+                            <div class="input-wrapper">
+                                <i class="input-icon bi bi-telephone"></i>
+                                {{ form.phone }}
+                            </div>
+                            <p class="help-text">Format: 08012345678</p>
+                            {% if form.phone.errors %}
+                            <div class="error-box show">
+                                <ul>{% for error in form.phone.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Password Row -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="{{ form.password1.id_for_label }}" class="form-label">
+                                Password <span class="required">*</span>
+                            </label>
+                            {{ form.password1 }}
+                            {% if form.password1.help_text %}
+                            <div class="help-text">
+                                {{ form.password1.help_text|safe }}
+                            </div>
+                            {% endif %}
+                            {% if form.password1.errors %}
+                            <div class="error-box show">
+                                <ul>{% for error in form.password1.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ form.password2.id_for_label }}" class="form-label">
+                                Confirm Password <span class="required">*</span>
+                            </label>
+                            {{ form.password2 }}
+                            {% if form.password2.errors %}
+                            <div class="error-box show">
+                                <ul>{% for error in form.password2.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Submit -->
+                    <button type="submit" class="register-btn">Create Account</button>
+                </form>
+            </div>
+
+            <!-- Footer -->
+            <div class="register-footer">
+                <p>Already have an account? 
+                    <a href="{% url 'users:login' %}">Sign In</a>
+                </p>
             </div>
         </div>
     </div>
 </div>
+
 {% endblock %}
 
 {% block extra_scripts %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // User type switching
-        const userTypeBtns = document.querySelectorAll('.user-type-btn');
-        const parentForm = document.getElementById('parentForm');
-        const studentForm = document.getElementById('studentForm');
-        
-        userTypeBtns.forEach(btn => {
-            btn.addEventListener('click', function() {
-                // Update active button
-                userTypeBtns.forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                
-                // Show correct form
-                const userType = this.dataset.userType;
-                if (userType === 'parent') {
-                    parentForm.classList.add('active');
-                    studentForm.classList.remove('active');
-                    
-                    // Update required fields
-                    document.querySelectorAll('#parentForm [required]').forEach(el => el.required = true);
-                    document.querySelectorAll('#studentForm [required]').forEach(el => el.required = false);
-                } else {
-                    parentForm.classList.remove('active');
-                    studentForm.classList.add('active');
-                    
-                    // Update required fields
-                    document.querySelectorAll('#parentForm [required]').forEach(el => el.required = false);
-                    document.querySelectorAll('#studentForm [required]').forEach(el => el.required = true);
-                }
-            });
-        });
-        
-        // Password toggle
-        const togglePassword = document.getElementById('togglePassword');
-        const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
-        const passwordField = document.getElementById('password');
-        const confirmPasswordField = document.getElementById('confirmPassword');
-        
-        togglePassword.addEventListener('click', function() {
-            const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
-            passwordField.setAttribute('type', type);
-            this.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
-        });
-        
-        toggleConfirmPassword.addEventListener('click', function() {
-            const type = confirmPasswordField.getAttribute('type') === 'password' ? 'text' : 'password';
-            confirmPasswordField.setAttribute('type', type);
-            this.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
-        });
-        
-        // Password strength checker
-        passwordField.addEventListener('input', function() {
-            const password = this.value;
-            const strengthFill = document.getElementById('strengthFill');
-            const strengthText = document.getElementById('strengthText');
-            
-            let strength = 0;
-            
-            // Length check
-            if (password.length >= 8) strength++;
-            if (password.length >= 12) strength++;
-            
-            // Complexity checks
-            if (/[A-Z]/.test(password)) strength++;
-            if (/[0-9]/.test(password)) strength++;
-            if (/[^A-Za-z0-9]/.test(password)) strength++;
-            
-            // Update display
-            strengthFill.className = 'strength-fill';
-            if (password.length === 0) {
-                strengthText.textContent = 'None';
-                strengthFill.style.width = '0%';
-            } else if (strength <= 2) {
-                strengthText.textContent = 'Weak';
-                strengthFill.classList.add('weak');
-            } else if (strength <= 4) {
-                strengthText.textContent = 'Medium';
-                strengthFill.classList.add('medium');
-            } else {
-                strengthText.textContent = 'Strong';
-                strengthFill.classList.add('strong');
-            }
-        });
-        
-        // Form validation
-        document.getElementById('registerForm').addEventListener('submit', function(e) {
-            const password = passwordField.value;
-            const confirmPassword = confirmPasswordField.value;
-            
-            // Check password match
-            if (password !== confirmPassword) {
-                e.preventDefault();
-                showToast('Passwords do not match!', 'error');
-                confirmPasswordField.focus();
-                return;
-            }
-            
-            // Check password strength
-            if (password.length < 8) {
-                e.preventDefault();
-                showToast('Password must be at least 8 characters long', 'error');
-                passwordField.focus();
-                return;
-            }
-            
-            // Show loading
-            showLoading();
-        });
-        
-        // Load student data for parent form
-        function loadStudents(query = '') {
-            fetch(`/api/students/?q=${encodeURIComponent(query)}`)
-                .then(response => response.json())
-                .then(data => {
-                    const select = document.querySelector('select[name="students"]');
-                    select.innerHTML = '<option value="">Search for students...</option>';
-                    
-                    data.students.forEach(student => {
-                        const option = document.createElement('option');
-                        option.value = student.id;
-                        option.textContent = `${student.name} - ${student.admission_no} (${student.class_name})`;
-                        select.appendChild(option);
-                    });
-                })
-                .catch(error => console.error('Error loading students:', error));
+    // Form validation
+    document.getElementById('registerForm').addEventListener('submit', function(e) {
+        const firstname = document.getElementById('{{ form.first_name.id_for_label }}').value.trim();
+        const lastname = document.getElementById('{{ form.last_name.id_for_label }}').value.trim();
+        const username = document.getElementById('{{ form.username.id_for_label }}').value.trim();
+        const email = document.getElementById('{{ form.email.id_for_label }}').value.trim();
+        const phone = document.getElementById('{{ form.phone.id_for_label }}').value.trim();
+        const password1 = document.getElementById('{{ form.password1.id_for_label }}').value.trim();
+        const password2 = document.getElementById('{{ form.password2.id_for_label }}').value.trim();
+        const role = document.querySelector('input[name="role"]:checked');
+
+        // Basic validation
+        if (!firstname || !lastname || !username || !email || !phone || !password1 || !password2 || !role) {
+            e.preventDefault();
+            alert('Please fill in all required fields');
+            return false;
         }
-        
-        // Initial load of students
-        loadStudents();
-        
-        // Search students on input
-        document.querySelector('select[name="students"]').addEventListener('input', function(e) {
-            if (e.target.value.length >= 2) {
-                loadStudents(e.target.value);
-            }
-        });
-        
-        // Load classes for student form
-        fetch('/api/classes/')
-            .then(response => response.json())
-            .then(data => {
-                const select = document.getElementById('studentClass');
-                data.classes.forEach(cls => {
-                    const option = document.createElement('option');
-                    option.value = cls.id;
-                    option.textContent = cls.name;
-                    select.appendChild(option);
-                });
-            })
-            .catch(error => console.error('Error loading classes:', error));
+
+        // Password match check
+        if (password1 !== password2) {
+            e.preventDefault();
+            alert('Passwords do not match');
+            return false;
+        }
+
+        // Disable submit button to prevent double submission
+        const btn = this.querySelector('.register-btn');
+        btn.disabled = true;
+        btn.textContent = 'Creating Account...';
     });
+
+    // Auto-focus first name field
+    document.getElementById('{{ form.first_name.id_for_label }}').focus();
+
+    // Default role selection
+    document.getElementById('role_student').checked = true;
 </script>
 {% endblock %}

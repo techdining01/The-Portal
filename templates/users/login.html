@@ -1,41 +1,408 @@
 {% extends "base.html" %}
-{% block title %}Login{% endblock %}
+{% block title %}Login — Portal{% endblock %}
 {% load static %}
 
 {% block content %}
-<div class="container d-flex justify-content-center align-items-center" style="height: 80vh;">
-  <div class="card shadow p-4" style="width: 350px;">
-    <h3 class="text-center mb-3">Login</h3> 
+<style>
+    /* Login Page Styles */
+    .login-container {
+        min-height: calc(100vh - 200px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 0;
+    }
 
-    <form method="post">
-      {% csrf_token %}
-      <div class="mb-3">
-        <label for="username" class="form-label">Username</label>
-        <input 
-          type="text" 
-          name="username" 
-          id="username" 
-          class="form-control" 
-          placeholder="Enter username" 
-          required>
-      </div>
+    .login-card {
+        width: 100%;
+        max-width: 420px;
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        background: white;
+        animation: slideUp 0.5s ease-out;
+    }
 
-      <div class="mb-3">
-        <label for="password" class="form-label">Password</label>
-        <input 
-          type="password" 
-          name="password" 
-          id="password" 
-          class="form-control" 
-          placeholder="Enter password" 
-          required>
-      </div>
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
 
-      <div class="d-grid">
-        <button type="submit" class="btn btn-primary">Login</button>
-      </div>
-    </form>
-    <a href="{% url 'users:signup' %}" class="text-center">Don't have an account? Register here</a>
-  </div>
+    .login-card .card-body {
+        padding: 2rem;
+    }
+
+    .login-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .login-header h2 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--dark);
+        margin-bottom: 0.5rem;
+    }
+
+    .login-header p {
+        color: var(--secondary);
+        font-size: 0.95rem;
+    }
+
+    /* Form Styles */
+    .login-form {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: var(--dark);
+        margin-bottom: 0.75rem;
+        display: block;
+        font-size: 0.95rem;
+    }
+
+    .form-control {
+        border: 2px solid var(--border);
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        background: #f8fafc;
+    }
+
+    .form-control:focus {
+        border-color: var(--primary);
+        background: white;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        outline: none;
+    }
+
+    .form-control::placeholder {
+        color: #94a3b8;
+    }
+
+    /* Submit Button */
+    .login-btn {
+        width: 100%;
+        padding: 0.875rem 1.5rem;
+        font-weight: 600;
+        font-size: 1rem;
+        border-radius: 10px;
+        border: none;
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+    }
+
+    .login-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(37, 99, 235, 0.4);
+    }
+
+    .login-btn:active {
+        transform: translateY(0);
+    }
+
+    .login-btn:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+
+    /* Login Footer */
+    .login-footer {
+        text-align: center;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border);
+    }
+
+    .login-footer p {
+        color: var(--secondary);
+        margin-bottom: 0;
+        font-size: 0.95rem;
+    }
+
+    .login-footer a {
+        color: var(--primary);
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .login-footer a:hover {
+        color: var(--primary-dark);
+        text-decoration: underline;
+    }
+
+    /* Error Messages */
+    .error-message {
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid #fecaca;
+        border-left: 4px solid var(--danger);
+        color: #991b1b;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .error-message i {
+        font-size: 1.1rem;
+        margin-top: 2px;
+        flex-shrink: 0;
+    }
+
+    /* Success Messages */
+    .success-message {
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid #a7f3d0;
+        border-left: 4px solid var(--success);
+        color: #065f46;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .success-message i {
+        font-size: 1.1rem;
+        margin-top: 2px;
+        flex-shrink: 0;
+    }
+
+    /* Checkbox Styles */
+    .form-check {
+        margin-bottom: 1rem;
+    }
+
+    .form-check-input {
+        border: 2px solid var(--border);
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .form-check-input:checked {
+        background-color: var(--primary);
+        border-color: var(--primary);
+    }
+
+    .form-check-input:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .form-check-label {
+        color: var(--secondary);
+        font-size: 0.95rem;
+        cursor: pointer;
+        margin-bottom: 0;
+    }
+
+    /* Loading State */
+    .login-btn.loading {
+        opacity: 0.7;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 576px) {
+        .login-container {
+            padding: 1rem;
+        }
+
+        .login-card {
+            max-width: 100%;
+        }
+
+        .login-card .card-body {
+            padding: 1.5rem;
+        }
+
+        .login-header h2 {
+            font-size: 1.5rem;
+        }
+
+        .form-control {
+            font-size: 16px; /* Prevents zoom on iOS */
+        }
+
+        .login-btn {
+            padding: 0.75rem 1rem;
+            font-size: 0.95rem;
+        }
+    }
+
+    /* Accessibility */
+    .form-control:focus,
+    .login-btn:focus {
+        outline: 2px solid var(--primary);
+        outline-offset: 2px;
+    }
+
+    /* Touch-friendly for mobile */
+    @media (hover: none) and (pointer: coarse) {
+        .form-control,
+        .login-btn,
+        .form-check-input {
+            min-height: 44px;
+        }
+    }
+</style>
+
+<div class="login-container">
+    <div class="login-card card">
+        <div class="card-body">
+            <!-- Header -->
+            <div class="login-header">
+                <h2>Welcome Back</h2>
+                <p>Sign in to your account</p>
+            </div>
+
+            <!-- Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    {% if message.tags == 'error' or message.tags == 'danger' %}
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <div>{{ message }}</div>
+                    </div>
+                    {% elif message.tags == 'success' %}
+                    <div class="success-message">
+                        <i class="fas fa-check-circle"></i>
+                        <div>{{ message }}</div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+
+            <!-- Form -->
+            <form method="post" class="login-form" novalidate>
+                {% csrf_token %}
+
+                <!-- Username Field -->
+                <div class="form-group">
+                    <label for="username" class="form-label">
+                        <i class="fas fa-user me-2 text-primary"></i>Username
+                    </label>
+                    <input 
+                        type="text" 
+                        name="username" 
+                        id="username" 
+                        class="form-control {% if form.username.errors %}is-invalid{% endif %}"
+                        placeholder="Enter your username" 
+                        required
+                        autocomplete="username"
+                        autofocus>
+                    {% if form.username.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.username.errors|first }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Password Field -->
+                <div class="form-group">
+                    <label for="password" class="form-label">
+                        <i class="fas fa-lock me-2 text-primary"></i>Password
+                    </label>
+                    <input 
+                        type="password" 
+                        name="password" 
+                        id="password" 
+                        class="form-control {% if form.password.errors %}is-invalid{% endif %}"
+                        placeholder="Enter your password" 
+                        required
+                        autocomplete="current-password">
+                    {% if form.password.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.password.errors|first }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Remember Me -->
+                <div class="form-check">
+                    <input 
+                        class="form-check-input" 
+                        type="checkbox" 
+                        id="remember" 
+                        name="remember"
+                        value="on">
+                    <label class="form-check-label" for="remember">
+                        Remember me
+                    </label>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="btn btn-primary login-btn">
+                    <i class="fas fa-sign-in-alt me-2"></i>Login
+                </button>
+            </form>
+
+            <!-- Footer -->
+            <div class="login-footer">
+                <p>
+                    Don't have an account? 
+                    <a href="{% url 'users:register_parent' %}">
+                        Register here
+                    </a>
+                </p>
+                {% if forgot_password_url %}
+                <p style="margin-top: 0.75rem;">
+                    <a href="{{ forgot_password_url }}" style="font-size: 0.85rem;">
+                        Forgot password?
+                    </a>
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
 </div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('.login-form');
+        const submitBtn = document.querySelector('.login-btn');
+
+        // Form submission handler
+        form.addEventListener('submit', function(e) {
+            // Disable button during submission
+            submitBtn.disabled = true;
+            submitBtn.classList.add('loading');
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Signing in...';
+        });
+
+        // Re-enable button if there's an error
+        if (form.querySelector('.invalid-feedback')) {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('loading');
+            submitBtn.innerHTML = '<i class="fas fa-sign-in-alt me-2"></i>Login';
+        }
+
+        // Auto-focus on first error field
+        const firstError = form.querySelector('.is-invalid');
+        if (firstError) {
+            firstError.focus();
+        }
+    });
+</script>
 {% endblock %}

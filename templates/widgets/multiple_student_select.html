@@ -1,0 +1,80 @@
+<!-- widgets/multiple_student_select.html -->
+<div class="multiple-student-widget">
+    <select 
+        name="{{ widget.name }}"
+        id="{{ widget.attrs.id|default:'' }}"
+        class="form-select multiple-student-select"
+        {% if widget.attrs.required %}required{% endif %}
+        {% if widget.attrs.disabled %}disabled{% endif %}
+        multiple
+        style="min-height: 200px;"
+    >
+        {% for group_name, group_choices, group_index in widget.optgroups %}
+            {% if group_name %}
+                <optgroup label="{{ group_name }}">
+            {% endif %}
+            
+            {% for option in group_choices %}
+                <option value="{{ option.value }}" 
+                        {% if option.selected %}selected{% endif %}
+                        {% if option.disabled %}disabled{% endif %}>
+                    {{ option.label }}
+                </option>
+            {% endfor %}
+            
+            {% if group_name %}
+                </optgroup>
+            {% endif %}
+        {% endfor %}
+    </select>
+    
+    <!-- REMOVE OR FIX THIS LINK -->
+    <!-- 
+    <div class="mt-2">
+        <a href="{% url 'product_list' %}" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-store"></i> Browse Products
+        </a>
+    </div>
+    -->
+    
+    <!-- OR REPLACE WITH: -->
+    <div class="mt-2">
+        <a href="/store/" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-store"></i> Visit Store
+        </a>
+    </div>
+</div>
+
+<style>
+.multiple-student-widget select {
+    width: 100%;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const select = document.querySelector('.multiple-student-select');
+    if (select) {
+        // Add search functionality
+        const searchInput = document.createElement('input');
+        searchInput.type = 'text';
+        searchInput.className = 'form-control mb-2';
+        searchInput.placeholder = 'Search students...';
+        searchInput.addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const options = select.querySelectorAll('option');
+            
+            options.forEach(option => {
+                const text = option.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    option.style.display = '';
+                } else {
+                    option.style.display = 'none';
+                }
+            });
+        });
+        
+        select.parentNode.insertBefore(searchInput, select);
+    }
+});
+</script>

@@ -1,0 +1,23 @@
+<div class="multiple-student-widget">
+    <select 
+        name="{{ widget.name }}"
+        {% include "forms/widgets/attrs.html" %}
+        multiple
+    >
+        {% for group_name, group_choices, group_index in widget.optgroups %}
+            {% if group_name %}
+                <optgroup label="{{ group_name }}">
+            {% endif %}
+            {% for option in group_choices %}
+                <option value="{{ option.value }}" 
+                        {% if option.selected %}selected{% endif %}>
+                    {{ option.label }}
+                </option>
+            {% endfor %}
+            {% if group_name %}
+                </optgroup>
+            {% endif %}
+        {% endfor %}
+    </select>
+</div>
+
